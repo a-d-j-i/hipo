@@ -1,0 +1,265 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add",
+    "refresh": "Refresh",
+    "search": "Search",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "created": "Created",
+    "updated": "Updated",
+    "required": "Required",
+    "atLeast8Chars": "At least 8 characters",
+    "all": "All",
+    "emptyText": "No data",
+    "optional": "Optional",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{n}}",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "loans": "Loans",
+    "payouts": "Payouts",
+    "parties": "Parties",
+    "users": "Users",
+    "audit": "Audit log",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "setup": {
+      "title": "Welcome to hipo",
+      "description": "Create the first administrator account. This will have full access.",
+      "warningTitle": "Remember your password",
+      "warningDescription": "There is no recovery — losing the password means losing access. Back up the database regularly from Settings.",
+      "username": "Username",
+      "password": "Password",
+      "confirm": "Confirm password",
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "confirmRequired": "Please confirm the password",
+      "passwordsDontMatch": "Passwords do not match",
+      "createAdmin": "Create admin",
+      "success": "Admin account created"
+    },
+    "login": {
+      "title": "Sign in",
+      "username": "Username",
+      "password": "Password",
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "submit": "Sign in"
+    }
+  },
+  "parties": {
+    "title": "Parties",
+    "addParty": "Add party",
+    "column": {
+      "name": "Name",
+      "reference": "Reference",
+      "created": "Created"
+    },
+    "form": {
+      "name": "Name",
+      "externalRef": "Reference (tax id, etc.)",
+      "notes": "Notes",
+      "nameRequired": "Name is required"
+    },
+    "drawerTitle": {
+      "add": "Add party",
+      "edit": "Edit {{name}}"
+    },
+    "toast": {
+      "created": "Party created",
+      "saved": "Saved",
+      "deleted": "Party deleted"
+    },
+    "confirmDelete": "Delete {{name}}?"
+  },
+  "loans": {
+    "title": "Loans",
+    "newLoan": "New loan",
+    "column": {
+      "ref": "Ref",
+      "debtor": "Debtor",
+      "principal": "Principal",
+      "interest": "Interest",
+      "status": "Status",
+      "issued": "Issued"
+    },
+    "status": {
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "form": {
+      "reference": "Reference",
+      "debtor": "Debtor",
+      "debtorRequired": "Debtor is required",
+      "currency": "Currency",
+      "principal": "Principal",
+      "interest": "Interest (flat)",
+      "issuedAt": "Issued at",
+      "notes": "Notes",
+      "lendersSection": "Lenders"
+    },
+    "lenders": {
+      "add": "Add lender",
+      "remove": "Remove",
+      "atLeastOne": "At least one lender",
+      "lenderPlaceholder": "Lender",
+      "amountPlaceholder": "Amount"
+    },
+    "drawerTitle": {
+      "create": "New loan",
+      "edit": "Edit {{ref}}",
+      "manageLenders": "Manage lenders — {{ref}}"
+    },
+    "actionTitle": {
+      "payments": "Payments",
+      "manageLenders": "Manage lenders"
+    },
+    "toast": {
+      "created": "Loan created",
+      "saved": "Saved",
+      "deleted": "Deleted",
+      "lendersUpdated": "Lenders updated"
+    },
+    "confirmDelete": "Delete loan {{ref}}?"
+  },
+  "payments": {
+    "drawerTitle": "Payments — {{ref}} ({{debtor}})",
+    "summary": {
+      "principal": "Principal",
+      "interest": "Interest",
+      "paidSoFar": "Paid so far",
+      "outstanding": "Outstanding"
+    },
+    "form": {
+      "amount": "Amount",
+      "paidAt": "Date",
+      "notes": "Notes",
+      "record": "Record"
+    },
+    "loanClosedAlert": "Loan is closed — no new payments can be recorded.",
+    "column": {
+      "date": "Date",
+      "amount": "Amount",
+      "notes": "Notes",
+      "lender": "Lender",
+      "share": "Share"
+    },
+    "toast": {
+      "recorded": "Payment recorded",
+      "deleted": "Payment deleted"
+    },
+    "confirmDelete": "Delete this payment?",
+    "notesPlaceholder": "Optional"
+  },
+  "payouts": {
+    "outstandingTitle": "Outstanding to lenders",
+    "historyTitle": "Payout history",
+    "column": {
+      "lender": "Lender",
+      "currency": "Currency",
+      "received": "Received",
+      "paidOut": "Paid out",
+      "outstanding": "Outstanding",
+      "date": "Date",
+      "amount": "Amount",
+      "notes": "Notes"
+    },
+    "record": "Record payout",
+    "recordTo": "Record payout — {{lender}} ({{currency}})",
+    "form": {
+      "amount": "Amount",
+      "paidAt": "Paid at",
+      "notes": "Notes"
+    },
+    "toast": {
+      "recorded": "Payout recorded",
+      "deleted": "Payout deleted"
+    },
+    "confirmDelete": "Delete this payout?",
+    "emptyBalances": "No balances yet"
+  },
+  "users": {
+    "title": "Users",
+    "addUser": "Add user",
+    "role": {
+      "admin": "Admin",
+      "user": "User"
+    },
+    "column": {
+      "username": "Username",
+      "role": "Role",
+      "created": "Created"
+    },
+    "form": {
+      "username": "Username",
+      "password": "Password",
+      "role": "Role",
+      "newPassword": "New password",
+      "confirm": "Confirm password",
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "confirmRequired": "Please confirm the password",
+      "passwordsDontMatch": "Passwords do not match"
+    },
+    "actionTitle": {
+      "resetPassword": "Reset password"
+    },
+    "drawerTitle": {
+      "add": "Add user",
+      "resetFor": "Reset password — {{username}}"
+    },
+    "toast": {
+      "created": "User created",
+      "deleted": "Deleted {{username}}",
+      "passwordReset": "Password reset for {{username}}",
+      "roleChanged": "{{username}} is now {{role}}"
+    },
+    "confirmDelete": "Delete {{username}}?",
+    "reset": "Reset"
+  },
+  "audit": {
+    "title": "Audit log",
+    "filter": {
+      "entity": "Entity",
+      "user": "User"
+    },
+    "entity": {
+      "user": "User",
+      "party": "Party",
+      "loan": "Loan",
+      "payment": "Payment",
+      "payout": "Payout"
+    },
+    "column": {
+      "when": "When",
+      "user": "User",
+      "action": "Action",
+      "entity": "Entity",
+      "id": "ID"
+    },
+    "deletedUser": "deleted user",
+    "emptyText": "No audit entries"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": {
+      "title": "Language",
+      "es": "Español",
+      "en": "English"
+    },
+    "placeholderNote": "More options coming soon (theme, backups, etc.)."
+  }
+}

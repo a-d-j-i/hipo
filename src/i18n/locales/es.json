@@ -1,0 +1,265 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "add": "Agregar",
+    "refresh": "Actualizar",
+    "search": "Buscar",
+    "yes": "Sí",
+    "no": "No",
+    "confirm": "Confirmar",
+    "saved": "Guardado",
+    "deleted": "Eliminado",
+    "created": "Creado",
+    "updated": "Actualizado",
+    "required": "Requerido",
+    "atLeast8Chars": "Mínimo 8 caracteres",
+    "all": "Todos",
+    "emptyText": "Sin datos",
+    "optional": "Opcional",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "page": "Página {{n}}",
+    "loading": "Cargando…"
+  },
+  "nav": {
+    "dashboard": "Inicio",
+    "loans": "Préstamos",
+    "payouts": "Liquidaciones",
+    "parties": "Personas",
+    "users": "Usuarios",
+    "audit": "Auditoría",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "auth": {
+    "setup": {
+      "title": "Bienvenido a hipo",
+      "description": "Creá la primera cuenta administrador. Tendrá acceso total.",
+      "warningTitle": "Recordá tu contraseña",
+      "warningDescription": "No hay recuperación — perder la contraseña significa perder el acceso. Hacé respaldos de la base de datos regularmente desde Configuración.",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "confirm": "Confirmar contraseña",
+      "usernameRequired": "Usuario requerido",
+      "passwordRequired": "Contraseña requerida",
+      "confirmRequired": "Confirmá la contraseña",
+      "passwordsDontMatch": "Las contraseñas no coinciden",
+      "createAdmin": "Crear administrador",
+      "success": "Cuenta administrador creada"
+    },
+    "login": {
+      "title": "Iniciar sesión",
+      "username": "Usuario",
+      "password": "Contraseña",
+      "usernameRequired": "Usuario requerido",
+      "passwordRequired": "Contraseña requerida",
+      "submit": "Ingresar"
+    }
+  },
+  "parties": {
+    "title": "Personas",
+    "addParty": "Agregar persona",
+    "column": {
+      "name": "Nombre",
+      "reference": "Referencia",
+      "created": "Creado"
+    },
+    "form": {
+      "name": "Nombre",
+      "externalRef": "Referencia (CUIT, DNI, etc.)",
+      "notes": "Notas",
+      "nameRequired": "El nombre es requerido"
+    },
+    "drawerTitle": {
+      "add": "Agregar persona",
+      "edit": "Editar {{name}}"
+    },
+    "toast": {
+      "created": "Persona creada",
+      "saved": "Guardado",
+      "deleted": "Persona eliminada"
+    },
+    "confirmDelete": "¿Eliminar {{name}}?"
+  },
+  "loans": {
+    "title": "Préstamos",
+    "newLoan": "Nuevo préstamo",
+    "column": {
+      "ref": "Ref.",
+      "debtor": "Deudor",
+      "principal": "Capital",
+      "interest": "Interés",
+      "status": "Estado",
+      "issued": "Emitido"
+    },
+    "status": {
+      "active": "Activo",
+      "closed": "Cerrado"
+    },
+    "form": {
+      "reference": "Referencia",
+      "debtor": "Deudor",
+      "debtorRequired": "El deudor es requerido",
+      "currency": "Moneda",
+      "principal": "Capital",
+      "interest": "Interés (plano)",
+      "issuedAt": "Fecha de emisión",
+      "notes": "Notas",
+      "lendersSection": "Prestamistas"
+    },
+    "lenders": {
+      "add": "Agregar prestamista",
+      "remove": "Quitar",
+      "atLeastOne": "Al menos un prestamista",
+      "lenderPlaceholder": "Prestamista",
+      "amountPlaceholder": "Monto"
+    },
+    "drawerTitle": {
+      "create": "Nuevo préstamo",
+      "edit": "Editar {{ref}}",
+      "manageLenders": "Prestamistas — {{ref}}"
+    },
+    "actionTitle": {
+      "payments": "Pagos",
+      "manageLenders": "Administrar prestamistas"
+    },
+    "toast": {
+      "created": "Préstamo creado",
+      "saved": "Guardado",
+      "deleted": "Eliminado",
+      "lendersUpdated": "Prestamistas actualizados"
+    },
+    "confirmDelete": "¿Eliminar préstamo {{ref}}?"
+  },
+  "payments": {
+    "drawerTitle": "Pagos — {{ref}} ({{debtor}})",
+    "summary": {
+      "principal": "Capital",
+      "interest": "Interés",
+      "paidSoFar": "Pagado",
+      "outstanding": "Pendiente"
+    },
+    "form": {
+      "amount": "Monto",
+      "paidAt": "Fecha",
+      "notes": "Notas",
+      "record": "Registrar"
+    },
+    "loanClosedAlert": "El préstamo está cerrado — no se pueden registrar nuevos pagos.",
+    "column": {
+      "date": "Fecha",
+      "amount": "Monto",
+      "notes": "Notas",
+      "lender": "Prestamista",
+      "share": "Parte"
+    },
+    "toast": {
+      "recorded": "Pago registrado",
+      "deleted": "Pago eliminado"
+    },
+    "confirmDelete": "¿Eliminar este pago?",
+    "notesPlaceholder": "Opcional"
+  },
+  "payouts": {
+    "outstandingTitle": "Pendiente a prestamistas",
+    "historyTitle": "Historial de pagos",
+    "column": {
+      "lender": "Prestamista",
+      "currency": "Moneda",
+      "received": "Recibido",
+      "paidOut": "Pagado",
+      "outstanding": "Pendiente",
+      "date": "Fecha",
+      "amount": "Monto",
+      "notes": "Notas"
+    },
+    "record": "Registrar pago",
+    "recordTo": "Registrar pago — {{lender}} ({{currency}})",
+    "form": {
+      "amount": "Monto",
+      "paidAt": "Fecha",
+      "notes": "Notas"
+    },
+    "toast": {
+      "recorded": "Pago registrado",
+      "deleted": "Pago eliminado"
+    },
+    "confirmDelete": "¿Eliminar este pago?",
+    "emptyBalances": "Sin saldos aún"
+  },
+  "users": {
+    "title": "Usuarios",
+    "addUser": "Agregar usuario",
+    "role": {
+      "admin": "Administrador",
+      "user": "Usuario"
+    },
+    "column": {
+      "username": "Usuario",
+      "role": "Rol",
+      "created": "Creado"
+    },
+    "form": {
+      "username": "Usuario",
+      "password": "Contraseña",
+      "role": "Rol",
+      "newPassword": "Nueva contraseña",
+      "confirm": "Confirmar contraseña",
+      "usernameRequired": "Usuario requerido",
+      "passwordRequired": "Contraseña requerida",
+      "confirmRequired": "Confirmá la contraseña",
+      "passwordsDontMatch": "Las contraseñas no coinciden"
+    },
+    "actionTitle": {
+      "resetPassword": "Restablecer contraseña"
+    },
+    "drawerTitle": {
+      "add": "Agregar usuario",
+      "resetFor": "Restablecer contraseña — {{username}}"
+    },
+    "toast": {
+      "created": "Usuario creado",
+      "deleted": "Usuario {{username}} eliminado",
+      "passwordReset": "Contraseña actualizada para {{username}}",
+      "roleChanged": "{{username}} ahora es {{role}}"
+    },
+    "confirmDelete": "¿Eliminar {{username}}?",
+    "reset": "Restablecer"
+  },
+  "audit": {
+    "title": "Auditoría",
+    "filter": {
+      "entity": "Entidad",
+      "user": "Usuario"
+    },
+    "entity": {
+      "user": "Usuario",
+      "party": "Persona",
+      "loan": "Préstamo",
+      "payment": "Pago",
+      "payout": "Pago a prestamista"
+    },
+    "column": {
+      "when": "Cuándo",
+      "user": "Usuario",
+      "action": "Acción",
+      "entity": "Entidad",
+      "id": "ID"
+    },
+    "deletedUser": "usuario eliminado",
+    "emptyText": "Sin entradas de auditoría"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": {
+      "title": "Idioma",
+      "es": "Español",
+      "en": "English"
+    },
+    "placeholderNote": "Más opciones llegarán pronto (tema, respaldos, etc.)."
+  }
+}
