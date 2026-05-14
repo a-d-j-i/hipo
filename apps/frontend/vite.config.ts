@@ -11,6 +11,37 @@ const backendPort = process.env.HIPO_BACKEND_PORT || "8787";
 export default defineConfig(async () => ({
   plugins: [react()],
 
+  build: {
+    // Split heavy vendors into their own chunks so the antd bundle (the
+    // dominant cost) can be cached separately from app code across deploys.
+    // Route-level code-splitting in App.tsx (React.lazy) handles the rest.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          // antd + everything antd's internal components reach for. The
+          // extra patterns prevent a `vendor → antd → vendor` cycle by
+          // keeping antd's transitive deps in the antd chunk.
+          if (
+            /node_modules\/(antd|@ant-design|rc-[^/]+|@rc-component|classnames|@ctrl\/tinycolor|@babel\/runtime|dayjs)/.test(
+              id,
+            )
+          ) {
+            return "antd";
+          }
+          if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) {
+            return "react";
+          }
+          return "vendor";
+        },
+      },
+    },
+    // antd 5 with its rc-*/@rc-component/* transitive deps comes out to
+    // ~1 MB minified (~310 KB gzipped). Anything below this is a chunk
+    // we should split further.
+    chunkSizeWarningLimit: 1100,
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent Vite from obscuring rust errors

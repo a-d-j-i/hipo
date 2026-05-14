@@ -1,4 +1,5 @@
-import { ConfigProvider } from "antd";
+import { lazy, Suspense } from "react";
+import { ConfigProvider, Spin } from "antd";
 import { BrowserRouter, Route, Routes } from "react-router";
 import {
   AuthProvider,
@@ -8,68 +9,90 @@ import {
   RequireSetup,
 } from "./auth/AuthContext";
 import AppLayout from "./layouts/AppLayout";
-import AuditLog from "./pages/AuditLog";
-import Dashboard from "./pages/Dashboard";
-import Loans from "./pages/Loans";
-import Login from "./pages/Login";
-import Parties from "./pages/Parties";
-import Payouts from "./pages/Payouts";
-import Settings from "./pages/Settings";
-import Setup from "./pages/Setup";
-import Users from "./pages/Users";
+
+// Per-route code splitting. Each page becomes its own chunk and is fetched
+// on first navigation; AppLayout + auth context stay in the entry bundle so
+// the shell paints immediately.
+const AuditLog = lazy(() => import("./pages/AuditLog"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Loans = lazy(() => import("./pages/Loans"));
+const Login = lazy(() => import("./pages/Login"));
+const Parties = lazy(() => import("./pages/Parties"));
+const Payouts = lazy(() => import("./pages/Payouts"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Setup = lazy(() => import("./pages/Setup"));
+const Users = lazy(() => import("./pages/Users"));
+
+function PageFallback() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "200px",
+        width: "100%",
+      }}
+    >
+      <Spin />
+    </div>
+  );
+}
 
 export default function App() {
   return (
     <ConfigProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route
-              path="/setup"
-              element={
-                <RequireSetup>
-                  <Setup />
-                </RequireSetup>
-              }
-            />
-            <Route
-              path="/login"
-              element={
-                <RequireLogin>
-                  <Login />
-                </RequireLogin>
-              }
-            />
-            <Route
-              element={
-                <RequireAuth>
-                  <AppLayout />
-                </RequireAuth>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="parties" element={<Parties />} />
-              <Route path="loans" element={<Loans />} />
-              <Route path="payouts" element={<Payouts />} />
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
               <Route
-                path="users"
+                path="/setup"
                 element={
-                  <RequireAdmin>
-                    <Users />
-                  </RequireAdmin>
+                  <RequireSetup>
+                    <Setup />
+                  </RequireSetup>
                 }
               />
               <Route
-                path="audit"
+                path="/login"
                 element={
-                  <RequireAdmin>
-                    <AuditLog />
-                  </RequireAdmin>
+                  <RequireLogin>
+                    <Login />
+                  </RequireLogin>
                 }
               />
-              <Route path="settings" element={<Settings />} />
-            </Route>
-          </Routes>
+              <Route
+                element={
+                  <RequireAuth>
+                    <AppLayout />
+                  </RequireAuth>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="parties" element={<Parties />} />
+                <Route path="loans" element={<Loans />} />
+                <Route path="payouts" element={<Payouts />} />
+                <Route
+                  path="users"
+                  element={
+                    <RequireAdmin>
+                      <Users />
+                    </RequireAdmin>
+                  }
+                />
+                <Route
+                  path="audit"
+                  element={
+                    <RequireAdmin>
+                      <AuditLog />
+                    </RequireAdmin>
+                  }
+                />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </ConfigProvider>
