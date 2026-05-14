@@ -23,12 +23,22 @@ async function main(): Promise<void> {
   const app = new Hono<AppEnv>();
 
   app.onError(errorHandler);
-  // CORS for dev (Tauri webview and Vite dev both hit the Deno port directly).
-  // Production server build will run same-origin (frontend served by Deno).
+  // CORS allowlist. All production shapes are same-origin (Tauri webview
+  // hits the sidecar at its own host:port; cloud serves the SPA via
+  // staticSpa). Cross-origin only happens when a browser at the Vite dev
+  // port bypasses the proxy and hits the backend directly — that's the
+  // single legitimate origin we need to allow.
+  const ALLOWED_ORIGINS = new Set([
+    "http://localhost:1420",
+    "http://127.0.0.1:1420",
+  ]);
   app.use(
     "*",
     cors({
-      origin: (origin) => origin ?? "*",
+      origin: (origin) => {
+        if (!origin) return null;
+        return ALLOWED_ORIGINS.has(origin) ? origin : null;
+      },
       credentials: true,
     }),
   );

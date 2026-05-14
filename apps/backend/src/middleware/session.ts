@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { Context, MiddlewareHandler } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { and, eq, gt } from "drizzle-orm";
@@ -114,10 +115,22 @@ export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
   await next();
 };
 
-/** Optional localhost-only token check. Active when HIPO_AUTH_TOKEN is set. */
+function safeTokenEqual(provided: string | undefined, expected: string): boolean {
+  if (!provided || provided.length !== expected.length) return false;
+  const enc = new TextEncoder();
+  return timingSafeEqual(enc.encode(provided), enc.encode(expected));
+}
+
+/**
+ * Localhost-only API token check. Active when HIPO_AUTH_TOKEN is set
+ * (Tauri shell injects it). Scoped to /api/* — static SPA assets (HTML,
+ * JS, CSS) are public bundle output with no secrets, so gating them
+ * would only block the initial page load while adding no protection.
+ */
 export const requireLocalToken: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (!config.authToken) return next();
-  if (c.req.header("X-Hipo-Token") !== config.authToken)
+  if (!c.req.path.startsWith("/api/")) return next();
+  if (!safeTokenEqual(c.req.header("X-Hipo-Token"), config.authToken))
     return c.json({ error: "forbidden" }, 403);
   await next();
 };
