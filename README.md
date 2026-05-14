@@ -164,14 +164,29 @@ CI alternative: push a `v*` tag to trigger `.github/workflows/release.yml`,
 which builds for Linux + Windows in parallel using native runners and uploads
 signed installers + `latest.json` to a draft GitHub Release.
 
-**Bundle sizes (reference):**
+**Bundle sizes (verified Linux x86_64, 2026-05-14):**
 
-- Compiled Deno sidecar (libsql + V8 + std + JS): **~132 MB**.
-- Final Windows installer: **~145 MB** (Tauri ~15 MB + sidecar + JS).
+- Tauri shell executable: **~20 MB**.
+- Compiled Deno sidecar (libsql + V8 + std + npm deps): **~387 MB** —
+  the npm-deps embed via Deno's auto-managed `node_modules` is the
+  bulk (~266 MB unique).
+- `.deb` / `.rpm` installer: **~117 MB** each (compressed).
+- `.AppImage`: **~197 MB**.
 - Comparison: pure Tauri+Rust ~25 MB, Electron-equivalent ~250 MB.
 
 The size delta vs. pure Rust buys backend code reuse with the cloud
-build (same binary deploys hosted).
+build (same binary deploys hosted). Windows installers aren't measured
+locally — expect roughly similar shapes.
+
+**Build-order gotcha.** `deno compile` embeds the workspace tree
+reachable from the repo root. If `apps/desktop/target/` contains stale
+Rust artifacts when you run `deno task compile:linux` *manually*, the
+sidecar binary balloons to **5.8 GB** (the entire Rust target/ gets
+dragged in). The orchestrated `npm run build:desktop:*` scripts and
+`.github/workflows/release.yml` chain steps in the right order (Deno
+compile *before* `tauri build`/`cargo build`), so official build paths
+are unaffected. Direct `deno task compile:*` invocations: `cargo
+clean` first, or just use the orchestrated script.
 
 ---
 
