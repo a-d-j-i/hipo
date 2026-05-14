@@ -1,0 +1,6 @@
+{
+  "comment": "Deno workspace root. apps/backend is the sole Deno package; this file holds settings Deno requires at the workspace root.",
+  "workspace": ["./apps/backend"],
+  "lock": true,
+  "nodeModulesDir": "auto"
+}

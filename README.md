@@ -1,8 +1,8 @@
 # hipo
 
 Desktop admin app for tracking **mortgage loans with multiple lenders**.
-Tauri 2 shell + Deno backend (sidecar) + React/TypeScript frontend, all from
-one codebase. Targets **Windows** and **Linux**. SQLite-only persistence,
+Tauri 2 shell + Deno backend (sidecar) + React/TypeScript frontend, all in
+one monorepo. Targets **Windows** and **Linux**. SQLite-only persistence,
 full audit trail, Spanish-default UI with English toggle.
 
 > The same Deno backend binary can also be deployed as a regular HTTP server
@@ -11,11 +11,31 @@ full audit trail, Spanish-default UI with English toggle.
 
 ---
 
-## Architecture in one diagram
+## Repo layout
+
+```
+hipo/
+├── apps/
+│   ├── frontend/   React + Vite + antd (browser bundle)
+│   ├── backend/    Deno + Hono + Drizzle + libsql (HTTP server)
+│   └── desktop/    Tauri shell — spawns backend, opens webview
+└── packages/
+    └── shared/     (stub) source-only TS shared by frontend + backend
+```
+
+Workspaces are managed by **npm workspaces** (no yarn, no turbo).
+Each app keeps its native config: `package.json` + `vite.config.ts` in
+frontend, `deno.json` in backend, `Cargo.toml` + `tauri.conf.json` in
+desktop. The thin `package.json` files in `apps/{backend,desktop}` only
+exist so npm workspaces can resolve them by name.
+
+---
+
+## Architecture
 
 ```
                 ┌──────────────────────────────┐
-                │  Tauri shell (Rust, ~110 LOC)│
+                │  apps/desktop (Tauri shell)   │
                 │  • generates auth token       │
                 │  • spawns sidecar             │
                 │  • opens window at backend URL│
@@ -24,7 +44,7 @@ full audit trail, Spanish-default UI with English toggle.
                                │ spawns
                                ▼
                 ┌──────────────────────────────┐
-                │  Deno backend (sidecar)       │
+                │  apps/backend (Deno sidecar)  │
                 │  • Hono + Drizzle + libsql    │
                 │  • cookie sessions            │
                 │  • full domain API + audit log│
@@ -33,27 +53,21 @@ full audit trail, Spanish-default UI with English toggle.
                                │ fetch (cookie + X-Hipo-Token)
                                │
                 ┌──────────────┴───────────────┐
-                │  React frontend               │
+                │  apps/frontend (React)        │
                 │  • antd 5, responsive         │
                 │  • no `invoke()` — fetch only │
                 │  • i18n (es default + en)     │
                 └──────────────────────────────┘
 ```
 
-Same React + Deno code runs unchanged in three deployment shapes:
-
-1. **Tauri desktop** — sidecar spawned by Rust, auth token in URL hash.
-2. **Local-service** — Deno binary running standalone, accessed via browser.
-3. **Cloud SaaS** — same Deno binary on Fly.io / Hetzner / etc.
-
 ---
 
 ## Prerequisites
 
-- **Node 20+** and **Yarn 1.x** (`yarn install` works with `package-lock.json` ignored)
+- **Node 20+** with **npm 10+** (workspaces support)
 - **Rust stable** with `cargo` on PATH
 - **Deno 2.x** — `curl -fsSL https://deno.com/install.sh | sh`
-- **Linux build deps** (if dev'ing on Linux):
+- **Linux build deps** (only if dev'ing on Linux):
   ```bash
   sudo apt-get install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
   ```
@@ -65,8 +79,18 @@ cargo install cargo-xwin --locked
 rustup target add x86_64-pc-windows-msvc
 ```
 
-(First `cargo-xwin` run downloads Microsoft Windows SDK headers/libs ~600 MB.
-CI uses a native `windows-latest` runner instead — see `.github/workflows/release.yml`.)
+CI uses a native `windows-latest` runner instead — see `.github/workflows/release.yml`.
+
+---
+
+## First-time setup
+
+```bash
+npm install        # installs frontend + desktop JS deps via npm workspaces
+                   # (apps/backend deps are managed by Deno separately)
+```
+
+Deno auto-installs its own deps to `node_modules/` on first `deno task` run.
 
 ---
 
@@ -76,12 +100,11 @@ Two long-running processes, hot-reload on both sides:
 
 ```bash
 # Terminal 1 — the Deno backend (with --watch)
-cd backend
-deno task dev
+npm run dev:backend
 # → HIPO_READY hostname=127.0.0.1 port=8787
 
-# Terminal 2 — the Tauri shell (which runs Vite dev under the hood)
-yarn tauri dev
+# Terminal 2 — the Tauri shell (which runs Vite under the hood)
+npm run dev:desktop
 # Window opens at http://localhost:1420; Vite proxies /api/* → :8787
 ```
 
@@ -90,41 +113,43 @@ Browser-only dev (skips Tauri entirely):
 ```bash
 # Terminal 1: same as above
 # Terminal 2:
-yarn dev
+npm run dev:frontend
 # Open http://localhost:1420 in any browser
 ```
 
 In dev, the backend's `HIPO_AUTH_TOKEN` env var is unset, so `requireLocalToken`
 is a no-op — fetch calls work without the `X-Hipo-Token` header.
 
-### Useful commands
+### Useful commands (from repo root)
 
 | Command | What it does |
 |---|---|
-| `yarn tauri dev` | Tauri webview pointing at Vite dev (sidecar **not** spawned in dev) |
-| `yarn dev` | Vite only — open in browser; proxies `/api/*` to the Deno backend |
-| `yarn dev:mock` | Vite + mock IPC for fast UI iteration (no real backend needed) |
-| `cd backend && deno task dev` | Deno backend with `--watch` |
-| `cd backend && deno task test` | 57 unit + integration tests |
-| `cd backend && deno task check` | Type-check the backend |
-| `yarn test` | Frontend unit tests |
-| `yarn tsc --noEmit` | Type-check the frontend |
+| `npm run dev:desktop` | Tauri webview pointing at Vite dev (sidecar **not** spawned in dev) |
+| `npm run dev:frontend` | Vite only — open in browser; proxies `/api/*` to the Deno backend |
+| `npm run dev:mock` | Vite + mock IPC for fast UI iteration (no real backend needed) |
+| `npm run dev:backend` | Deno backend with `--watch` |
+| `npm run check:frontend` / `check:backend` | Type-check each |
+| `npm run test:frontend` / `test:backend` | Run unit tests |
+| `npm run lint` | ESLint over the frontend |
+
+You can also `cd` into any workspace and use its native tools directly:
+`cd apps/backend && deno task test`, `cd apps/desktop && cargo check`, etc.
 
 ---
 
 ## Building for release
 
 The build chains the Deno sidecar (compiled to a single native binary) with
-the Tauri wrapper.
+the Tauri wrapper:
 
 ```bash
-yarn tauri:build:linux      # Linux x86_64
-yarn tauri:build:windows    # Linux host → Windows x86_64 via cargo-xwin
+npm run build:desktop:linux      # Linux x86_64
+npm run build:desktop:windows    # Linux host → Windows x86_64 via cargo-xwin
 ```
 
 Output paths:
-- `src-tauri/binaries/hipo-backend-<target>(.exe)` — the Deno sidecar
-- `src-tauri/target/<target>/release/bundle/{deb,nsis,msi,...}/` — the installers
+- `apps/desktop/binaries/hipo-backend-<target>(.exe)` — the Deno sidecar
+- `apps/desktop/target/<target>/release/bundle/{deb,nsis,msi,...}/` — the installers
 
 CI alternative: push a `v*` tag to trigger `.github/workflows/release.yml`,
 which builds for Linux + Windows in parallel using native runners and uploads
@@ -134,33 +159,35 @@ signed installers + `latest.json` to a draft GitHub Release.
 
 ## Auto-updater setup
 
-The Tauri shell ships with `tauri-plugin-updater` wired up. On launch (release
+`apps/desktop` ships with `tauri-plugin-updater` wired up. On launch (release
 builds only) the frontend calls `check()`; if a newer signed bundle is
-available the user gets an antd modal offering to install and relaunch.
+available the user gets an antd modal offering to install and relaunch. A
+manual "Check for updates" button lives in the Settings page.
 
 ### One-time setup before your first release
 
 1. **Generate a signing keypair:**
    ```bash
-   yarn tauri signer generate -w ~/.tauri/hipo.key
+   npm run signer:generate -w @hipo/desktop
+   # or equivalently: cd apps/desktop && tauri signer generate
    ```
-   - **Public key** → paste into `src-tauri/tauri.conf.json` at
+   - **Public key** → paste into `apps/desktop/tauri.conf.json` at
      `plugins.updater.pubkey` (replace the `PLACEHOLDER_…` value).
    - **Private key** + password → store as repo secrets
      `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
    - **Keep the private key safe** — losing it means existing installations
      can no longer accept updates and need a fresh install.
 
-2. **Replace the placeholder URL** in `src-tauri/tauri.conf.json` at
+2. **Replace the placeholder URL** in `apps/desktop/tauri.conf.json` at
    `plugins.updater.endpoints` with your GitHub org/repo:
    ```
    https://github.com/<owner>/<repo>/releases/latest/download/latest.json
    ```
 
-3. **Verify cross-compile** (only if you'll build Windows locally — otherwise
-   CI handles it):
+3. **Verify cross-compile** (only if you'll build Windows locally —
+   otherwise CI handles it):
    ```bash
-   yarn tauri:build:windows
+   npm run build:desktop:windows
    ```
 
 ### Cutting a release
@@ -178,60 +205,23 @@ installations will pick it up on next launch via the `latest.json` endpoint.
 
 ---
 
-## Project layout
-
-```
-hipo/
-├── src/                    React frontend (TypeScript + antd 5)
-│   ├── api/                http.ts (fetch helper), updater.ts
-│   ├── auth/               AuthContext + login/setup flows
-│   ├── audit/ loans/ parties/ payments/ payouts/  ← per-domain api.ts
-│   ├── bindings/           types (kept for compat with existing pages)
-│   ├── hooks/useIsMobile.ts
-│   ├── layouts/AppLayout.tsx     responsive sidebar + hamburger
-│   ├── pages/              one .tsx per route
-│   ├── i18n/locales/{es,en}.json
-│   └── main.tsx
-│
-├── backend/                Deno + Hono + Drizzle backend
-│   ├── deno.json
-│   └── src/
-│       ├── server.ts                 entry: Hono app
-│       ├── config.ts static.ts
-│       ├── db/                       client + schema + migrations
-│       ├── auth/ parties/ loans/
-│       │   payments/ payouts/ audit/ per-domain operations + tests
-│       ├── routes/                   thin Hono handlers calling do_*
-│       ├── middleware/session.ts
-│       └── errors.ts error_handler.ts
-│
-├── src-tauri/              Tauri shell (Rust, launcher only)
-│   ├── src/lib.rs          spawns sidecar, opens window
-│   ├── tauri.conf.json
-│   ├── capabilities/default.json
-│   └── binaries/hipo-backend-<target>  ← built by deno compile
-│
-└── .github/workflows/release.yml      tag → signed installers
-```
-
----
-
 ## Conventions & rules
 
-- **Money in integer cents** — `i64`/`number` everywhere in storage; `decimal.js`
-  on the frontend for arithmetic.
+- **Money in integer cents** — `i64`/`number` everywhere in storage;
+  `decimal.js` on the frontend for arithmetic.
 - **Payment splits** use largest-remainder cents allocation — every payment
-  reconciles exactly to the lender shares. See `backend/src/payments/split.ts`.
+  reconciles exactly to the lender shares. See
+  `apps/backend/src/payments/split.ts`.
 - **Soft delete** on `users`, `parties`, `loans`, `debtor_payments`,
   `lender_payouts`. Reads filter `WHERE deleted_at IS NULL`. Junction tables
   (`loan_lenders`, `debtor_payment_splits`) aren't soft-deleted.
 - **Every mutation writes an audit row** inside the same transaction.
-  `action` is `entity.verb` (`party.create`, `loan.update`, etc.). Payload is
-  `{before, after}` JSON.
+  `action` is `entity.verb` (`party.create`, `loan.update`, etc.). Payload
+  is `{before, after}` JSON.
 - **Migrations are append-only** — never edit a migration that has shipped.
   Add a new one with the next version number.
-- **No `Deno.*` namespace in business logic** — only Web Standard APIs + Hono
-  + Drizzle. Keeps the backend runnable on Node/Bun/Workers if needed.
+- **No `Deno.*` namespace in business logic** — only Web Standard APIs +
+  Hono + Drizzle. Keeps the backend runnable on Node/Bun/Workers if needed.
 - **i18n: Spanish default + English.** Rust shell error strings remain
   English (sidecar-internal only; never user-visible).
 
@@ -239,6 +229,6 @@ hipo/
 
 ## Licensing
 
-Commercial closed-source — all runtime deps are MIT/Apache. Tauri (MIT/Apache),
-Deno (MIT + V8 BSD), Hono / Drizzle / Zod / decimal.js (MIT/Apache),
-@node-rs/argon2 (MIT), libsql (MIT). No LGPL exposure.
+Commercial closed-source — all runtime deps are MIT/Apache. Tauri
+(MIT/Apache), Deno (MIT + V8 BSD), Hono / Drizzle / Zod / decimal.js
+(MIT/Apache), @node-rs/argon2 (MIT), libsql (MIT). No LGPL exposure.

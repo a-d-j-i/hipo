@@ -1,0 +1,14 @@
+{
+  "name": "@hipo/backend",
+  "private": true,
+  "version": "0.1.0",
+  "comment": "Thin npm-workspace wrapper that bridges to Deno tasks. All real config lives in deno.json. node_modules here exists only so npm workspaces can resolve this package by name.",
+  "scripts": {
+    "dev": "deno task dev",
+    "start": "deno task start",
+    "check": "deno task check",
+    "test": "deno task test",
+    "compile:linux": "deno task compile:linux",
+    "compile:windows": "deno task compile:windows"
+  }
+}

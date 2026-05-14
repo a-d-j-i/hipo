@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "ar.com.adjimann.hipo",
   "build": {
-    "beforeDevCommand": "yarn dev",
+    "beforeDevCommand": "npm --prefix ../frontend run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "yarn build",
-    "frontendDist": "../dist"
+    "beforeBuildCommand": "npm --prefix ../frontend run build",
+    "frontendDist": "../frontend/dist"
   },
   "app": {
     "windows": [],

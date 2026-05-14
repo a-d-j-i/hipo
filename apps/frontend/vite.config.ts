@@ -28,8 +28,9 @@ export default defineConfig(async () => ({
         }
       : undefined,
     watch: {
-      // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 3. tell Vite to ignore watching the sibling desktop app (Rust + Tauri
+      //    artifacts shouldn't trigger HMR).
+      ignored: ["**/apps/desktop/**"],
     },
     // 4. proxy /api/* to the Deno backend so same-origin fetch works in
     //    browser dev. Configurable via HIPO_BACKEND_PORT (default 8787).

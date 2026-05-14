@@ -51,25 +51,27 @@ needed, add an optional `users.party_id` FK then. See
 
 ## Commands
 
-- `yarn dev` — Vite dev server (port `1420`, `strictPort`).
-- `yarn build` — `tsc --noEmit` + `vite build` → `dist/`.
-- `yarn tauri dev` / `yarn tauri build` — full desktop app.
-- `yarn lint` / `yarn lint:fix` — ESLint.
-- `yarn format` / `yarn format:check` — Prettier (also formats `*.md`).
-- `yarn test` / `yarn test:watch` — Vitest (jsdom, Testing Library,
-  `mockIPC` for invoke).
-- `yarn dev:mock` — Vite dev server with `mockIPC` returning canned data;
-  runs the React app in any browser without booting Tauri or Rust.
-- `yarn dev:fast` — `dev:mock` plus auto-login and the configured locale;
-  the fastest way to click through the UI without a real backend.
-- `yarn tauri:fast` — full `tauri dev` (real Rust + SQLite) with auto-login
-  and locale forced. Defaults to `admin/admin123`; override per-run with
-  `VITE_AUTO_LOGIN=alice:hunter2 yarn tauri:fast` if your real DB uses
-  different credentials.
-- Rust-only, in `src-tauri/`: `cargo check`, `cargo build`, `cargo test`.
-- **`cd src-tauri && cargo test`** — also regenerates `src/bindings/*.ts`
-  (ts-rs emits the TS definitions during test runs). Re-run after any
-  change to `#[derive(TS)]` structs.
+The repo is an npm-workspaces monorepo. Most commands run from the root.
+
+- `npm run dev:frontend` — Vite dev server (port `1420`, `strictPort`).
+- `npm run dev:backend` — Deno backend with `--watch`.
+- `npm run dev:desktop` — Tauri shell (calls into Vite via `beforeDevCommand`).
+- `npm run dev:mock` / `npm run dev:fast` — Vite + mockIPC (no backend needed).
+- `npm run build:frontend` — `tsc --noEmit` + `vite build` → `apps/frontend/dist/`.
+- `npm run build:backend:linux` / `:windows` — compile Deno sidecar to a single
+  native binary in `apps/desktop/binaries/`.
+- `npm run build:desktop:linux` / `:windows` — full Tauri build (chains
+  frontend + backend + desktop). Windows uses `cargo-xwin` from a Linux host.
+- `npm run check:frontend` — `tsc --noEmit` on the React app.
+- `npm run check:backend` — `deno check` on the backend.
+- `npm run test:frontend` / `test:backend` — unit tests per workspace.
+- `npm run lint` — ESLint on the frontend.
+- `npm run format` — Prettier across the whole repo.
+
+Inside individual workspaces you can also use the native tools directly:
+- `cd apps/backend && deno task {dev,test,check,compile:linux,…}`
+- `cd apps/desktop && cargo check`, `cargo tauri dev`, `cargo tauri build`
+- `cd apps/frontend && npm run dev` (or any other frontend script)
 
 ## Frontend stack — agreed deps
 
