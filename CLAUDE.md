@@ -153,7 +153,8 @@ use explicit `.ts` extensions so Deno's strict resolver is happy.
 
 - `src/types.ts` — 14 canonical API + input types (`User`, `Party`, `Loan`,
   `CreateLoanInput`, `PartyInput`, …). Backend `apps/backend/src/<domain>/types.ts`
-  files re-export these under `Public*` aliases that operation files use.
+  files re-export them by name (and house any row→API mappers like
+  `publicParty`).
 - `src/validators.ts` — `check*` functions returning `string | null` plus
   constants (`USERNAME_MAX_LENGTH`, `PASSWORD_MIN_LENGTH`, etc.). Backend
   wraps each in a thin `validate*` that throws `badRequest(msg)`. Frontend
@@ -225,9 +226,9 @@ is by manual SQL. The audit log (`xxx.delete` action) records who
 soft-deleted what with the `before` state.
 
 **Type sync.** All API + input shapes live in `packages/shared/src/types.ts`.
-Backend `apps/backend/src/<domain>/types.ts` files re-export them under
-`Public*` aliases (which operations code uses); frontend imports them
-directly from `@hipo/shared`. No codegen, no ts-rs.
+Backend `apps/backend/src/<domain>/types.ts` files re-export them by name
+(no rename) and house any row→API mappers (e.g. `publicParty`); frontend
+imports them directly from `@hipo/shared`. No codegen, no ts-rs.
 
 **Auth.** Two roles: `admin` and `user`. Argon2id passwords via
 `@node-rs/argon2`. **DB-backed cookie sessions** — random 256-bit hex id
@@ -405,9 +406,9 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
   `HIPO_AUTH_TOKEN`, `HIPO_STATIC_DIR`, `HIPO_SESSION_TTL_DAYS`).
 - `db/{client,schema,migrations}.ts` — Drizzle setup + table defs + v1
   migration.
-- `<domain>/{operations,types,validators}.ts` — `do_*` operations,
-  `Public*` type aliases, validator wrappers. Each domain has a
-  `*_test.ts` next to `operations.ts`.
+- `<domain>/{operations,types,validators}.ts` — `do_*` operations, type
+  re-exports from `@hipo/shared` (+ any row→API mappers), validator
+  wrappers. Each domain has a `*_test.ts` next to `operations.ts`.
 - `routes/<domain>.ts` — Hono routes, one per domain.
 - `audit/write.ts` — `writeAudit(tx, ...)` helper.
 - `auth/{passwords,types}.ts` + `middleware/session.ts` — session +

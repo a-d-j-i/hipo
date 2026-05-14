@@ -1,6 +1,6 @@
 // Canonical API types. Single source of truth for both frontend (consumed
-// from `@hipo/shared`) and backend (re-exported under the existing Public*
-// aliases by each domain's types.ts).
+// from `@hipo/shared`) and backend (re-exported by name from each domain's
+// types.ts).
 //
 // Snake_case is intentional for response shapes — that's what the wire
 // format looks like. CamelCase is used for request/input shapes
