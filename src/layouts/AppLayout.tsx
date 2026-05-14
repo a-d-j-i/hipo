@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { Button, Layout, Menu, Space, Tag, Typography } from "antd";
+import { Button, Drawer, Grid, Layout, Menu, Space, Tag, Typography } from "antd";
 import {
   BankOutlined,
   ContactsOutlined,
   DashboardOutlined,
   HistoryOutlined,
   LogoutOutlined,
+  MenuOutlined,
   SettingOutlined,
   UserOutlined,
   WalletOutlined,
@@ -18,10 +19,13 @@ const { Sider, Header, Content } = Layout;
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser, logout } = useAuth();
   const { t } = useTranslation();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const menuItems = [
     { key: "/", icon: <DashboardOutlined />, label: t("nav.dashboard") },
@@ -41,60 +45,115 @@ export default function AppLayout() {
   const pageLabel =
     menuItems.find((i) => i.key === selectedKey)?.label ?? "";
 
+  const handleNavigate = (key: string) => {
+    navigate(key);
+    setDrawerOpen(false);
+  };
+
+  const brand = (
+    <div
+      style={{
+        height: 48,
+        margin: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: 600,
+        fontSize: 18,
+      }}
+    >
+      {isMobile ? "hipo" : collapsed ? "h" : "hipo"}
+    </div>
+  );
+
+  const menu = (
+    <Menu
+      mode="inline"
+      selectedKeys={[selectedKey]}
+      items={menuItems}
+      onClick={({ key }) => handleNavigate(key)}
+    />
+  );
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        theme="light"
-      >
-        <div
-          style={{
-            height: 48,
-            margin: 16,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 600,
-            fontSize: 18,
-          }}
+      {!isMobile && (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          theme="light"
+          breakpoint="md"
         >
-          {collapsed ? "h" : "hipo"}
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-        />
-      </Sider>
+          {brand}
+          {menu}
+        </Sider>
+      )}
+      {isMobile && (
+        <Drawer
+          placement="left"
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          width={240}
+          styles={{ body: { padding: 0 } }}
+        >
+          {brand}
+          {menu}
+        </Drawer>
+      )}
       <Layout>
         <Header
           style={{
             background: "#fff",
-            padding: "0 24px",
+            padding: isMobile ? "0 12px" : "0 24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            gap: 8,
           }}
         >
-          <Typography.Title level={4} style={{ margin: 0 }}>
-            {pageLabel}
-          </Typography.Title>
           <Space>
-            <Typography.Text strong>{currentUser?.username}</Typography.Text>
+            {isMobile && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerOpen(true)}
+                size="large"
+                aria-label={t("nav.openMenu")}
+              />
+            )}
+            <Typography.Title
+              level={isMobile ? 5 : 4}
+              style={{ margin: 0, whiteSpace: "nowrap" }}
+            >
+              {pageLabel}
+            </Typography.Title>
+          </Space>
+          <Space size={isMobile ? 4 : 8}>
+            {!isMobile && (
+              <Typography.Text strong>{currentUser?.username}</Typography.Text>
+            )}
             <Tag color={currentUser?.role === "admin" ? "blue" : "default"}>
               {currentUser?.role === "admin"
                 ? t("users.role.admin")
                 : t("users.role.user")}
             </Tag>
-            <Button icon={<LogoutOutlined />} onClick={logout}>
-              {t("nav.logout")}
+            <Button
+              icon={<LogoutOutlined />}
+              onClick={logout}
+              size={isMobile ? "middle" : "middle"}
+            >
+              {!isMobile && t("nav.logout")}
             </Button>
           </Space>
         </Header>
-        <Content style={{ margin: 24, padding: 24, background: "#fff" }}>
+        <Content
+          style={{
+            margin: isMobile ? 12 : 24,
+            padding: isMobile ? 12 : 24,
+            background: "#fff",
+          }}
+        >
           <Outlet />
         </Content>
       </Layout>

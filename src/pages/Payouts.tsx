@@ -22,6 +22,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
+import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as payoutsApi from "../payouts/api";
 import { formatCents, majorToCents } from "../loans/format";
 import type { LenderBalance } from "../bindings/LenderBalance";
@@ -45,6 +46,7 @@ export default function Payouts() {
   const [loading, setLoading] = useState(true);
   const [recordTarget, setRecordTarget] = useState<Target | null>(null);
   const [form] = Form.useForm<FormValues>();
+  const drawerWidth = useResponsiveDrawerWidth(420);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -129,6 +131,7 @@ export default function Payouts() {
         dataSource={balances}
         pagination={false}
         size="small"
+        scroll={{ x: "max-content" }}
         locale={{ emptyText: <Empty description={t("payouts.emptyBalances")} /> }}
         style={{ marginBottom: 32 }}
         columns={[
@@ -194,6 +197,7 @@ export default function Payouts() {
         loading={loading}
         dataSource={payouts}
         size="small"
+        scroll={{ x: "max-content" }}
         columns={[
           {
             title: t("payouts.column.date"),
@@ -254,7 +258,7 @@ export default function Payouts() {
         }
         open={recordTarget !== null}
         onClose={() => setRecordTarget(null)}
-        width={420}
+        width={drawerWidth}
         destroyOnClose
       >
         <Form
@@ -277,6 +281,7 @@ export default function Payouts() {
               step={0.01}
               style={{ width: "100%" }}
               placeholder="0.00"
+              inputMode="decimal"
             />
           </Form.Item>
           <Form.Item

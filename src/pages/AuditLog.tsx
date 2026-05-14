@@ -145,6 +145,7 @@ export default function AuditLog() {
         dataSource={entries}
         size="small"
         pagination={false}
+        scroll={{ x: "max-content" }}
         locale={{ emptyText: <Empty description={t("audit.emptyText")} /> }}
         expandable={{
           expandedRowRender: (e) => (

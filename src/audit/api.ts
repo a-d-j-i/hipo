@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { httpRequest } from "../api/http";
 import type { AuditEntry } from "../bindings/AuditEntry";
 
 export const listAuditLog = (args: {
@@ -6,4 +6,11 @@ export const listAuditLog = (args: {
   userId: number | null;
   limit: number;
   offset: number;
-}) => invoke<AuditEntry[]>("list_audit_log", args);
+}) => {
+  const q = new URLSearchParams();
+  if (args.entityType) q.set("entity_type", args.entityType);
+  if (args.userId !== null) q.set("user_id", String(args.userId));
+  q.set("limit", String(args.limit));
+  q.set("offset", String(args.offset));
+  return httpRequest<AuditEntry[]>("GET", `/api/audit?${q.toString()}`);
+};

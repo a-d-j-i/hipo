@@ -1,0 +1,27 @@
+{
+  "tasks": {
+    "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys --watch src/server.ts",
+    "start": "deno run --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys src/server.ts",
+    "compile:linux": "deno compile --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys --target x86_64-unknown-linux-gnu --output ../src-tauri/binaries/hipo-backend-x86_64-unknown-linux-gnu src/server.ts",
+    "compile:windows": "deno compile --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys --target x86_64-pc-windows-msvc --output ../src-tauri/binaries/hipo-backend-x86_64-pc-windows-msvc.exe src/server.ts",
+    "check": "deno check src/server.ts",
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys src/"
+  },
+  "imports": {
+    "hono": "npm:hono@^4.6.0",
+    "hono/cookie": "npm:hono@^4.6.0/cookie",
+    "hono/cors": "npm:hono@^4.6.0/cors",
+    "drizzle-orm": "npm:drizzle-orm@^0.36.0",
+    "drizzle-orm/libsql": "npm:drizzle-orm@^0.36.0/libsql",
+    "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core",
+    "@libsql/client": "npm:@libsql/client@^0.14.0",
+    "@libsql/client/node": "npm:@libsql/client@^0.14.0/node",
+    "@node-rs/argon2": "npm:@node-rs/argon2@^2.0.0"
+  },
+  "lock": false,
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}

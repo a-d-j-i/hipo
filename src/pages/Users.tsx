@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import * as api from "../auth/api";
+import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import type { Role } from "../bindings/Role";
 import type { User } from "../bindings/User";
 
@@ -32,6 +33,7 @@ export default function Users() {
   const [resetFor, setResetFor] = useState<User | null>(null);
   const [createForm] = Form.useForm<CreateValues>();
   const [resetForm] = Form.useForm<ResetValues>();
+  const drawerWidth = useResponsiveDrawerWidth(420);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -122,6 +124,7 @@ export default function Users() {
         rowKey="id"
         loading={loading}
         dataSource={users}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: t("users.column.username"), dataIndex: "username" },
           {
@@ -185,7 +188,7 @@ export default function Users() {
         title={t("users.drawerTitle.add")}
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        width={420}
+        width={drawerWidth}
         destroyOnClose
       >
         <Form

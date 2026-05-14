@@ -1,38 +1,42 @@
-import { invoke } from "@tauri-apps/api/core";
+import { httpRequest } from "../api/http";
 import type { AuthStatus } from "../bindings/AuthStatus";
 import type { Role } from "../bindings/Role";
 import type { User } from "../bindings/User";
 
-export const authStatus = () => invoke<AuthStatus>("auth_status");
+export const authStatus = () =>
+  httpRequest<AuthStatus>("GET", "/api/auth/status");
 
 export const setupFirstAdmin = (args: { username: string; password: string }) =>
-  invoke<User>("setup_first_admin", args);
+  httpRequest<User>("POST", "/api/auth/setup", args);
 
 export const login = (args: { username: string; password: string }) =>
-  invoke<User>("login", args);
+  httpRequest<User>("POST", "/api/auth/login", args);
 
-export const logout = () => invoke<null>("logout");
+export const logout = () => httpRequest<null>("POST", "/api/auth/logout");
 
-export const currentUser = () => invoke<User | null>("current_user");
+export const currentUser = () =>
+  httpRequest<User | null>("GET", "/api/auth/me");
 
 export const changePassword = (args: {
   oldPassword: string;
   newPassword: string;
-}) => invoke<null>("change_password", args);
+}) => httpRequest<null>("POST", "/api/auth/change_password", args);
 
-export const listUsers = () => invoke<User[]>("list_users");
+export const listUsers = () => httpRequest<User[]>("GET", "/api/users");
 
 export const createUser = (args: {
   username: string;
   password: string;
   role: Role;
-}) => invoke<User>("create_user", args);
+}) => httpRequest<User>("POST", "/api/users", args);
 
 export const deleteUser = (args: { id: number }) =>
-  invoke<null>("delete_user", args);
+  httpRequest<null>("DELETE", `/api/users/${args.id}`);
 
 export const resetUserPassword = (args: { id: number; newPassword: string }) =>
-  invoke<null>("reset_user_password", args);
+  httpRequest<null>("POST", `/api/users/${args.id}/reset_password`, {
+    newPassword: args.newPassword,
+  });
 
 export const changeUserRole = (args: { id: number; role: Role }) =>
-  invoke<null>("change_user_role", args);
+  httpRequest<null>("POST", `/api/users/${args.id}/role`, { role: args.role });

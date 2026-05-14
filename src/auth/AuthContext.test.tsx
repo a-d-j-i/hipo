@@ -1,6 +1,5 @@
 import { render, screen, waitFor } from "@testing-library/react";
-import { mockIPC } from "@tauri-apps/api/mocks";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "./AuthContext";
 
 function Probe() {
@@ -15,12 +14,30 @@ function Probe() {
   );
 }
 
+function jsonResponse(body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function mockAuthStatusOnce(body: unknown) {
+  const spy = vi.fn(async (input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input.toString();
+    if (url.endsWith("/api/auth/status")) return jsonResponse(body);
+    return new Response("not mocked", { status: 500 });
+  });
+  vi.stubGlobal("fetch", spy);
+  return spy;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe("AuthContext", () => {
   it("shows needs-setup when the backend reports zero users", async () => {
-    mockIPC((cmd) => {
-      if (cmd === "auth_status")
-        return { needs_setup: true, current_user: null };
-    });
+    mockAuthStatusOnce({ needs_setup: true, current_user: null });
     render(
       <AuthProvider>
         <Probe />
@@ -32,17 +49,14 @@ describe("AuthContext", () => {
   });
 
   it("shows the current user when authenticated", async () => {
-    mockIPC((cmd) => {
-      if (cmd === "auth_status")
-        return {
-          needs_setup: false,
-          current_user: {
-            id: 1,
-            username: "alice",
-            role: "admin",
-            created_at: 1700000000,
-          },
-        };
+    mockAuthStatusOnce({
+      needs_setup: false,
+      current_user: {
+        id: 1,
+        username: "alice",
+        role: "admin",
+        created_at: 1700000000,
+      },
     });
     render(
       <AuthProvider>
@@ -55,10 +69,7 @@ describe("AuthContext", () => {
   });
 
   it("shows no-user when ready but unauthenticated", async () => {
-    mockIPC((cmd) => {
-      if (cmd === "auth_status")
-        return { needs_setup: false, current_user: null };
-    });
+    mockAuthStatusOnce({ needs_setup: false, current_user: null });
     render(
       <AuthProvider>
         <Probe />

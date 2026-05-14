@@ -1,12 +1,12 @@
-import { invoke } from "@tauri-apps/api/core";
+import { httpRequest } from "../api/http";
 import type { Loan } from "../bindings/Loan";
 import type { LoanLenderInput } from "../bindings/LoanLenderInput";
 import type { LoanStatus } from "../bindings/LoanStatus";
 
-export const listLoans = () => invoke<Loan[]>("list_loans");
+export const listLoans = () => httpRequest<Loan[]>("GET", "/api/loans");
 
 export const getLoan = (args: { id: number }) =>
-  invoke<Loan>("get_loan", args);
+  httpRequest<Loan>("GET", `/api/loans/${args.id}`);
 
 export const createLoan = (args: {
   reference: string | null;
@@ -16,7 +16,7 @@ export const createLoan = (args: {
   issuedAt: number;
   notes: string | null;
   lenders: LoanLenderInput[];
-}) => invoke<Loan>("create_loan", args);
+}) => httpRequest<Loan>("POST", "/api/loans", args);
 
 export const updateLoan = (args: {
   id: number;
@@ -25,12 +25,18 @@ export const updateLoan = (args: {
   issuedAt: number;
   status: LoanStatus;
   notes: string | null;
-}) => invoke<Loan>("update_loan", args);
+}) => {
+  const { id, ...body } = args;
+  return httpRequest<Loan>("PATCH", `/api/loans/${id}`, body);
+};
 
 export const setLoanLenders = (args: {
   loanId: number;
   lenders: LoanLenderInput[];
-}) => invoke<Loan>("set_loan_lenders", args);
+}) =>
+  httpRequest<Loan>("PUT", `/api/loans/${args.loanId}/lenders`, {
+    lenders: args.lenders,
+  });
 
 export const deleteLoan = (args: { id: number }) =>
-  invoke<null>("delete_loan", args);
+  httpRequest<null>("DELETE", `/api/loans/${args.id}`);

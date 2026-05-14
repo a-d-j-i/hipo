@@ -1,8 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
+import { httpRequest } from "../api/http";
 import type { LenderBalance } from "../bindings/LenderBalance";
 import type { LenderPayout } from "../bindings/LenderPayout";
 
-export const listPayouts = () => invoke<LenderPayout[]>("list_payouts");
+export const listPayouts = () =>
+  httpRequest<LenderPayout[]>("GET", "/api/payouts");
 
 export const createLenderPayout = (args: {
   lenderId: number;
@@ -10,9 +11,10 @@ export const createLenderPayout = (args: {
   amountCents: number;
   paidAt: number;
   notes: string | null;
-}) => invoke<LenderPayout>("create_lender_payout", args);
+}) => httpRequest<LenderPayout>("POST", "/api/payouts", args);
 
 export const deleteLenderPayout = (args: { id: number }) =>
-  invoke<null>("delete_lender_payout", args);
+  httpRequest<null>("DELETE", `/api/payouts/${args.id}`);
 
-export const lenderBalances = () => invoke<LenderBalance[]>("lender_balances");
+export const lenderBalances = () =>
+  httpRequest<LenderBalance[]>("GET", "/api/payouts/balances");

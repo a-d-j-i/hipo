@@ -16,12 +16,17 @@
     "test:watch": "vitest",
     "dev:mock": "VITE_USE_MOCKS=1 vite",
     "dev:fast": "VITE_USE_MOCKS=1 VITE_AUTO_LOGIN=1 VITE_LOCALE=es vite",
-    "tauri:fast": "VITE_AUTO_LOGIN=1 VITE_LOCALE=es tauri dev"
+    "tauri:fast": "VITE_AUTO_LOGIN=1 VITE_LOCALE=es tauri dev",
+    "backend:compile:linux": "cd backend && deno task compile:linux",
+    "backend:compile:windows": "cd backend && deno task compile:windows",
+    "tauri:build:linux": "yarn backend:compile:linux && tauri build --target x86_64-unknown-linux-gnu",
+    "tauri:build:windows": "yarn backend:compile:windows && tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.2",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "^2",
+    "@tauri-apps/plugin-updater": "^2",
     "antd": "^6.3.7",
     "dayjs": "^1.11.20",
     "i18next": "^26.1.0",

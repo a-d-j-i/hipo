@@ -24,6 +24,7 @@ import {
 import dayjs, { type Dayjs } from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
+import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as loansApi from "../loans/api";
 import * as partiesApi from "../parties/api";
 import PaymentsDrawer from "../payments/PaymentsDrawer";
@@ -133,6 +134,7 @@ function LendersEditor({
                     min={0}
                     step={0.01}
                     style={{ width: "100%" }}
+                    inputMode="decimal"
                   />
                 </Form.Item>
                 <Typography.Text
@@ -183,6 +185,8 @@ export default function Loans() {
   const [createForm] = Form.useForm<CreateFormValues>();
   const [editForm] = Form.useForm<EditFormValues>();
   const [lendersForm] = Form.useForm<LendersFormValues>();
+  const wideDrawerWidth = useResponsiveDrawerWidth(560);
+  const editDrawerWidth = useResponsiveDrawerWidth(460);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -330,6 +334,7 @@ export default function Loans() {
         rowKey="id"
         loading={loading}
         dataSource={loans}
+        scroll={{ x: "max-content" }}
         expandable={{
           expandedRowRender: (loan) => (
             <Table<Loan["lenders"][number]>
@@ -446,7 +451,7 @@ export default function Loans() {
         title={t("loans.drawerTitle.create")}
         open={creating}
         onClose={() => setCreating(false)}
-        width={560}
+        width={wideDrawerWidth}
         destroyOnClose
       >
         <Form
@@ -490,6 +495,7 @@ export default function Loans() {
                 min={0}
                 step={0.01}
                 style={{ width: 160 }}
+                inputMode="decimal"
               />
             </Form.Item>
           </Space>
@@ -520,7 +526,7 @@ export default function Loans() {
         }
         open={editing !== null}
         onClose={() => setEditing(null)}
-        width={460}
+        width={editDrawerWidth}
         destroyOnClose
       >
         <Form
@@ -533,7 +539,12 @@ export default function Loans() {
             <Input />
           </Form.Item>
           <Form.Item name="interest" label={t("loans.form.interest")}>
-            <InputNumber<number> min={0} step={0.01} style={{ width: "100%" }} />
+            <InputNumber<number>
+              min={0}
+              step={0.01}
+              style={{ width: "100%" }}
+              inputMode="decimal"
+            />
           </Form.Item>
           <Form.Item
             name="issuedAt"
@@ -574,7 +585,7 @@ export default function Loans() {
         }
         open={managingLenders !== null}
         onClose={() => setManagingLenders(null)}
-        width={560}
+        width={wideDrawerWidth}
         destroyOnClose
       >
         <Form

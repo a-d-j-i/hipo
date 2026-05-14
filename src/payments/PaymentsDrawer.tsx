@@ -17,6 +17,7 @@ import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs, { type Dayjs } from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
+import { useIsMobile, useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as api from "./api";
 import { formatCents, majorToCents } from "../loans/format";
 import type { DebtorPayment } from "../bindings/DebtorPayment";
@@ -44,6 +45,8 @@ export default function PaymentsDrawer({
   const [payments, setPayments] = useState<DebtorPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [form] = Form.useForm<FormValues>();
+  const drawerWidth = useResponsiveDrawerWidth(720);
+  const isMobile = useIsMobile();
 
   const refresh = useCallback(async () => {
     if (!loan) return;
@@ -116,14 +119,14 @@ export default function PaymentsDrawer({
       }
       open={open}
       onClose={onClose}
-      width={720}
+      width={drawerWidth}
       destroyOnClose
     >
       {loan && (
         <>
           <Descriptions
             size="small"
-            column={2}
+            column={isMobile ? 1 : 2}
             style={{ marginBottom: 16 }}
             bordered
           >
@@ -156,7 +159,7 @@ export default function PaymentsDrawer({
           ) : (
             <Form
               form={form}
-              layout="inline"
+              layout={isMobile ? "vertical" : "inline"}
               onFinish={onSubmit}
               style={{ marginBottom: 16 }}
               requiredMark={false}
@@ -172,8 +175,9 @@ export default function PaymentsDrawer({
                 <InputNumber<number>
                   min={0}
                   step={0.01}
-                  style={{ width: 160 }}
+                  style={{ width: isMobile ? "100%" : 160 }}
                   placeholder="0.00"
+                  inputMode="decimal"
                 />
               </Form.Item>
               <Form.Item
@@ -181,7 +185,7 @@ export default function PaymentsDrawer({
                 label={t("payments.form.paidAt")}
                 rules={[{ required: true }]}
               >
-                <DatePicker />
+                <DatePicker style={{ width: isMobile ? "100%" : undefined }} />
               </Form.Item>
               <Form.Item
                 name="notes"
@@ -195,6 +199,7 @@ export default function PaymentsDrawer({
                   type="primary"
                   htmlType="submit"
                   icon={<PlusOutlined />}
+                  block={isMobile}
                 >
                   {t("payments.form.record")}
                 </Button>
@@ -208,6 +213,7 @@ export default function PaymentsDrawer({
             dataSource={payments}
             size="small"
             pagination={false}
+            scroll={{ x: "max-content" }}
             expandable={{
               expandedRowRender: (p) => (
                 <Table

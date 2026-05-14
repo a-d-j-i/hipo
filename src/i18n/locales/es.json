@@ -33,7 +33,8 @@
     "users": "Usuarios",
     "audit": "Auditoría",
     "settings": "Configuración",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "openMenu": "Abrir menú"
   },
   "auth": {
     "setup": {
@@ -259,6 +260,19 @@
       "title": "Idioma",
       "es": "Español",
       "en": "English"
+    },
+    "updates": {
+      "title": "Actualizaciones",
+      "description": "hipo busca actualizaciones automáticamente al iniciar. Hacé clic para verificar ahora.",
+      "check": "Buscar actualizaciones",
+      "checking": "Buscando…",
+      "upToDate": "Estás en la última versión.",
+      "checkFailed": "No se pudo contactar al servidor de actualizaciones.",
+      "available": "Actualización disponible — {{version}}",
+      "bodyFallback": "Hay una nueva versión lista. ¿Instalar y reiniciar ahora?",
+      "install": "Instalar y reiniciar",
+      "later": "Más tarde",
+      "updateFailed": "Falló la actualización"
     },
     "placeholderNote": "Más opciones llegarán pronto (tema, respaldos, etc.)."
   }

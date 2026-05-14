@@ -33,7 +33,8 @@
     "users": "Users",
     "audit": "Audit log",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "openMenu": "Open menu"
   },
   "auth": {
     "setup": {
@@ -259,6 +260,19 @@
       "title": "Language",
       "es": "Español",
       "en": "English"
+    },
+    "updates": {
+      "title": "Updates",
+      "description": "hipo checks for updates automatically on launch. Click below to check now.",
+      "check": "Check for updates",
+      "checking": "Checking…",
+      "upToDate": "You're on the latest version.",
+      "checkFailed": "Couldn't reach the update server.",
+      "available": "Update available — {{version}}",
+      "bodyFallback": "A new version is ready. Install it and restart now?",
+      "install": "Install and restart",
+      "later": "Later",
+      "updateFailed": "Update failed"
     },
     "placeholderNote": "More options coming soon (theme, backups, etc.)."
   }

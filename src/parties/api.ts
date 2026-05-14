@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { httpRequest } from "../api/http";
 import type { Party } from "../bindings/Party";
 
 export type PartyInput = {
@@ -7,16 +7,18 @@ export type PartyInput = {
   notes: string | null;
 };
 
-export const listParties = () => invoke<Party[]>("list_parties");
+export const listParties = () => httpRequest<Party[]>("GET", "/api/parties");
 
 export const getParty = (args: { id: number }) =>
-  invoke<Party>("get_party", args);
+  httpRequest<Party>("GET", `/api/parties/${args.id}`);
 
 export const createParty = (input: PartyInput) =>
-  invoke<Party>("create_party", input);
+  httpRequest<Party>("POST", "/api/parties", input);
 
-export const updateParty = (args: { id: number } & PartyInput) =>
-  invoke<Party>("update_party", args);
+export const updateParty = (args: { id: number } & PartyInput) => {
+  const { id, ...input } = args;
+  return httpRequest<Party>("PATCH", `/api/parties/${id}`, input);
+};
 
 export const deleteParty = (args: { id: number }) =>
-  invoke<null>("delete_party", args);
+  httpRequest<null>("DELETE", `/api/parties/${args.id}`);

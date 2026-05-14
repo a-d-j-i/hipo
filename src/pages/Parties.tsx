@@ -17,6 +17,7 @@ import {
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
+import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as api from "../parties/api";
 import type { Party } from "../bindings/Party";
 
@@ -36,6 +37,7 @@ export default function Parties() {
   const [editing, setEditing] = useState<Party | null>(null);
   const [creating, setCreating] = useState(false);
   const [form] = Form.useForm<FormValues>();
+  const drawerWidth = useResponsiveDrawerWidth(420);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -121,6 +123,7 @@ export default function Parties() {
         rowKey="id"
         loading={loading}
         dataSource={parties}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: t("parties.column.name"), dataIndex: "name" },
           {
@@ -164,7 +167,7 @@ export default function Parties() {
         title={drawerTitle}
         open={open}
         onClose={close}
-        width={420}
+        width={drawerWidth}
         destroyOnClose
       >
         <Form

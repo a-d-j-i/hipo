@@ -270,6 +270,109 @@ Foundation-first ordering:
 17. Dark mode via antd `ConfigProvider` + `theme.darkAlgorithm`.
 18. PDF export via `@react-pdf/renderer` (e.g., loan statements).
 
+## Architectural directions under evaluation (as of 2026-05-13)
+
+The Tauri-only direction above is being reconsidered. The product target is
+now **three deployment shapes from one codebase**:
+
+1. **Tauri desktop** — current shape; single-user-per-process.
+2. **Local server / Windows service** — same binary as cloud, accessed via
+   browser on `localhost`. Cookie sessions.
+3. **Cloud multi-tenant SaaS** — same binary, deployed to Fly.io or similar.
+   **One SQLite file per org** (filesystem-enforced tenant isolation), routed
+   by subdomain or session. Target scale: ~100 orgs × ~100 users.
+
+Goal: users start on local install and migrate to cloud without UI changes.
+Backend speaks **HTTP even when running locally** — frontend always uses
+`fetch()`. Tauri (if kept) becomes a thin shell that boots the local server
+and opens the webview to `localhost:<port>`.
+
+**Leading architecture: Tauri shell + Deno sidecar.**
+
+- **Tauri** stays as a thin native shell (Rust, ~150–300 LOC, written once):
+  spawns the backend, manages its lifecycle, opens the window at
+  `http://127.0.0.1:<port>`, wires the auto-updater, enforces single-
+  instance, bundles the installer. **No business logic in Rust.**
+- **Deno + Hono + Drizzle** is the actual backend (TypeScript). Runs as a
+  Tauri sidecar locally via `externalBin`; the **same binary** deploys to
+  Fly.io / Hetzner for the cloud SaaS build.
+- **React frontend** always speaks `fetch()`, never `invoke()`. Identical
+  code in Tauri and cloud builds.
+- For native-only features (e.g. backup/export), prefer browser APIs
+  (`<input type="file">`, `Blob` downloads) over `invoke` so the frontend
+  stays identical across deployment targets.
+
+**Localhost-auth token (Tauri build only):** Tauri generates a random token
+at startup, passes to the Deno child via env var, and injects it into the
+frontend HTML. Deno middleware requires `X-Hipo-Token` on every request
+(prevents other processes on the machine from hitting the local API). In
+cloud build this is replaced by HTTPS + cookie sessions.
+
+**Backend runtime portability:** write Deno code against **Web Standard
+APIs + Hono + Drizzle**, not the `Deno.*` namespace, so the same backend
+runs on Deno/Bun/Node/Workers without changes.
+
+**Mobile support: responsive cloud build only.** No Capacitor, no Tauri
+mobile, no React Native. Mobile users hit the cloud URL in a phone browser.
+Backend doesn't change. Frontend must be responsive from day one: collapse
+`<Sider>` to a hamburger drawer at `< md`, render `<Table>` as `<List>`
+cards on narrow screens, `layout="vertical"` forms, `inputMode="decimal"`
+for currency, `size="large"` buttons on mobile, test on a real phone.
+Optional PWA upgrade later via `vite-plugin-pwa` for "Add to Home Screen."
+Skip offline mode / push / App Store — not a fit for an admin app.
+
+**Considered and rejected: embedding Deno inside Tauri's Rust process**
+(via `deno_core` / `deno_runtime`). Single-process would feel tighter, but
+clean Rust builds balloon to 10–15 min (V8 in the dep tree), local-vs-cloud
+runtimes diverge (Deno-the-Rust-library vs Deno-the-binary), the frontend
+transport splits (`invoke` for Tauri vs `fetch` for cloud), and debugging
+loses Deno's native tools. Sidecar's "problems" (port allocation, localhost
+auth token) are ~30 LOC each and standard. Would reconsider only if the app
+grew lots of native-API calls from TS, which it currently doesn't.
+
+**Bundle size:** ~110 MB Windows installer (Tauri ~15 MB + bundled Deno
+binary ~85 MB + JS). Larger than pure Tauri+Rust (~25 MB), smaller than
+Electron-equivalent (~250 MB).
+
+**Licensing — fully clean.** Tauri (MIT/Apache), Deno (MIT + V8 BSD),
+Hono/Drizzle/Zod/decimal.js (MIT/Apache). No LGPL exposure.
+
+**Migration implication:** `auth.rs`, `db.rs`, `audit.rs`, and the loan/
+party/payment commands in Rust get rewritten in TS. Tauri shell code shrinks
+to launcher + updater + window. The `do_*` twin pattern still applies — just
+in TypeScript now.
+
+No commitment yet — pending a concrete side-by-side `do_create_loan`
+example to confirm the TS shape feels right.
+
+**Foundation refactor that helps regardless of stack:**
+
+- `do_*` functions take explicit `user_id` parameter (not read from
+  `AppState`). Tauri wrapper reads the in-memory session and passes it;
+  HTTP wrapper reads from cookie-session middleware and passes it. Same
+  business logic, two thin wrappers.
+
+**What's net-new for cloud mode** (any stack): signup flow, email service
+(Resend/Postmark/SES) for verification + password reset, DB-backed sessions,
+rate limiting on auth endpoints, TLS (Caddy or platform-managed), Litestream
+per-org backups, org management (invite/remove/role).
+
+**Update distribution (Tauri build):** self-hosted via **GitHub Releases**
+for signed binaries + **GitHub Pages** for the `latest.json` manifest,
+wired up by `tauri-action`. Free, HTTPS, signature verification baked in.
+Lacks CrabNebula's staged rollouts and download analytics — graduate to
+those only if needed. Non-Tauri server builds use sysadmin-style updates
+(`systemctl restart` / MSI upgrade rules) rather than rolling a custom
+in-process updater. This is an argument for keeping Tauri in the mix even
+alongside axum/HTTP mode.
+
+**Regulated-industry flags** (Argentina mortgage data, SaaS context): Ley
+25.326 registration with AAIP likely required; encryption at rest flips from
+"deferred" to "required"; right-of-access / right-of-deletion endpoints
+needed (soft-delete may need to become hard-delete for compliance requests).
+
+See `memory/project-hipo-deployment-directions.md` for the full analysis.
+
 ## Architecture
 
 Two-process Tauri app:

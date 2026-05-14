@@ -4,6 +4,8 @@ import react from "@vitejs/plugin-react";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
+// @ts-expect-error process is a nodejs global
+const backendPort = process.env.HIPO_BACKEND_PORT || "8787";
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
@@ -28,6 +30,14 @@ export default defineConfig(async () => ({
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
       ignored: ["**/src-tauri/**"],
+    },
+    // 4. proxy /api/* to the Deno backend so same-origin fetch works in
+    //    browser dev. Configurable via HIPO_BACKEND_PORT (default 8787).
+    proxy: {
+      "/api": {
+        target: `http://127.0.0.1:${backendPort}`,
+        changeOrigin: false,
+      },
     },
   },
 

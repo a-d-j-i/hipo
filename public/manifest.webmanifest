@@ -1,0 +1,19 @@
+{
+  "name": "hipo",
+  "short_name": "hipo",
+  "description": "Mortgage loan tracker with multiple lenders",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#1677ff",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
