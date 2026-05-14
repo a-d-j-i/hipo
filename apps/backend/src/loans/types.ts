@@ -1,7 +1,7 @@
 export type {
   CreateLoanInput,
-  Loan as PublicLoan,
-  LoanLender as PublicLoanLender,
+  Loan,
+  LoanLender,
   LoanLenderInput,
   LoanStatus,
   UpdateLoanInput,

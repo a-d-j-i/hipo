@@ -9,7 +9,7 @@ import {
   type Ctx,
   nowSecs,
   publicUser,
-  type PublicUser,
+  type User,
   requireAdmin,
   requireAuth,
 } from "./types.ts";
@@ -40,11 +40,11 @@ export async function doAuthStatus(ctx: Ctx): Promise<AuthStatus> {
   return { needs_setup: count === 0, current_user: ctx.user };
 }
 
-export async function doCurrentUser(ctx: Ctx): Promise<PublicUser | null> {
+export async function doCurrentUser(ctx: Ctx): Promise<User | null> {
   return ctx.user;
 }
 
-export async function doListUsers(ctx: Ctx): Promise<PublicUser[]> {
+export async function doListUsers(ctx: Ctx): Promise<User[]> {
   requireAdmin(ctx);
   const rows = await ctx.db
     .select()
@@ -59,7 +59,7 @@ export async function doListUsers(ctx: Ctx): Promise<PublicUser[]> {
 export async function doSetupFirstAdmin(
   ctx: Ctx,
   args: { username: string; password: string },
-): Promise<PublicUser> {
+): Promise<User> {
   validateUsername(args.username);
   validatePassword(args.password);
   if ((await activeUserCount(ctx)) > 0)
@@ -90,7 +90,7 @@ export async function doSetupFirstAdmin(
 export async function doLogin(
   ctx: Ctx,
   args: { username: string; password: string },
-): Promise<PublicUser> {
+): Promise<User> {
   const row = await findUserByUsername(ctx, args.username.trim());
   if (!row) throw badRequest("wrong username or password");
   await verifyPassword(args.password, row.passwordHash);
@@ -128,7 +128,7 @@ export async function doChangePassword(
 export async function doCreateUser(
   ctx: Ctx,
   args: { username: string; password: string; role: "admin" | "user" },
-): Promise<PublicUser> {
+): Promise<User> {
   const me = requireAdmin(ctx);
   validateUsername(args.username);
   validatePassword(args.password);

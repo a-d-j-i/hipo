@@ -7,7 +7,7 @@ import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "../errors.ts";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, PublicUser } from "../auth/types.ts";
+import type { Ctx, User } from "../auth/types.ts";
 import {
   doCreateParty,
   doDeleteParty,
@@ -18,8 +18,8 @@ import {
 
 async function freshCtx(): Promise<{
   ctx: Ctx;
-  setUser: (u: PublicUser | null) => void;
-  loginAsAdmin: () => Promise<PublicUser>;
+  setUser: (u: User | null) => void;
+  loginAsAdmin: () => Promise<User>;
 }> {
   // libsql :memory: doesn't survive db.transaction() — use temp file.
   const tmpFile = await Deno.makeTempFile({ suffix: ".db" });
@@ -42,7 +42,7 @@ async function freshCtx(): Promise<{
   }
   const db = drizzle(client);
   const ctx: Ctx = { db, user: null };
-  const setUser = (u: PublicUser | null) => {
+  const setUser = (u: User | null) => {
     ctx.user = u;
   };
   const loginAsAdmin = async () => {

@@ -1,7 +1,7 @@
 import { and, desc, eq, type SQL } from "drizzle-orm";
 import { type Ctx, requireAdmin } from "../auth/types.ts";
 import { auditLog, users } from "../db/schema.ts";
-import type { ListAuditLogInput, PublicAuditEntry } from "./types.ts";
+import type { ListAuditLogInput, AuditEntry } from "./types.ts";
 
 const MIN_LIMIT = 1;
 const MAX_LIMIT = 500;
@@ -13,7 +13,7 @@ function clamp(n: number, lo: number, hi: number): number {
 export async function doListAuditLog(
   ctx: Ctx,
   args: ListAuditLogInput,
-): Promise<PublicAuditEntry[]> {
+): Promise<AuditEntry[]> {
   requireAdmin(ctx);
   const limit = clamp(args.limit, MIN_LIMIT, MAX_LIMIT);
   const offset = Math.max(0, args.offset);

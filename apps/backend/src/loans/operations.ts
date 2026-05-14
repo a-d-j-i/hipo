@@ -18,8 +18,8 @@ import type {
   CreateLoanInput,
   LoanLenderInput,
   LoanStatus,
-  PublicLoan,
-  PublicLoanLender,
+  Loan,
+  LoanLender,
   UpdateLoanInput,
 } from "./types.ts";
 import {
@@ -55,7 +55,7 @@ async function loanHasPayments(db: Db | Tx, loanId: number): Promise<boolean> {
 async function fetchLenders(
   db: Db | Tx,
   loanId: number,
-): Promise<PublicLoanLender[]> {
+): Promise<LoanLender[]> {
   const rows = await db
     .select({
       lender_id: loanLenders.lenderId,
@@ -69,7 +69,7 @@ async function fetchLenders(
   return rows;
 }
 
-async function fetchLoan(db: Db | Tx, id: number): Promise<PublicLoan> {
+async function fetchLoan(db: Db | Tx, id: number): Promise<Loan> {
   const rows = await db
     .select({
       id: loans.id,
@@ -111,7 +111,7 @@ async function insertLenders(
 
 // ---------- Reads ----------
 
-export async function doListLoans(ctx: Ctx): Promise<PublicLoan[]> {
+export async function doListLoans(ctx: Ctx): Promise<Loan[]> {
   requireAuth(ctx);
   const heads = await ctx.db
     .select({
@@ -149,7 +149,7 @@ export async function doListLoans(ctx: Ctx): Promise<PublicLoan[]> {
     .where(inArray(loanLenders.loanId, ids))
     .orderBy(asc(parties.name));
 
-  const byLoan = new Map<number, PublicLoanLender[]>();
+  const byLoan = new Map<number, LoanLender[]>();
   for (const r of lenderRows) {
     const arr = byLoan.get(r.loan_id) ?? [];
     arr.push({
@@ -166,7 +166,7 @@ export async function doListLoans(ctx: Ctx): Promise<PublicLoan[]> {
 export async function doGetLoan(
   ctx: Ctx,
   args: { id: number },
-): Promise<PublicLoan> {
+): Promise<Loan> {
   requireAuth(ctx);
   return await fetchLoan(ctx.db, args.id);
 }
@@ -176,7 +176,7 @@ export async function doGetLoan(
 export async function doCreateLoan(
   ctx: Ctx,
   args: CreateLoanInput,
-): Promise<PublicLoan> {
+): Promise<Loan> {
   const me = requireAuth(ctx);
   const currencyCode = args.currencyCode.trim().toUpperCase();
   validateCurrencyCode(currencyCode);
@@ -216,7 +216,7 @@ export async function doCreateLoan(
 export async function doUpdateLoan(
   ctx: Ctx,
   args: UpdateLoanInput,
-): Promise<PublicLoan> {
+): Promise<Loan> {
   const me = requireAuth(ctx);
   if (args.interestCents < 0) throw badRequest("interest must be >= 0");
   const reference = normalizeOpt(args.reference);
@@ -247,7 +247,7 @@ export async function doUpdateLoan(
 export async function doSetLoanLenders(
   ctx: Ctx,
   args: { loanId: number; lenders: LoanLenderInput[] },
-): Promise<PublicLoan> {
+): Promise<Loan> {
   const me = requireAuth(ctx);
   const before = await fetchLoan(ctx.db, args.loanId);
   if (await loanHasPayments(ctx.db, args.loanId))

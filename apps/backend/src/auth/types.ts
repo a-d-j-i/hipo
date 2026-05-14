@@ -1,10 +1,9 @@
-import type { User as PublicUserType } from "@hipo/shared";
+import type { User } from "@hipo/shared";
 import type { Db } from "../db/client.ts";
-import type { User as DbUser } from "../db/schema.ts";
+import type { UserRow } from "../db/schema.ts";
 import { forbidden, unauthorized } from "../errors.ts";
 
-export type { AuthStatus } from "@hipo/shared";
-export type PublicUser = PublicUserType;
+export type { AuthStatus, User } from "@hipo/shared";
 
 /**
  * Per-request context handed to every do_* operation.
@@ -12,10 +11,11 @@ export type PublicUser = PublicUserType;
  */
 export type Ctx = {
   db: Db;
-  user: PublicUser | null;
+  user: User | null;
 };
 
-export function publicUser(u: DbUser): PublicUser {
+/** Map a raw DB row (camelCase, has passwordHash) to the public API shape. */
+export function publicUser(u: UserRow): User {
   return {
     id: u.id,
     username: u.username,
@@ -24,12 +24,12 @@ export function publicUser(u: DbUser): PublicUser {
   };
 }
 
-export function requireAuth(ctx: Ctx): PublicUser {
+export function requireAuth(ctx: Ctx): User {
   if (!ctx.user) throw unauthorized();
   return ctx.user;
 }
 
-export function requireAdmin(ctx: Ctx): PublicUser {
+export function requireAdmin(ctx: Ctx): User {
   const me = requireAuth(ctx);
   if (me.role !== "admin") throw forbidden();
   return me;

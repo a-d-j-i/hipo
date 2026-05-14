@@ -4,13 +4,13 @@ import { and, eq, gt } from "drizzle-orm";
 import { sessions, type Session, users } from "../db/schema.ts";
 import type { Db } from "../db/client.ts";
 import { config, SESSION_COOKIE } from "../config.ts";
-import { publicUser, type PublicUser } from "../auth/types.ts";
+import { publicUser, type User } from "../auth/types.ts";
 
 export type AppEnv = {
   Variables: {
     db: Db;
     session: Session | null;
-    user: PublicUser | null;
+    user: User | null;
   };
 };
 

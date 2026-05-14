@@ -22,14 +22,14 @@ import {
 import { badRequest, notFound } from "../errors.ts";
 import type {
   CreateLenderPayoutInput,
-  PublicLenderBalance,
-  PublicLenderPayout,
+  LenderBalance,
+  LenderPayout,
 } from "./types.ts";
 
 async function fetchPayout(
   db: Db | Tx,
   id: number,
-): Promise<PublicLenderPayout> {
+): Promise<LenderPayout> {
   const rows = await db
     .select({
       id: lenderPayouts.id,
@@ -52,7 +52,7 @@ async function fetchPayout(
 
 // ---------- Reads ----------
 
-export async function doListPayouts(ctx: Ctx): Promise<PublicLenderPayout[]> {
+export async function doListPayouts(ctx: Ctx): Promise<LenderPayout[]> {
   requireAuth(ctx);
   return await ctx.db
     .select({
@@ -82,7 +82,7 @@ export async function doListPayouts(ctx: Ctx): Promise<PublicLenderPayout[]> {
  */
 export async function doLenderBalances(
   ctx: Ctx,
-): Promise<PublicLenderBalance[]> {
+): Promise<LenderBalance[]> {
   requireAuth(ctx);
 
   const received = await ctx.db
@@ -142,7 +142,7 @@ export async function doLenderBalances(
     .where(sql`${parties.id} IN ${lenderIds}`);
   const nameById = new Map(nameRows.map((r) => [r.id, r.name]));
 
-  const out: PublicLenderBalance[] = [];
+  const out: LenderBalance[] = [];
   for (const [k, cell] of byKey) {
     const [idStr, currency_code] = k.split(":");
     const lender_id = Number(idStr);
@@ -169,7 +169,7 @@ export async function doLenderBalances(
 export async function doCreateLenderPayout(
   ctx: Ctx,
   args: CreateLenderPayoutInput,
-): Promise<PublicLenderPayout> {
+): Promise<LenderPayout> {
   const me = requireAuth(ctx);
   const currencyCode = args.currencyCode.trim().toUpperCase();
   validateCurrencyCode(currencyCode);

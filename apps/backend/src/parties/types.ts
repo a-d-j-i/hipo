@@ -1,10 +1,9 @@
-import type { Party as PartyRow } from "../db/schema.ts";
-import type { Party as PublicPartyType } from "@hipo/shared";
+import type { Party } from "@hipo/shared";
+import type { PartyRow } from "../db/schema.ts";
 
-export type { PartyInput } from "@hipo/shared";
-export type PublicParty = PublicPartyType;
+export type { Party, PartyInput } from "@hipo/shared";
 
-export function publicParty(p: PartyRow): PublicParty {
+export function publicParty(p: PartyRow): Party {
   return {
     id: p.id,
     name: p.name,

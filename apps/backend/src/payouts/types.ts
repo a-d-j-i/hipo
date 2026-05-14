@@ -1,5 +1,5 @@
 export type {
   CreateLenderPayoutInput,
-  LenderBalance as PublicLenderBalance,
-  LenderPayout as PublicLenderPayout,
+  LenderBalance,
+  LenderPayout,
 } from "@hipo/shared";

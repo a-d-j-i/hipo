@@ -7,7 +7,7 @@ import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "../errors.ts";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, PublicUser } from "../auth/types.ts";
+import type { Ctx, User } from "../auth/types.ts";
 import { doCreateParty } from "../parties/operations.ts";
 import {
   doCreateLoan,
@@ -17,12 +17,12 @@ import {
   doSetLoanLenders,
   doUpdateLoan,
 } from "./operations.ts";
-import type { CreateLoanInput, PublicLoan } from "./types.ts";
+import type { CreateLoanInput, Loan } from "./types.ts";
 
 type Fixture = {
   ctx: Ctx;
-  setUser: (u: PublicUser | null) => void;
-  admin: PublicUser;
+  setUser: (u: User | null) => void;
+  admin: User;
   debtorId: number;
   lenderA: number;
   lenderB: number;
@@ -49,7 +49,7 @@ async function freshFixture(): Promise<Fixture> {
   }
   const db = drizzle(client);
   const ctx: Ctx = { db, user: null };
-  const setUser = (u: PublicUser | null) => {
+  const setUser = (u: User | null) => {
     ctx.user = u;
   };
 
@@ -98,7 +98,7 @@ function loanInput(f: Fixture): CreateLoanInput {
   };
 }
 
-async function makeLoan(f: Fixture): Promise<PublicLoan> {
+async function makeLoan(f: Fixture): Promise<Loan> {
   return await doCreateLoan(f.ctx, loanInput(f));
 }
 

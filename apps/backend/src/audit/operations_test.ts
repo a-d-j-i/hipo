@@ -5,14 +5,14 @@ import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "../errors.ts";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, PublicUser } from "../auth/types.ts";
+import type { Ctx, User } from "../auth/types.ts";
 import { doCreateParty, doDeleteParty } from "../parties/operations.ts";
 import { doListAuditLog } from "./operations.ts";
 
 async function freshCtx(): Promise<{
   ctx: Ctx;
-  setUser: (u: PublicUser | null) => void;
-  admin: PublicUser;
+  setUser: (u: User | null) => void;
+  admin: User;
 }> {
   const tmpFile = await Deno.makeTempFile({ suffix: ".db" });
   const client = createClient({ url: `file:${tmpFile}` });
@@ -34,7 +34,7 @@ async function freshCtx(): Promise<{
   }
   const db = drizzle(client);
   const ctx: Ctx = { db, user: null };
-  const setUser = (u: PublicUser | null) => {
+  const setUser = (u: User | null) => {
     ctx.user = u;
   };
   const admin = await doSetupFirstAdmin(ctx, {

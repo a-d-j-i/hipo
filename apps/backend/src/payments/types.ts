@@ -1,5 +1,5 @@
 export type {
   CreateDebtorPaymentInput,
-  DebtorPayment as PublicDebtorPayment,
-  DebtorPaymentSplit as PublicDebtorPaymentSplit,
+  DebtorPayment,
+  DebtorPaymentSplit,
 } from "@hipo/shared";

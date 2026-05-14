@@ -8,7 +8,7 @@ import {
 } from "../auth/types.ts";
 import { parties } from "../db/schema.ts";
 import { notFound } from "../errors.ts";
-import { type PartyInput, publicParty, type PublicParty } from "./types.ts";
+import { type PartyInput, publicParty, type Party } from "./types.ts";
 import { normalizeOpt, validateName } from "./validators.ts";
 
 async function selectActive(ctx: Ctx, id: number) {
@@ -20,7 +20,7 @@ async function selectActive(ctx: Ctx, id: number) {
   return rows[0] ?? null;
 }
 
-export async function doListParties(ctx: Ctx): Promise<PublicParty[]> {
+export async function doListParties(ctx: Ctx): Promise<Party[]> {
   requireAuth(ctx);
   const rows = await ctx.db
     .select()
@@ -33,7 +33,7 @@ export async function doListParties(ctx: Ctx): Promise<PublicParty[]> {
 export async function doGetParty(
   ctx: Ctx,
   args: { id: number },
-): Promise<PublicParty> {
+): Promise<Party> {
   requireAuth(ctx);
   const row = await selectActive(ctx, args.id);
   if (!row) throw notFound("party not found");
@@ -43,7 +43,7 @@ export async function doGetParty(
 export async function doCreateParty(
   ctx: Ctx,
   args: PartyInput,
-): Promise<PublicParty> {
+): Promise<Party> {
   const me = requireAuth(ctx);
   validateName(args.name);
   const name = args.name.trim();
@@ -73,7 +73,7 @@ export async function doCreateParty(
 export async function doUpdateParty(
   ctx: Ctx,
   args: { id: number } & PartyInput,
-): Promise<PublicParty> {
+): Promise<Party> {
   const me = requireAuth(ctx);
   validateName(args.name);
 
@@ -89,7 +89,7 @@ export async function doUpdateParty(
       .update(parties)
       .set({ name, externalRef, notes })
       .where(eq(parties.id, args.id));
-    const after: PublicParty = {
+    const after: Party = {
       id: args.id,
       name,
       external_ref: externalRef,

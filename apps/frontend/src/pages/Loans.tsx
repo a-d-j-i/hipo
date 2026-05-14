@@ -125,6 +125,16 @@ function LendersEditor({
                       required: true,
                       message: t("loans.lenders.lenderPlaceholder"),
                     },
+                    {
+                      validator: async (_, value) => {
+                        if (value == null) return;
+                        const duplicated = rows.some(
+                          (r, i) => i !== field.name && r?.lenderId === value,
+                        );
+                        if (duplicated)
+                          throw new Error(t("loans.lenders.duplicate"));
+                      },
+                    },
                   ]}
                   style={{ marginBottom: 0, minWidth: 200 }}
                 >

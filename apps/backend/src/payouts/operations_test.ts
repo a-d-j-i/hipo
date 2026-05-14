@@ -7,7 +7,7 @@ import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "../errors.ts";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, PublicUser } from "../auth/types.ts";
+import type { Ctx, User } from "../auth/types.ts";
 import { doCreateParty } from "../parties/operations.ts";
 import { doCreateLoan } from "../loans/operations.ts";
 import { doCreateDebtorPayment } from "../payments/operations.ts";
@@ -19,8 +19,8 @@ import {
 
 type Fixture = {
   ctx: Ctx;
-  setUser: (u: PublicUser | null) => void;
-  admin: PublicUser;
+  setUser: (u: User | null) => void;
+  admin: User;
   debtor: number;
   alice: number;
   bob: number;
@@ -47,7 +47,7 @@ async function freshFixture(): Promise<Fixture> {
   }
   const db = drizzle(client);
   const ctx: Ctx = { db, user: null };
-  const setUser = (u: PublicUser | null) => {
+  const setUser = (u: User | null) => {
     ctx.user = u;
   };
   const admin = await doSetupFirstAdmin(ctx, {

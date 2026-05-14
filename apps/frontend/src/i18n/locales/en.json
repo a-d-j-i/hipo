@@ -116,6 +116,7 @@
       "add": "Add lender",
       "remove": "Remove",
       "atLeastOne": "At least one lender",
+      "duplicate": "Lender already selected",
       "lenderPlaceholder": "Lender",
       "amountPlaceholder": "Amount"
     },

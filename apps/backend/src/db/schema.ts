@@ -108,10 +108,12 @@ export const auditLog = sqliteTable("audit_log", {
   payload: text("payload"),
 });
 
-export type User = typeof users.$inferSelect;
+// DB row types use the `Row` suffix to keep them distinct from the API
+// shapes of the same name in @hipo/shared (User, Party, Loan, …).
+export type UserRow = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type AuditEntryRow = typeof auditLog.$inferSelect;
-export type Party = typeof parties.$inferSelect;
+export type PartyRow = typeof parties.$inferSelect;
 export type LoanRow = typeof loans.$inferSelect;
 export type LoanLenderRow = typeof loanLenders.$inferSelect;

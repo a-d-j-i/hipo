@@ -20,14 +20,14 @@ import { badRequest, notFound } from "../errors.ts";
 import { splitPayment } from "@hipo/shared";
 import type {
   CreateDebtorPaymentInput,
-  PublicDebtorPayment,
-  PublicDebtorPaymentSplit,
+  DebtorPayment,
+  DebtorPaymentSplit,
 } from "./types.ts";
 
 async function fetchSplits(
   db: Db | Tx,
   paymentId: number,
-): Promise<PublicDebtorPaymentSplit[]> {
+): Promise<DebtorPaymentSplit[]> {
   return await db
     .select({
       lender_id: debtorPaymentSplits.lenderId,
@@ -43,7 +43,7 @@ async function fetchSplits(
 async function fetchPayment(
   db: Db | Tx,
   id: number,
-): Promise<PublicDebtorPayment> {
+): Promise<DebtorPayment> {
   const rows = await db
     .select({
       id: debtorPayments.id,
@@ -83,7 +83,7 @@ async function loanLenderShares(
 export async function doListLoanPayments(
   ctx: Ctx,
   args: { loanId: number },
-): Promise<PublicDebtorPayment[]> {
+): Promise<DebtorPayment[]> {
   requireAuth(ctx);
   const heads = await ctx.db
     .select({
@@ -120,7 +120,7 @@ export async function doListLoanPayments(
     .where(inArray(debtorPaymentSplits.paymentId, ids))
     .orderBy(asc(parties.name));
 
-  const byPayment = new Map<number, PublicDebtorPaymentSplit[]>();
+  const byPayment = new Map<number, DebtorPaymentSplit[]>();
   for (const r of splitRows) {
     const arr = byPayment.get(r.payment_id) ?? [];
     arr.push({
@@ -139,7 +139,7 @@ export async function doListLoanPayments(
 export async function doCreateDebtorPayment(
   ctx: Ctx,
   args: CreateDebtorPaymentInput,
-): Promise<PublicDebtorPayment> {
+): Promise<DebtorPayment> {
   const me = requireAuth(ctx);
   if (args.amountCents <= 0) throw badRequest("amount must be > 0");
   const notes = normalizeOpt(args.notes);

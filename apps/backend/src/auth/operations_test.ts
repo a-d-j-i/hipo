@@ -16,9 +16,9 @@ import {
   doResetUserPassword,
   doSetupFirstAdmin,
 } from "./operations.ts";
-import type { Ctx, PublicUser } from "./types.ts";
+import type { Ctx, User } from "./types.ts";
 
-async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: PublicUser | null) => void }> {
+async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: User | null) => void }> {
   // libsql's node binding doesn't keep :memory: state across db.transaction()
   // (each tx opens a new connection that sees an empty in-memory DB).
   // Use a temp file instead; Deno cleans it up on process exit.

@@ -116,6 +116,7 @@
       "add": "Agregar prestamista",
       "remove": "Quitar",
       "atLeastOne": "Al menos un prestamista",
+      "duplicate": "Prestamista ya seleccionado",
       "lenderPlaceholder": "Prestamista",
       "amountPlaceholder": "Monto"
     },
