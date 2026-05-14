@@ -1,14 +1,14 @@
 # hipo backend
 
 TypeScript backend running on Deno. Serves the React SPA and exposes the JSON
-API. Same binary runs as a Tauri sidecar locally and as the cloud server.
+API. The same binary runs as a Tauri sidecar locally and as the cloud server.
 
 ## Prerequisites
 
 Install Deno (https://deno.com):
 
 ```bash
-curl -fsSL https://deno.land/install.sh | sh
+npm install -g deno
 ```
 
 ## Tasks
@@ -37,8 +37,3 @@ deno task compile:windows  # cross-compile Windows x86_64 binary from Linux
 - **Sessions are DB-backed**, not JWT. Logout = `DELETE FROM sessions WHERE id = ?`. See the deployment-directions memory for the full rationale.
 - **`do_*` pattern** carries over from the Rust backend: business logic is plain async functions taking the connection + scoped context; route handlers are thin wrappers. Same testability gain.
 - **No `Deno.*` namespace** in business logic — only Web Standard APIs + Hono + Drizzle. Keeps the code runnable on Node/Bun/Workers if the runtime ever changes.
-
-## Status
-
-Phase 4 skeleton: server + health + DB + sessions wired up. Domain endpoints
-(parties, loans, payments, payouts, audit, auth) get ported in Phase 5.
