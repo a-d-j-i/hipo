@@ -88,10 +88,10 @@ Most commands run from the repo root.
 - `npm run dev:backend` — Deno backend with `--watch` (default port 8787).
 - `npm run dev:desktop` — Tauri shell (calls into Vite via
   `beforeDevCommand`). User runs `dev:backend` separately.
-- `npm run dev:mock` / `npm run dev:fast` — Vite + mockIPC. **Note:** mock
-  mode is currently a no-op since the frontend uses `fetch()`, not
-  `invoke()`. Update `apps/frontend/src/mocks/ipc.ts` to intercept fetch
-  if mock dev is wanted again.
+- `npm run dev:mock` / `npm run dev:fast` — Vite + in-browser mock backend.
+  `apps/frontend/src/mocks/ipc.ts` stubs `window.fetch` for `/api/*` URLs;
+  the React app runs end-to-end with seed data (`admin`/`admin123`,
+  `alice`/`alice123`). No Deno needed.
 - `npm run build:frontend` — `tsc --noEmit` + `vite build` → `apps/frontend/dist/`.
 - `npm run build:backend:linux` / `:windows` — compile Deno sidecar to a
   single native binary in `apps/desktop/binaries/`.
@@ -250,10 +250,10 @@ would require an error-code refactor on the backend. Deferred.
 **Dev feature flags** (Vite env vars, read by
 `apps/frontend/src/vite-env.d.ts`):
 
-- `VITE_USE_MOCKS=1` — loads `src/mocks/ipc.ts`. **Currently a no-op** —
-  the file still registers `mockIPC` handlers, but the frontend uses
-  `fetch()` instead of `invoke()`, so nothing gets intercepted. Update the
-  mocks to intercept `fetch` if mock dev is needed.
+- `VITE_USE_MOCKS=1` — loads `src/mocks/ipc.ts`, which stubs
+  `window.fetch` so the app runs without a real backend. Seed users:
+  `admin`/`admin123` (admin), `alice`/`alice123` (user). All domain
+  state is in-memory; reloading the page resets it.
 - `VITE_AUTO_LOGIN=1` — auto-calls `setup_first_admin` / `login` with
   `admin/admin123` on bootstrap; with these flags set, the user never sees
   the setup or login screens. Use `VITE_AUTO_LOGIN=user:pass` for custom
@@ -382,8 +382,6 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
 - `api/http.ts` — `httpRequest(method, path, body?)` wrapper around
   `fetch` (cookie credentials, X-Hipo-Token header, JSON, error mapping).
 - `api/updater.ts` — Tauri-only update-check helper.
-- `api/transport.ts` — vestigial `call()` wrapper from the migration; no
-  current consumers. Can be deleted.
 - `auth/` — `AuthContext.tsx` (provider + guards
   `RequireSetup`/`RequireLogin`/`RequireAuth`/`RequireAdmin`) and `api.ts`.
 - `<domain>/api.ts` — typed `httpRequest` wrappers per domain.
@@ -393,7 +391,8 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
   at `< md` breakpoint.
 - `lib/antdRules.ts` — `rule(check)` helper bridging shared `check*` to
   antd Form rules.
-- `mocks/ipc.ts` — `mockIPC` handlers (currently inactive; see Dev flags).
+- `mocks/ipc.ts` — `window.fetch` stub for `VITE_USE_MOCKS=1`. Mirrors the
+  Deno backend's API surface against in-memory seed data.
 - `pages/` — one `.tsx` per route (`Setup`, `Login`, `Dashboard`, `Parties`,
   `Loans`, `Payments` drawer, `Payouts`, `Users`, `AuditLog`, `Settings`).
 - `test/setup.ts` — Vitest setup (cleanup, fetch stub, jest-dom matchers).
