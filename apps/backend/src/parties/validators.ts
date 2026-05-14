@@ -1,13 +1,11 @@
+import { checkPartyName, normalizeOptional } from "@hipo/shared";
 import { badRequest } from "../errors.ts";
 
 export function validateName(name: string): void {
-  if (name.trim() === "") throw badRequest("name is required");
-  if (name.length > 200) throw badRequest("name is too long");
+  const err = checkPartyName(name);
+  if (err) throw badRequest(err);
 }
 
-/** Returns null for blank/whitespace-only input, otherwise the trimmed value. */
-export function normalizeOpt(s: string | null | undefined): string | null {
-  if (s === null || s === undefined) return null;
-  const trimmed = s.trim();
-  return trimmed === "" ? null : trimmed;
-}
+// Re-export so existing consumers (parties/operations.ts) keep their import
+// path. New code should reach for `normalizeOptional` from @hipo/shared.
+export { normalizeOptional as normalizeOpt };
