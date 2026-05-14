@@ -31,6 +31,7 @@ import PaymentsDrawer from "../payments/PaymentsDrawer";
 import {
   centsToMajor,
   checkCurrencyCode,
+  checkLenders,
   COMMON_CURRENCIES,
   formatCents,
   majorToCents,
@@ -87,6 +88,20 @@ function LendersEditor({
           validator: async (_, value: LenderRow[]) => {
             if (!value || value.length === 0)
               throw new Error(t("loans.lenders.atLeastOne"));
+            // Only run shared cross-row checks on fully-filled rows;
+            // incomplete rows are flagged by their own per-row rules.
+            const complete = value.filter(
+              (r) =>
+                r?.lenderId != null && r?.amount != null && r.amount > 0,
+            );
+            if (complete.length === 0) return;
+            const err = checkLenders(
+              complete.map((r) => ({
+                lenderId: r.lenderId!,
+                amountLentCents: majorToCents(r.amount!),
+              })),
+            );
+            if (err) throw new Error(err);
           },
         },
       ]}
