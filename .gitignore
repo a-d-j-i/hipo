@@ -14,11 +14,21 @@ dist/
 apps/frontend/dist/
 apps/desktop/target/
 apps/desktop/gen/
+*.tsbuildinfo
+coverage/
 
-# IDE
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
 .vscode/*
 .idea/*
 .DS_Store
+
+# Claude Code local state
+.claude/
 
 # Tauri sidecar binaries — rebuilt by:
 #   cd apps/backend && deno task compile:linux    (or :windows)
