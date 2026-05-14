@@ -46,6 +46,7 @@ pub fn run() {
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
@@ -57,6 +58,8 @@ pub fn run() {
     // Updater is release-only: dev builds skip it so a real signing key is
     // only required when shipping. The release pipeline replaces the pubkey
     // placeholder in tauri.conf.json with the public half of the signing key.
+    // `tauri-plugin-process` (registered above) provides the `relaunch()`
+    // hook the frontend's updater handler calls after `downloadAndInstall()`.
     #[cfg(not(debug_assertions))]
     {
         builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
