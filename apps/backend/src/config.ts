@@ -17,10 +17,7 @@ function envString(name: string, defaultValue: string): string {
 export const config = {
   port: envInt("HIPO_PORT", 8787),
   dataDir: envString("HIPO_DATA_DIR", "./data"),
-  // Path is relative to apps/backend/. Resolves to the on-disk dir during
-  // `deno task dev`; the compiled binary embeds it via `deno compile
-  // --include ../frontend/dist` so the same path works at runtime.
-  staticDir: envString("HIPO_STATIC_DIR", "../frontend/dist"),
+  staticDir: envString("HIPO_STATIC_DIR", "../dist"),
   sessionTtlDays: envInt("HIPO_SESSION_TTL_DAYS", 30),
   authToken: Deno.env.get("HIPO_AUTH_TOKEN"),
 } as const;
