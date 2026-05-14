@@ -16,9 +16,13 @@ import {
   doResetUserPassword,
   doSetupFirstAdmin,
 } from "./operations.ts";
+import { _resetForTests as resetRateLimit } from "./rate_limit.ts";
 import type { Ctx, User } from "./types.ts";
 
 async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: User | null) => void }> {
+  // Rate-limit state is process-wide; reset between tests so failed
+  // attempts in earlier tests don't lock out later ones.
+  resetRateLimit();
   // libsql's node binding doesn't keep :memory: state across db.transaction()
   // (each tx opens a new connection that sees an empty in-memory DB).
   // Use a temp file instead; Deno cleans it up on process exit.
@@ -85,6 +89,44 @@ Deno.test("login_with_wrong_password", async () => {
     AppError,
     "wrong",
   );
+});
+
+Deno.test("login_rate_limit_locks_after_repeated_failures", async () => {
+  const { ctx } = await freshCtx();
+  await doSetupFirstAdmin(ctx, { username: "root", password: "password123" });
+  // 5 failures push us into the lockout window.
+  for (let i = 0; i < 5; i++) {
+    await assertRejects(
+      () => doLogin(ctx, { username: "root", password: "wrong" }),
+      AppError,
+      "wrong",
+    );
+  }
+  // 6th attempt returns the lock message even with the right password.
+  await assertRejects(
+    () => doLogin(ctx, { username: "root", password: "password123" }),
+    AppError,
+    "too many login attempts",
+  );
+});
+
+Deno.test("login_rate_limit_resets_on_success", async () => {
+  const { ctx } = await freshCtx();
+  await doSetupFirstAdmin(ctx, { username: "root", password: "password123" });
+  // Burn 4 failures (still under the threshold of 5).
+  for (let i = 0; i < 4; i++) {
+    await assertRejects(() =>
+      doLogin(ctx, { username: "root", password: "wrong" })
+    );
+  }
+  // A success clears the counter.
+  await doLogin(ctx, { username: "root", password: "password123" });
+  // Now we can fail 4 more times without getting locked.
+  for (let i = 0; i < 4; i++) {
+    await assertRejects(() =>
+      doLogin(ctx, { username: "root", password: "wrong" })
+    );
+  }
 });
 
 Deno.test("change_password_flow", async () => {

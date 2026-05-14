@@ -1,8 +1,13 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { users } from "../db/schema.ts";
-import { badRequest, conflict, notFound } from "../errors.ts";
+import { badRequest, conflict, notFound, tooManyRequests } from "../errors.ts";
 import { writeAudit } from "../audit/write.ts";
 import { hashPassword, verifyPassword } from "./passwords.ts";
+import {
+  clearLoginFailures,
+  isLoginLocked,
+  recordLoginFailure,
+} from "./rate_limit.ts";
 import { validatePassword, validateUsername } from "./validators.ts";
 import {
   type AuthStatus,
@@ -91,9 +96,21 @@ export async function doLogin(
   ctx: Ctx,
   args: { username: string; password: string },
 ): Promise<User> {
-  const row = await findUserByUsername(ctx, args.username.trim());
-  if (!row) throw badRequest("wrong username or password");
-  await verifyPassword(args.password, row.passwordHash);
+  const trimmed = args.username.trim();
+  if (isLoginLocked(trimmed))
+    throw tooManyRequests("too many login attempts, try again later");
+  const row = await findUserByUsername(ctx, trimmed);
+  if (!row) {
+    recordLoginFailure(trimmed);
+    throw badRequest("wrong username or password");
+  }
+  try {
+    await verifyPassword(args.password, row.passwordHash);
+  } catch (err) {
+    recordLoginFailure(trimmed);
+    throw err;
+  }
+  clearLoginFailures(trimmed);
   return publicUser(row);
 }
 

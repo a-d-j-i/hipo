@@ -14,3 +14,4 @@ export const forbidden = (msg = "forbidden") => new AppError(403, msg);
 export const badRequest = (msg: string) => new AppError(400, msg);
 export const notFound = (msg: string) => new AppError(404, msg);
 export const conflict = (msg: string) => new AppError(409, msg);
+export const tooManyRequests = (msg: string) => new AppError(429, msg);
