@@ -23,6 +23,32 @@ async function main(): Promise<void> {
   const app = new Hono<AppEnv>();
 
   app.onError(errorHandler);
+
+  // Security headers on every response. CSP is HTML-only (other content
+  // types ignore it); the rest are blanket. antd's css-in-js needs
+  // 'unsafe-inline' on style-src; scripts never need it.
+  const CSP = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self' data:",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ].join("; ");
+  app.use("*", async (c, next) => {
+    await next();
+    c.res.headers.set("X-Content-Type-Options", "nosniff");
+    c.res.headers.set("Referrer-Policy", "no-referrer");
+    c.res.headers.set("X-Frame-Options", "DENY");
+    const ct = c.res.headers.get("content-type") ?? "";
+    if (ct.startsWith("text/html")) {
+      c.res.headers.set("Content-Security-Policy", CSP);
+    }
+  });
+
   // CORS allowlist. All production shapes are same-origin (Tauri webview
   // hits the sidecar at its own host:port; cloud serves the SPA via
   // staticSpa). Cross-origin only happens when a browser at the Vite dev

@@ -1,3 +1,4 @@
+import { join, resolve, sep } from "node:path";
 import type { MiddlewareHandler } from "hono";
 import type { AppEnv } from "./middleware/session.ts";
 import { config } from "./config.ts";
@@ -32,18 +33,24 @@ async function readIfExists(path: string): Promise<Uint8Array | null> {
   }
 }
 
-/** Serves /dist as static files; falls back to index.html for SPA routes. */
+/** Serves staticDir as static files; falls back to index.html for SPA routes. */
 export const staticSpa: MiddlewareHandler<AppEnv> = async (c, next) => {
   if (c.req.path.startsWith("/api/")) return next();
 
-  const safePath = c.req.path.replace(/\.\./g, "");
-  const filePath = `${config.staticDir}${safePath === "/" ? "/index.html" : safePath}`;
+  // Resolve once; reject anything that escapes the static root after
+  // path normalization (handles `..`, redundant separators, etc.).
+  const baseDir = resolve(config.staticDir);
+  const requested = c.req.path === "/" ? "/index.html" : c.req.path;
+  const candidate = resolve(join(baseDir, "." + requested));
+  const insideBase =
+    candidate === baseDir || candidate.startsWith(baseDir + sep);
 
-  let body = await readIfExists(filePath);
-  let path = filePath;
+  let body: Uint8Array | null = null;
+  let path = candidate;
+  if (insideBase) body = await readIfExists(candidate);
   if (!body) {
-    // SPA fallback
-    path = `${config.staticDir}/index.html`;
+    // SPA fallback — always index.html, always inside baseDir.
+    path = resolve(baseDir, "index.html");
     body = await readIfExists(path);
   }
   if (!body) return c.text("not found", 404);
