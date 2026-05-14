@@ -60,6 +60,15 @@ exist so npm workspaces can resolve them by name.
                 └──────────────────────────────┘
 ```
 
+**Localhost token (Tauri build only).** The shell generates a 256-bit
+random token, passes it to the Deno child via `HIPO_AUTH_TOKEN`, and
+embeds it in the webview URL as `#token=...`. The SPA's
+`extractAuthToken()` reads and clears the hash on boot; `httpRequest`
+adds `X-Hipo-Token` to every fetch. The backend's `requireLocalToken`
+middleware enforces it when the env var is set — preventing other
+processes on the machine from hitting the local API. Cloud / browser-dev
+leaves the env var unset and the middleware is a no-op.
+
 ---
 
 ## Prerequisites
@@ -155,6 +164,15 @@ CI alternative: push a `v*` tag to trigger `.github/workflows/release.yml`,
 which builds for Linux + Windows in parallel using native runners and uploads
 signed installers + `latest.json` to a draft GitHub Release.
 
+**Bundle sizes (reference):**
+
+- Compiled Deno sidecar (libsql + V8 + std + JS): **~132 MB**.
+- Final Windows installer: **~145 MB** (Tauri ~15 MB + sidecar + JS).
+- Comparison: pure Tauri+Rust ~25 MB, Electron-equivalent ~250 MB.
+
+The size delta vs. pure Rust buys backend code reuse with the cloud
+build (same binary deploys hosted).
+
 ---
 
 ## Auto-updater setup
@@ -205,6 +223,27 @@ installations will pick it up on next launch via the `latest.json` endpoint.
 
 ---
 
+## Lost-password recovery (V1)
+
+No in-app reset flow. If the sole admin forgets their password, recover
+manually:
+
+```bash
+# Locate the data dir (default: OS app_data_dir for ar.com.adjimann.hipo).
+# Linux:   ~/.local/share/ar.com.adjimann.hipo/hipo.db
+# Windows: %APPDATA%\ar.com.adjimann.hipo\hipo.db
+
+sqlite3 hipo.db \
+  "UPDATE users SET password_hash = '<new-argon2id-encoded-hash>' WHERE username = 'admin'"
+```
+
+Generate the hash with any argon2id tool (or the wrappers in
+`apps/backend/src/auth/passwords.ts`). Alternatively, delete `hipo.db`
+to re-bootstrap from scratch (data loss). The cloud build will add a
+real email-based reset flow.
+
+---
+
 ## Conventions & rules
 
 - **Money in integer cents** — `i64`/`number` everywhere in storage;
@@ -224,6 +263,105 @@ installations will pick it up on next launch via the `latest.json` endpoint.
   Hono + Drizzle. Keeps the backend runnable on Node/Bun/Workers if needed.
 - **i18n: Spanish default + English.** Rust shell error strings remain
   English (sidecar-internal only; never user-visible).
+- **Users ≠ parties.** Separate tables on purpose: parties include
+  entities (banks, trusts) that don't authenticate, plus there are
+  hundreds of them vs. 1–10 staff `users`. If lender-portal access ever
+  lands, add a `users.party_id` FK then — bridge pattern, not
+  inheritance. Forward-compatible.
+- **Cross-domain guards** enforced in `do_*` operations + tests:
+  - Can't change a loan's lenders if it has payments.
+  - Can't delete a loan with payments — close it instead.
+
+---
+
+## Design decisions (considered & rejected)
+
+Decisions taken during architecture exploration, recorded here so we
+don't re-litigate them.
+
+**Backend runtime / topology:**
+
+- **Embedded Deno** (`deno_core` / `deno_runtime`) — single-process
+  feels tighter but pulls slow Rust compiles, runtime drift, and
+  frontend transport divergence. The sidecar's "problems" (port
+  allocation, auth token) are ~30 LOC each.
+- **Bun rewrite** — Bun statically links **LGPL 2.1**
+  JavaScriptCore; commercial closed-source would require NOTICE +
+  offer-to-relink paperwork. Deno (MIT + V8 BSD) is cleaner.
+- **Pure Rust + axum** — preserves the old Rust backend but blocks the
+  actual goal: sharing TS code with the frontend (`types`, validators,
+  split, format).
+- **Third-party Tauri plugins** (`tauri-plugin-deno`, `tauri-plugin-js`)
+  — documented Windows production bugs, single-maintainer projects.
+  Tauri's built-in `externalBin` instead.
+
+**Frontend libraries:**
+
+- **Zod** — parallel schema layer with no upside given the shared
+  `check*` validators in `@hipo/shared` already cover both sides.
+- **Jotai / Zustand / Redux** — source of truth is the backend; React
+  only holds ephemeral UI state. `useState` / `useReducer` /
+  `useContext` are enough.
+- **TanStack Query** — deferred until 3+ views share data and manual
+  invalidation gets painful. Migration is mechanical when needed.
+- **Sass / CSS-in-JS** — plain CSS at this size.
+- **Sentry / telemetry** — not at this scale.
+- **Native file dialogs** (`@tauri-apps/plugin-dialog` / `plugin-fs`) —
+  prefer browser APIs (`<input type="file">`, `Blob` downloads) so the
+  frontend is identical across Tauri and cloud builds.
+
+**Money / domain:**
+
+- **Floats for money** — rejected. Integer cents in storage; BigInt for
+  intermediate products in the split (cent × cent overflows
+  `Number.MAX_SAFE_INTEGER` at realistic loan sizes). Largest-remainder
+  allocation guarantees the total reconciles exactly.
+- **Amortization tables / interest-rate math** — out of scope.
+  `principal_cents` + flat `interest_cents` matches the use case.
+
+---
+
+## Cloud deployment caveats (when wired)
+
+The same Deno binary runs as a hosted server, but several things flip
+from "deferred" to "required" the moment it does:
+
+- **Multi-tenancy: one SQLite file per org.** Filesystem-enforced
+  isolation, so a missed `WHERE org_id = ?` can't leak data; per-customer
+  backup/restore is `cp`. Not yet implemented (single-tenant currently);
+  architecture supports it without breaking changes — subdomain → path.
+- **Encryption at rest** becomes required (SQLCipher or platform disk
+  encryption). Local desktop installs run plain SQLite by design — the
+  user's filesystem is the trust boundary there.
+- **AR regulatory flags** (per the `ar.com.adjimann.hipo` identifier):
+  - **Ley 25.326 (PDPA)** — AAIP registration likely required for SaaS
+    that stores third-party data.
+  - **Right-of-access / right-of-deletion** endpoints needed;
+    soft-delete may need to become hard-delete for compliance requests.
+  - **SOC 2 / ISO 27001** for B2B sales eventually.
+
+Not blocking now — factor into the timeline when cloud SaaS goes live.
+
+---
+
+## Prior art
+
+If you're considering extracting `apps/desktop` into a generic
+"wrap-a-web-app-as-a-desktop-app" tool, **CrabNebula's Taurify**
+(`https://docs.crabnebula.dev/taurify/`) already covers substantially
+the same ground: `npx taurify init/dev/build`, no Rust required,
+first-class Deno backend config (`backend: { flavor: "deno", path,
+entryPoint }`), auto-updates, multi-platform output (desktop + iOS +
+Android).
+
+The only meaningful differentiator identified for an OSS alternative is
+licensing / lock-in: Taurify is paired with CrabNebula's commercial
+Cloud (billing page + `cloud/ci/taurify-workflow` doc), and the CLI has
+no visible OSS license — only `vscode-taurify` is on GitHub.
+
+**Recommended path** (2026-05-14 finding): try Taurify on hipo first —
+cheapest experiment. If it fits, the OSS-tool idea is moot. If it
+doesn't, the gap list becomes the actual scope.
 
 ---
 
