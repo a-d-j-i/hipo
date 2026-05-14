@@ -15,9 +15,11 @@ import {
 import { DeleteOutlined, KeyOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+import { checkPassword, checkUsername } from "@hipo/shared";
 import { useAuth } from "../auth/AuthContext";
 import * as api from "../auth/api";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
+import { rule } from "../lib/antdRules";
 import type { Role } from "../bindings/Role";
 import type { User } from "../bindings/User";
 
@@ -203,6 +205,7 @@ export default function Users() {
             label={t("users.form.username")}
             rules={[
               { required: true, message: t("users.form.usernameRequired") },
+              rule(checkUsername),
             ]}
           >
             <Input autoFocus />
@@ -212,7 +215,7 @@ export default function Users() {
             label={t("users.form.password")}
             rules={[
               { required: true, message: t("users.form.passwordRequired") },
-              { min: 8, message: t("common.atLeast8Chars") },
+              rule(checkPassword),
             ]}
           >
             <Input.Password />
@@ -252,7 +255,7 @@ export default function Users() {
             label={t("users.form.newPassword")}
             rules={[
               { required: true, message: t("users.form.passwordRequired") },
-              { min: 8, message: t("common.atLeast8Chars") },
+              rule(checkPassword),
             ]}
           >
             <Input.Password autoFocus />

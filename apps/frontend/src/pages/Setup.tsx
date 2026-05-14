@@ -1,6 +1,8 @@
 import { Alert, Button, Card, Form, Input, message, Typography } from "antd";
 import { useTranslation } from "react-i18next";
+import { checkPassword, checkUsername } from "@hipo/shared";
 import { useAuth } from "../auth/AuthContext";
+import { rule } from "../lib/antdRules";
 
 type FormValues = { username: string; password: string; confirm: string };
 
@@ -47,6 +49,7 @@ export default function Setup() {
             label={t("auth.setup.username")}
             rules={[
               { required: true, message: t("auth.setup.usernameRequired") },
+              rule(checkUsername),
             ]}
           >
             <Input autoFocus autoComplete="username" />
@@ -56,7 +59,7 @@ export default function Setup() {
             label={t("auth.setup.password")}
             rules={[
               { required: true, message: t("auth.setup.passwordRequired") },
-              { min: 8, message: t("common.atLeast8Chars") },
+              rule(checkPassword),
             ]}
           >
             <Input.Password autoComplete="new-password" />

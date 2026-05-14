@@ -16,8 +16,10 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
+import { checkPartyName } from "@hipo/shared";
 import { useAuth } from "../auth/AuthContext";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
+import { rule } from "../lib/antdRules";
 import * as api from "../parties/api";
 import type { Party } from "../bindings/Party";
 
@@ -181,6 +183,7 @@ export default function Parties() {
             label={t("parties.form.name")}
             rules={[
               { required: true, message: t("parties.form.nameRequired") },
+              rule(checkPartyName),
             ]}
           >
             <Input autoFocus />
