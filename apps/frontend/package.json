@@ -16,6 +16,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@hipo/shared": "*",
     "@ant-design/icons": "^6.2.2",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-process": "^2",

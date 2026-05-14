@@ -19,7 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { useIsMobile, useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as api from "./api";
-import { formatCents, majorToCents } from "../loans/format";
+import { formatCents, majorToCents } from "@hipo/shared";
 import type { DebtorPayment } from "../bindings/DebtorPayment";
 import type { Loan } from "../bindings/Loan";
 

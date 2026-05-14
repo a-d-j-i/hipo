@@ -33,7 +33,7 @@ import {
   COMMON_CURRENCIES,
   formatCents,
   majorToCents,
-} from "../loans/format";
+} from "@hipo/shared";
 import type { Loan } from "../bindings/Loan";
 import type { LoanLenderInput } from "../bindings/LoanLenderInput";
 import type { LoanStatus } from "../bindings/LoanStatus";

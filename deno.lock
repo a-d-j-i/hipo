@@ -2857,6 +2857,7 @@
           "dependencies": [
             "npm:@ant-design/icons@^6.2.2",
             "npm:@eslint/js@^10.0.1",
+            "npm:@hipo/shared@*",
             "npm:@tauri-apps/api@2",
             "npm:@tauri-apps/plugin-process@2",
             "npm:@tauri-apps/plugin-updater@2",

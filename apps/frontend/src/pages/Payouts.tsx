@@ -24,7 +24,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as payoutsApi from "../payouts/api";
-import { formatCents, majorToCents } from "../loans/format";
+import { formatCents, majorToCents } from "@hipo/shared";
 import type { LenderBalance } from "../bindings/LenderBalance";
 import type { LenderPayout } from "../bindings/LenderPayout";
 

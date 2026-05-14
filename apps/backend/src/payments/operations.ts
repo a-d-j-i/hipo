@@ -17,7 +17,7 @@ import {
 import type { Tx } from "../audit/write.ts";
 import { normalizeOpt } from "../loans/validators.ts";
 import { badRequest, notFound } from "../errors.ts";
-import { splitPayment } from "./split.ts";
+import { splitPayment } from "@hipo/shared";
 import type {
   CreateDebtorPaymentInput,
   PublicDebtorPayment,

@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@^1.0";
-import { splitPayment } from "./split.ts";
+import { splitPayment } from "@hipo/shared";
 
 function sum(v: Array<[number, number]>): number {
   return v.reduce((s, [, c]) => s + c, 0);
