@@ -21,7 +21,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import { rule } from "../lib/antdRules";
 import * as api from "../parties/api";
-import type { Party } from "../bindings/Party";
+import type { Party } from "@hipo/shared";
 
 type FormValues = {
   name: string;

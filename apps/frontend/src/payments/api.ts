@@ -1,5 +1,5 @@
 import { httpRequest } from "../api/http";
-import type { DebtorPayment } from "../bindings/DebtorPayment";
+import type { DebtorPayment } from "@hipo/shared";
 
 export const listLoanPayments = (args: { loanId: number }) =>
   httpRequest<DebtorPayment[]>(

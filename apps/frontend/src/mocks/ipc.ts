@@ -1,16 +1,16 @@
 import { mockIPC } from "@tauri-apps/api/mocks";
-import type { AuditEntry } from "../bindings/AuditEntry";
-import type { DebtorPayment } from "../bindings/DebtorPayment";
-import type { DebtorPaymentSplit } from "../bindings/DebtorPaymentSplit";
-import type { LenderBalance } from "../bindings/LenderBalance";
-import type { LenderPayout } from "../bindings/LenderPayout";
-import type { Loan } from "../bindings/Loan";
-import type { LoanLender } from "../bindings/LoanLender";
-import type { LoanLenderInput } from "../bindings/LoanLenderInput";
-import type { LoanStatus } from "../bindings/LoanStatus";
-import type { Party } from "../bindings/Party";
-import type { Role } from "../bindings/Role";
-import type { User } from "../bindings/User";
+import type { AuditEntry } from "@hipo/shared";
+import type { DebtorPayment } from "@hipo/shared";
+import type { DebtorPaymentSplit } from "@hipo/shared";
+import type { LenderBalance } from "@hipo/shared";
+import type { LenderPayout } from "@hipo/shared";
+import type { Loan } from "@hipo/shared";
+import type { LoanLender } from "@hipo/shared";
+import type { LoanLenderInput } from "@hipo/shared";
+import type { LoanStatus } from "@hipo/shared";
+import type { Party } from "@hipo/shared";
+import type { Role } from "@hipo/shared";
+import type { User } from "@hipo/shared";
 
 type DbUser = User & { passwordHash: string; deletedAt: number | null };
 

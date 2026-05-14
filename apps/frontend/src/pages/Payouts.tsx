@@ -25,8 +25,8 @@ import { useAuth } from "../auth/AuthContext";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as payoutsApi from "../payouts/api";
 import { formatCents, majorToCents } from "@hipo/shared";
-import type { LenderBalance } from "../bindings/LenderBalance";
-import type { LenderPayout } from "../bindings/LenderPayout";
+import type { LenderBalance } from "@hipo/shared";
+import type { LenderPayout } from "@hipo/shared";
 
 type FormValues = {
   amount: number;

@@ -1,5 +1,5 @@
 import { httpRequest } from "../api/http";
-import type { AuditEntry } from "../bindings/AuditEntry";
+import type { AuditEntry } from "@hipo/shared";
 
 export const listAuditLog = (args: {
   entityType: string | null;

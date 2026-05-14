@@ -1,7 +1,7 @@
 import { httpRequest } from "../api/http";
-import type { AuthStatus } from "../bindings/AuthStatus";
-import type { Role } from "../bindings/Role";
-import type { User } from "../bindings/User";
+import type { AuthStatus } from "@hipo/shared";
+import type { Role } from "@hipo/shared";
+import type { User } from "@hipo/shared";
 
 export const authStatus = () =>
   httpRequest<AuthStatus>("GET", "/api/auth/status");

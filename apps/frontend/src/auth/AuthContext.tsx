@@ -8,7 +8,7 @@ import {
 } from "react";
 import { Spin } from "antd";
 import { Navigate } from "react-router";
-import type { User } from "../bindings/User";
+import type { User } from "@hipo/shared";
 import * as api from "./api";
 
 type AuthState = {

@@ -14,8 +14,8 @@ import dayjs from "dayjs";
 import { useTranslation } from "react-i18next";
 import * as auditApi from "../audit/api";
 import * as authApi from "../auth/api";
-import type { AuditEntry } from "../bindings/AuditEntry";
-import type { User } from "../bindings/User";
+import type { AuditEntry } from "@hipo/shared";
+import type { User } from "@hipo/shared";
 
 const PAGE_SIZE = 50;
 

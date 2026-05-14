@@ -1,18 +1,6 @@
-/** Matches src/bindings/AuditEntry.ts (snake_case). */
-export type PublicAuditEntry = {
-  id: number;
-  at: number;
-  user_id: number | null;
-  user_name: string | null;
-  action: string;
-  entity_type: string;
-  entity_id: number | null;
-  payload: string | null;
-};
-
-export type ListAuditLogInput = {
-  entityType: string | null;
-  userId: number | null;
-  limit: number;
-  offset: number;
-};
+// Re-exports the API shapes from @hipo/shared under the Public* names used
+// by operations/route handlers. Single source of truth lives in shared.
+export type {
+  AuditEntry as PublicAuditEntry,
+  ListAuditLogInput,
+} from "@hipo/shared";

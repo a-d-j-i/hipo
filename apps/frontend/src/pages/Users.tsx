@@ -20,8 +20,8 @@ import { useAuth } from "../auth/AuthContext";
 import * as api from "../auth/api";
 import { useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import { rule } from "../lib/antdRules";
-import type { Role } from "../bindings/Role";
-import type { User } from "../bindings/User";
+import type { Role } from "@hipo/shared";
+import type { User } from "@hipo/shared";
 
 type CreateValues = { username: string; password: string; role: Role };
 type ResetValues = { password: string; confirm: string };

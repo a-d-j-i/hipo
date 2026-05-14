@@ -30,14 +30,16 @@ import * as partiesApi from "../parties/api";
 import PaymentsDrawer from "../payments/PaymentsDrawer";
 import {
   centsToMajor,
+  checkCurrencyCode,
   COMMON_CURRENCIES,
   formatCents,
   majorToCents,
 } from "@hipo/shared";
-import type { Loan } from "../bindings/Loan";
-import type { LoanLenderInput } from "../bindings/LoanLenderInput";
-import type { LoanStatus } from "../bindings/LoanStatus";
-import type { Party } from "../bindings/Party";
+import { rule } from "../lib/antdRules";
+import type { Loan } from "@hipo/shared";
+import type { LoanLenderInput } from "@hipo/shared";
+import type { LoanStatus } from "@hipo/shared";
+import type { Party } from "@hipo/shared";
 
 type LenderRow = { lenderId: number | null; amount: number | null };
 
@@ -480,7 +482,7 @@ export default function Loans() {
             <Form.Item
               name="currencyCode"
               label={t("loans.form.currency")}
-              rules={[{ required: true }]}
+              rules={[{ required: true }, rule(checkCurrencyCode)]}
             >
               <Select
                 style={{ width: 110 }}

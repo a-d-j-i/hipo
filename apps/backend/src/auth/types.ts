@@ -1,19 +1,10 @@
+import type { User as PublicUserType } from "@hipo/shared";
 import type { Db } from "../db/client.ts";
 import type { User as DbUser } from "../db/schema.ts";
 import { forbidden, unauthorized } from "../errors.ts";
 
-/** Public user shape exposed over the API. Matches src/bindings/User.ts. */
-export type PublicUser = {
-  id: number;
-  username: string;
-  role: "admin" | "user";
-  created_at: number;
-};
-
-export type AuthStatus = {
-  needs_setup: boolean;
-  current_user: PublicUser | null;
-};
+export type { AuthStatus } from "@hipo/shared";
+export type PublicUser = PublicUserType;
 
 /**
  * Per-request context handed to every do_* operation.

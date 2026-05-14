@@ -7,19 +7,14 @@
 // thin `validate*` functions that throw `AppError` via `badRequest`; the
 // frontend can call them directly inside antd `rules` validators.
 
+import type { LoanLenderInput } from "./types.ts";
+
 // ---------- Constants ----------
 
 export const USERNAME_MAX_LENGTH = 64;
 export const PASSWORD_MIN_LENGTH = 8;
 export const PARTY_NAME_MAX_LENGTH = 200;
 export const CURRENCY_CODE_PATTERN = /^[A-Z]{3}$/;
-
-// ---------- Types ----------
-
-export type LoanLenderInput = {
-  lenderId: number;
-  amountLentCents: number;
-};
 
 // ---------- Checks ----------
 

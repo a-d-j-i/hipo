@@ -1,5 +1,5 @@
 import { httpRequest } from "../api/http";
-import type { Party } from "../bindings/Party";
+import type { Party } from "@hipo/shared";
 
 export type PartyInput = {
   name: string;

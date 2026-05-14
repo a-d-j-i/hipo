@@ -1,7 +1,7 @@
 import { httpRequest } from "../api/http";
-import type { Loan } from "../bindings/Loan";
-import type { LoanLenderInput } from "../bindings/LoanLenderInput";
-import type { LoanStatus } from "../bindings/LoanStatus";
+import type { Loan } from "@hipo/shared";
+import type { LoanLenderInput } from "@hipo/shared";
+import type { LoanStatus } from "@hipo/shared";
 
 export const listLoans = () => httpRequest<Loan[]>("GET", "/api/loans");
 

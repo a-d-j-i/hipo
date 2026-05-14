@@ -1,6 +1,6 @@
 import { httpRequest } from "../api/http";
-import type { LenderBalance } from "../bindings/LenderBalance";
-import type { LenderPayout } from "../bindings/LenderPayout";
+import type { LenderBalance } from "@hipo/shared";
+import type { LenderPayout } from "@hipo/shared";
 
 export const listPayouts = () =>
   httpRequest<LenderPayout[]>("GET", "/api/payouts");
