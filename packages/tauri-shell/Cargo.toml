@@ -1,0 +1,17 @@
+[package]
+name = "tauri-shell"
+version = "0.1.0"
+description = "Generic Tauri shell: spawns a sidecar backend, opens a webview at the announced port, runs the auto-updater"
+edition = "2021"
+
+[lib]
+name = "tauri_shell"
+crate-type = ["rlib"]
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-process = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2"
+rand = "0.8"
