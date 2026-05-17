@@ -1,5 +1,5 @@
 // Deno/Node SQLite client factory. Uses libsql's native node binding.
-// Browser variant (Phase 2) will live in client-browser.ts.
+// Browser variant lives in client-browser.ts.
 
 import { createClient, type Client } from "@libsql/client/node";
 import { drizzle } from "drizzle-orm/libsql";
@@ -31,11 +31,13 @@ export async function openDb(
   const client = createClient({ url });
 
   // SQLite-side hardening — WAL for concurrent readers + foreign keys on.
+  // Pragmas can't go through Drizzle (no DDL/PRAGMA in the typed API)
+  // so we run them on the raw client before constructing the wrapper.
   await client.execute("PRAGMA journal_mode = WAL");
   await client.execute("PRAGMA foreign_keys = ON");
 
-  await runMigrations(client, opts.migrations);
-
   const db = drizzle(client);
+  await runMigrations(db, opts.migrations);
+
   return { db, client };
 }

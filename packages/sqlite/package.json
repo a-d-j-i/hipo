@@ -9,5 +9,9 @@
     ".": "./src/index.ts",
     "./client-deno": "./src/client-deno.ts",
     "./client-browser": "./src/client-browser.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "sqlocal": "^0.18.0"
   }
 }

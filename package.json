@@ -10,7 +10,8 @@
     "packages/sqlite",
     "packages/server",
     "packages/auth",
-    "packages/audit"
+    "packages/audit",
+    "spikes/05-in-page-ops"
   ],
   "scripts": {
     "dev:frontend": "npm run dev -w @hipo/frontend",

@@ -8,6 +8,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
+    "./passwords-browser": "./src/passwords.browser.ts",
     "./middleware-session": "./src/middleware-session.ts"
+  },
+  "dependencies": {
+    "hash-wasm": "^4.11.0"
   }
 }
