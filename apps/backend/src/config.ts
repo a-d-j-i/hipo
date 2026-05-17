@@ -1,5 +1,21 @@
+// Runtime config. Reads env vars on Deno; defaults across the board on
+// browser (where this module is bundled into the in-page Worker —
+// there are no env vars and the fields that matter for the Deno
+// shape, like dataDir/staticDir/port, aren't used by the in-page
+// shape anyway).
+
+declare const Deno:
+  | { env: { get(name: string): string | undefined } }
+  | undefined;
+
+function envRaw(name: string): string | undefined {
+  return typeof Deno !== "undefined" && Deno?.env
+    ? Deno.env.get(name)
+    : undefined;
+}
+
 function envInt(name: string, defaultValue: number): number {
-  const raw = Deno.env.get(name);
+  const raw = envRaw(name);
   if (raw === undefined || raw === "") return defaultValue;
   const parsed = Number.parseInt(raw, 10);
   if (Number.isNaN(parsed))
@@ -8,7 +24,7 @@ function envInt(name: string, defaultValue: number): number {
 }
 
 function envString(name: string, defaultValue: string): string {
-  const raw = Deno.env.get(name);
+  const raw = envRaw(name);
   return raw === undefined || raw === "" ? defaultValue : raw;
 }
 
@@ -19,7 +35,7 @@ export const config = {
   dataDir: envString("HIPO_DATA_DIR", "./data"),
   staticDir: envString("HIPO_STATIC_DIR", "../dist"),
   sessionTtlDays: envInt("HIPO_SESSION_TTL_DAYS", 30),
-  authToken: Deno.env.get("HIPO_AUTH_TOKEN"),
+  authToken: envRaw("HIPO_AUTH_TOKEN"),
 } as const;
 
 export const SESSION_COOKIE = "hipo_session";

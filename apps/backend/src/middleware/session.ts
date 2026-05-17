@@ -7,7 +7,6 @@
 //
 // Phase 1C: rewritten from Hono to the framework router.
 
-import { timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import type { Db } from "@hipo/sqlite";
 import { sessions, type Session, users } from "@hipo/auth/schema";
@@ -74,6 +73,13 @@ export function attachSessionCookie(c: AppCtx, sessionId: string): void {
       maxAge: config.sessionTtlDays * 86_400,
     }),
   );
+  // Also expose the session id via a custom (non-forbidden) response
+  // header. The browser/SW intercepts Set-Cookie cleanly for real HTTP
+  // responses (Deno shape), but synthetic SW responses (in-page shape)
+  // don't propagate Set-Cookie to the cookie jar. The frontend's
+  // httpRequest reads X-Hipo-Session and forwards it as X-Hipo-Token
+  // on subsequent fetches — exact same session lookup either way.
+  c.resHeaders.set("X-Hipo-Session", sessionId);
 }
 
 export function clearSessionCookie(c: AppCtx): void {
@@ -86,9 +92,17 @@ export function clearSessionCookie(c: AppCtx): void {
       maxAge: 0,
     }),
   );
+  c.resHeaders.set("X-Hipo-Session", "");
 }
 
-/** Reads the session cookie, looks up the session row + user, attaches to state. */
+/**
+ * Reads the session ID from either the Cookie header (Deno shape) or
+ * the X-Hipo-Token header (in-page shape), looks up the session row +
+ * user, attaches to state.
+ *
+ * Both transports point at the same sessions table — only the
+ * delivery mechanism differs. See attachSessionCookie() for why.
+ */
 export function sessionMiddleware(db: Db): Middleware<AppState> {
   return async (c, next) => {
     c.state.db = db;
@@ -97,13 +111,17 @@ export function sessionMiddleware(db: Db): Middleware<AppState> {
 
     const cookies = parseCookies(c.req.headers.get("cookie"));
     const cookie = cookies.get(SESSION_COOKIE);
-    if (cookie) {
+    const headerToken =
+      c.req.headers.get("x-hipo-token") ?? c.req.headers.get("X-Hipo-Token");
+    const sessionId = cookie ?? headerToken ?? null;
+
+    if (sessionId) {
       const now = Math.floor(Date.now() / 1000);
       const rows = await db
         .select({ session: sessions, user: users })
         .from(sessions)
         .innerJoin(users, eq(sessions.userId, users.id))
-        .where(and(eq(sessions.id, cookie), gt(sessions.expiresAt, now)))
+        .where(and(eq(sessions.id, sessionId), gt(sessions.expiresAt, now)))
         .limit(1);
 
       if (rows.length > 0 && rows[0].user.deletedAt === null) {
@@ -113,10 +131,13 @@ export function sessionMiddleware(db: Db): Middleware<AppState> {
         db
           .update(sessions)
           .set({ lastSeenAt: now })
-          .where(eq(sessions.id, cookie))
+          .where(eq(sessions.id, sessionId))
           .then(() => {})
           .catch(() => {});
-      } else {
+      } else if (cookie) {
+        // Stale cookie — clear it. (No equivalent for X-Hipo-Token;
+        // the frontend's httpRequest already resyncs from
+        // X-Hipo-Session response headers on next auth response.)
         clearSessionCookie(c);
       }
     }
@@ -138,10 +159,17 @@ export const requireAdmin: Middleware<AppState> = async (c, next) => {
   return await next();
 };
 
+// Pure-JS constant-time string compare. Avoids node:crypto so the
+// module bundles into the in-page Worker; equivalent guarantees on
+// short hex/base64 tokens (the actual call site is rare anyway —
+// only when HIPO_AUTH_TOKEN is set, ie Tauri sidecar mode).
 function safeTokenEqual(provided: string | undefined, expected: string): boolean {
   if (!provided || provided.length !== expected.length) return false;
-  const enc = new TextEncoder();
-  return timingSafeEqual(enc.encode(provided), enc.encode(expected));
+  let mismatch = 0;
+  for (let i = 0; i < provided.length; i++) {
+    mismatch |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
+  }
+  return mismatch === 0;
 }
 
 /** Localhost-only API token check, active when HIPO_AUTH_TOKEN is set. */

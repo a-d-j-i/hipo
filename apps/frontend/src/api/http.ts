@@ -1,19 +1,61 @@
 /**
- * Minimal fetch helper for talking to the Deno backend.
+ * Minimal fetch helper for talking to the backend.
  *
- * - `credentials: "include"` so the session cookie flows.
- * - `X-Hipo-Token` header attached when a token has been registered (Tauri
- *   shell injects one via the URL hash on launch; browser dev mode has none).
- * - Non-2xx responses throw with the backend's `{ error }` message, matching
- *   the `try/catch + message.error(String(e))` pattern the pages already use.
- * - `VITE_BACKEND_URL` lets the Tauri webview hit an absolute URL when the
- *   Vite proxy isn't in the loop. Defaults to empty (same-origin), which
- *   means `/api/*` goes through Vite's proxy in dev or the bundled server
- *   in production.
+ * - `credentials: "include"` so the session cookie flows (Deno shape).
+ * - `X-Hipo-Token` header attached when a token has been registered.
+ *   Set by:
+ *     - Tauri shell: random launch token, gates /api/* on the sidecar.
+ *     - In-page backend: session ID (the Worker can't propagate cookies
+ *       through the SW because synthetic Responses don't honour
+ *       Set-Cookie in some browsers; X-Hipo-Token carries the same ID
+ *       via a non-forbidden header instead).
+ * - After every response, we check for `X-Hipo-Session` on the
+ *   response headers — login/setup set it to the new session ID; logout
+ *   sets it empty. That keeps `authToken` in sync without the frontend
+ *   pages having to know about session transport.
+ * - Non-2xx responses throw with the backend's `{ error }` message,
+ *   matching the `try/catch + message.error(String(e))` pattern the
+ *   pages already use.
+ * - `VITE_BACKEND_URL` lets the Tauri webview hit an absolute URL when
+ *   the Vite proxy isn't in the loop. Defaults to empty (same-origin).
  */
 const API_BASE = (import.meta.env.VITE_BACKEND_URL ?? "").replace(/\/$/, "");
 
-let authToken: string | null = null;
+// sessionStorage key for the in-page session token. Survives reloads
+// within the tab but not tab close. We only persist the token in the
+// in-page shape — for Tauri it comes from the URL hash each launch,
+// for the Deno shape from the Set-Cookie response.
+const TOKEN_STORAGE_KEY = "hipo:authToken";
+
+function loadInitialToken(): string | null {
+  // Only restore for the in-page shape. Tauri/cloud shapes set
+  // authToken via extractAuthToken or rely on cookies.
+  if (
+    typeof sessionStorage !== "undefined" &&
+    import.meta.env.VITE_INPAGE_BACKEND
+  ) {
+    return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  }
+  return null;
+}
+
+let authToken: string | null = loadInitialToken();
+
+/** Programmatic setter. Persists in sessionStorage for the in-page shape. */
+export function setAuthToken(token: string | null): void {
+  authToken = token && token.length > 0 ? token : null;
+  if (
+    typeof sessionStorage !== "undefined" &&
+    import.meta.env.VITE_INPAGE_BACKEND
+  ) {
+    if (authToken) sessionStorage.setItem(TOKEN_STORAGE_KEY, authToken);
+    else sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  }
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
 
 /**
  * Reads `#token=...` from the URL, stores it for later requests, and rewrites
@@ -27,7 +69,6 @@ export function extractAuthToken(): void {
   const token = params.get("token");
   if (!token) return;
   authToken = token;
-  // Remove the token from the visible URL.
   history.replaceState(
     null,
     "",
@@ -52,6 +93,16 @@ export async function httpRequest<T>(
     body: body !== undefined ? JSON.stringify(body) : undefined,
   };
   const res = await fetch(url, init);
+
+  // The server uses X-Hipo-Session on /api/auth/* responses to
+  // communicate session-token changes (login/setup → new ID, logout
+  // → empty). Sync our in-memory token so subsequent requests carry
+  // it via X-Hipo-Token.
+  const sessionUpdate = res.headers.get("X-Hipo-Session");
+  if (sessionUpdate !== null) {
+    setAuthToken(sessionUpdate);
+  }
+
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {

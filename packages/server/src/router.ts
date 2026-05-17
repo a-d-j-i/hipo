@@ -54,7 +54,17 @@ function wrapHandler<TState extends object>(
 function applyHeaders(res: Response, headers: Headers): Response {
   if (headers.entries().next().done) return res;
   const merged = new Headers(res.headers);
-  headers.forEach((v, k) => merged.set(k, v));
+  // Set-Cookie can have multiple values for one key and must NOT be
+  // comma-joined. Headers.forEach yields the comma-joined version for
+  // multi-valued headers, which corrupts cookies. Handle set-cookie
+  // separately via getSetCookie (Headers API since 2023).
+  headers.forEach((v, k) => {
+    if (k.toLowerCase() === "set-cookie") return;
+    merged.set(k, v);
+  });
+  for (const sc of headers.getSetCookie?.() ?? []) {
+    merged.append("set-cookie", sc);
+  }
   return new Response(res.body, {
     status: res.status,
     statusText: res.statusText,

@@ -7,13 +7,7 @@ import {
   requireLocalToken,
   sessionMiddleware,
 } from "./middleware/session.ts";
-import { registerAuditRoutes } from "./routes/audit.ts";
-import { registerAuthRoutes } from "./routes/auth.ts";
-import { registerHealthRoutes } from "./routes/health.ts";
-import { registerLoanRoutes } from "./routes/loans.ts";
-import { registerPartyRoutes } from "./routes/parties.ts";
-import { registerPaymentRoutes } from "./routes/payments.ts";
-import { registerPayoutRoutes } from "./routes/payouts.ts";
+import { registerAllRoutes } from "./routes/index.ts";
 import { staticSpa } from "./static.ts";
 
 async function main(): Promise<void> {
@@ -58,13 +52,7 @@ async function main(): Promise<void> {
   app.use(requireLocalToken);
   app.use(sessionMiddleware(db));
 
-  registerHealthRoutes(app);
-  registerAuthRoutes(app);
-  registerPartyRoutes(app);
-  registerLoanRoutes(app);
-  registerPaymentRoutes(app);
-  registerPayoutRoutes(app);
-  registerAuditRoutes(app);
+  registerAllRoutes(app);
 
   // Static SPA fallback — runs whenever no route matches.
   app.notFound(staticSpa);

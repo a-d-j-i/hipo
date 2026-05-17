@@ -25,3 +25,10 @@ export {
 } from "./cookies.ts";
 
 export { type Ctx, requireAuth, requireAdmin } from "./ctx.ts";
+
+export {
+  serveOnPort,
+  dispatchOverPort,
+  type WireRequest,
+  type WireResponse,
+} from "./worker-bridge.ts";

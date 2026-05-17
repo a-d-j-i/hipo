@@ -20,6 +20,14 @@ async function bootstrap() {
     await import("./mocks/ipc");
   }
 
+  // In-page-backend shape: SW + Worker host the framework router and
+  // OPFS-backed SQLite. After this returns, vanilla `fetch("/api/...")`
+  // is served entirely in-browser. No Deno running.
+  if (import.meta.env.VITE_INPAGE_BACKEND) {
+    const { bootInPageBackend } = await import("./in-page-backend");
+    await bootInPageBackend();
+  }
+
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <App />

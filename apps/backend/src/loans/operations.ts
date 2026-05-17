@@ -6,7 +6,7 @@ import {
   requireAdmin,
   requireAuth,
 } from "../auth/types.ts";
-import type { Db } from "../db/client.ts";
+import type { Db } from "@hipo/sqlite";
 import {
   debtorPayments,
   loanLenders,

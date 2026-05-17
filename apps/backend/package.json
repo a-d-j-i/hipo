@@ -2,7 +2,14 @@
   "name": "@hipo/backend",
   "private": true,
   "version": "0.1.0",
-  "comment": "Thin npm-workspace wrapper that bridges to Deno tasks. All real config lives in deno.json. node_modules here exists only so npm workspaces can resolve this package by name.",
+  "type": "module",
+  "comment": "Thin npm-workspace wrapper that bridges to Deno tasks. All real config lives in deno.json. The src/ paths are also re-exported so Vite in apps/frontend can import them for the in-page Worker shape (Phase 3).",
+  "exports": {
+    "./routes": "./src/routes/index.ts",
+    "./migrations": "./src/db/migrations.ts",
+    "./middleware-session": "./src/middleware/session.ts",
+    "./schema": "./src/db/schema.ts"
+  },
   "scripts": {
     "dev": "deno task dev",
     "start": "deno task start",
