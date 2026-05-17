@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spike 02: SW + Worker + hand-rolled router</title>
+    <style>
+      body {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+        color: #1f2937;
+      }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1rem; margin-top: 2rem; color: #374151; }
+      .row { display: flex; gap: 0.5rem; margin: 0.5rem 0; align-items: center; flex-wrap: wrap; }
+      button {
+        padding: 0.4rem 0.8rem;
+        font: inherit;
+        background: #7c3aed;
+        color: white;
+        border: 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover { background: #6d28d9; }
+      button:disabled { background: #9ca3af; cursor: not-allowed; }
+      input {
+        padding: 0.4rem;
+        font: inherit;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+      }
+      pre {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .ok { color: #059669; }
+      .err { color: #dc2626; }
+      .hint { color: #6b7280; font-size: 0.9rem; }
+      code { background: #fef3c7; padding: 0.05rem 0.3rem; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <h1>Spike 02: Service Worker + dedicated Worker + hand-rolled router</h1>
+    <p class="hint">
+      Validates the framework topology: <code>fetch("/api/…")</code> on
+      main thread → SW intercepts → forwards to dedicated Worker via
+      MessageChannel → hand-rolled router dispatches → Drizzle hits
+      OPFS SQLite → response. <strong>No Hono.</strong>
+    </p>
+
+    <h2>Topology status</h2>
+    <pre id="status">(initialising…)</pre>
+
+    <h2>Test calls</h2>
+    <div class="row">
+      <button id="health-btn">GET /api/health</button>
+      <button id="list-btn">GET /api/items</button>
+      <input id="text-input" placeholder="text" />
+      <button id="create-btn">POST /api/items</button>
+      <button id="clear-btn">DELETE /api/items</button>
+      <button id="not-found-btn">GET /api/missing</button>
+    </div>
+
+    <h2>Response</h2>
+    <pre id="response">(no response yet)</pre>
+
+    <h2>Log</h2>
+    <pre id="log"></pre>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

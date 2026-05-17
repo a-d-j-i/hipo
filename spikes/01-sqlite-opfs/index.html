@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spike 01: SQLite-WASM + Drizzle + OPFS</title>
+    <style>
+      body {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+        color: #1f2937;
+      }
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1rem; margin-top: 2rem; color: #374151; }
+      .row { display: flex; gap: 0.5rem; margin: 0.5rem 0; align-items: center; }
+      button {
+        padding: 0.4rem 0.8rem;
+        font: inherit;
+        background: #2563eb;
+        color: white;
+        border: 0;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover { background: #1d4ed8; }
+      button:disabled { background: #9ca3af; cursor: not-allowed; }
+      input {
+        padding: 0.4rem;
+        font: inherit;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+      }
+      pre {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .ok { color: #059669; }
+      .err { color: #dc2626; }
+      .hint { color: #6b7280; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Spike 01: SQLite-WASM + Drizzle + OPFS</h1>
+    <p class="hint">
+      Validates that SQLite-WASM runs in a dedicated Web Worker, persists to
+      OPFS, and is reachable via Drizzle. Reload the page to verify
+      persistence.
+    </p>
+
+    <h2>Environment</h2>
+    <pre id="env"></pre>
+
+    <h2>Actions</h2>
+    <div class="row">
+      <input id="text-input" placeholder="text to insert" />
+      <button id="insert-btn">Insert row</button>
+      <button id="select-btn">Refresh list</button>
+      <button id="clear-btn">Clear all rows</button>
+    </div>
+
+    <h2>Rows in <code>items</code> table</h2>
+    <pre id="rows">(loading…)</pre>
+
+    <h2>Log</h2>
+    <pre id="log"></pre>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
