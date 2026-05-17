@@ -1,7 +1,10 @@
-import { type Context, Hono } from "hono";
-import type { Ctx } from "../auth/types.ts";
-import { badRequest } from "../errors.ts";
-import { type AppEnv, requireAuth } from "../middleware/session.ts";
+import { badRequest, json, type Router } from "@hipo/server";
+import type { Ctx } from "@hipo/auth";
+import {
+  type AppCtx,
+  type AppState,
+  requireAuth,
+} from "../middleware/session.ts";
 import {
   doCreateParty,
   doDeleteParty,
@@ -11,40 +14,39 @@ import {
 } from "../parties/operations.ts";
 import type { PartyInput } from "../parties/types.ts";
 
-function ctxOf(c: Context<AppEnv>): Ctx {
-  return { db: c.var.db, user: c.var.user };
+function ctxOf(c: AppCtx): Ctx {
+  return { db: c.state.db, user: c.state.user };
 }
 
-function parseId(c: Context<AppEnv>): number {
-  const raw = c.req.param("id");
+function parseId(c: AppCtx): number {
+  const raw = c.params.id;
   if (!raw) throw badRequest("id is required");
   const id = Number.parseInt(raw, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   return id;
 }
 
-export const partyRoutes = new Hono<AppEnv>();
+export function registerPartyRoutes(app: Router<AppState>) {
+  app.get("/api/parties", requireAuth, async (c) =>
+    json(await doListParties(ctxOf(c))),
+  );
 
-// All party routes need a logged-in user.
-partyRoutes.use("*", requireAuth);
+  app.post("/api/parties", requireAuth, async (c) => {
+    const body = (await c.req.json()) as PartyInput;
+    return json(await doCreateParty(ctxOf(c), body));
+  });
 
-partyRoutes.get("/", async (c) => c.json(await doListParties(ctxOf(c))));
+  app.get("/api/parties/:id", requireAuth, async (c) =>
+    json(await doGetParty(ctxOf(c), { id: parseId(c) })),
+  );
 
-partyRoutes.post("/", async (c) => {
-  const body = await c.req.json<PartyInput>();
-  return c.json(await doCreateParty(ctxOf(c), body));
-});
+  app.patch("/api/parties/:id", requireAuth, async (c) => {
+    const body = (await c.req.json()) as PartyInput;
+    return json(await doUpdateParty(ctxOf(c), { id: parseId(c), ...body }));
+  });
 
-partyRoutes.get("/:id", async (c) =>
-  c.json(await doGetParty(ctxOf(c), { id: parseId(c) })),
-);
-
-partyRoutes.patch("/:id", async (c) => {
-  const body = await c.req.json<PartyInput>();
-  return c.json(await doUpdateParty(ctxOf(c), { id: parseId(c), ...body }));
-});
-
-partyRoutes.delete("/:id", async (c) => {
-  await doDeleteParty(ctxOf(c), { id: parseId(c) });
-  return c.json(null);
-});
+  app.delete("/api/parties/:id", requireAuth, async (c) => {
+    await doDeleteParty(ctxOf(c), { id: parseId(c) });
+    return json(null);
+  });
+}

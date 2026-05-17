@@ -1,32 +1,21 @@
+// hipo's combined schema barrel. Framework tables come from the
+// dedicated packages; domain tables (parties / loans / payments /
+// payouts) live here. Domain tables move to apps/hipo in Phase 1D.
+
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const users = sqliteTable("users", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  username: text("username").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  role: text("role", { enum: ["admin", "user"] }).notNull(),
-  createdAt: integer("created_at")
-    .notNull()
-    .default(sql`(unixepoch())`),
-  deletedAt: integer("deleted_at"),
-});
+// Framework tables (re-exported for back-compat with existing imports).
+export {
+  users,
+  sessions,
+  type UserRow,
+  type NewUser,
+  type Session,
+} from "@hipo/auth/schema";
+export { auditLog, type AuditEntryRow } from "@hipo/audit/schema";
 
-export const sessions = sqliteTable("sessions", {
-  id: text("id").primaryKey(),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id),
-  createdAt: integer("created_at")
-    .notNull()
-    .default(sql`(unixepoch())`),
-  lastSeenAt: integer("last_seen_at")
-    .notNull()
-    .default(sql`(unixepoch())`),
-  expiresAt: integer("expires_at").notNull(),
-  ip: text("ip"),
-  userAgent: text("user_agent"),
-});
+// Domain tables (hipo-specific).
 
 export const parties = sqliteTable("parties", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -98,22 +87,7 @@ export const lenderPayouts = sqliteTable("lender_payouts", {
   deletedAt: integer("deleted_at"),
 });
 
-export const auditLog = sqliteTable("audit_log", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  at: integer("at").notNull(),
-  userId: integer("user_id").notNull(),
-  action: text("action").notNull(),
-  entityType: text("entity_type").notNull(),
-  entityId: integer("entity_id"),
-  payload: text("payload"),
-});
-
-// DB row types use the `Row` suffix to keep them distinct from the API
-// shapes of the same name in @hipo/shared (User, Party, Loan, …).
-export type UserRow = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
-export type Session = typeof sessions.$inferSelect;
-export type AuditEntryRow = typeof auditLog.$inferSelect;
+// Domain row types
 export type PartyRow = typeof parties.$inferSelect;
 export type LoanRow = typeof loans.$inferSelect;
 export type LoanLenderRow = typeof loanLenders.$inferSelect;

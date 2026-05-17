@@ -1,6 +1,10 @@
-import { type Context, Hono } from "hono";
-import type { Ctx } from "../auth/types.ts";
-import { badRequest } from "../errors.ts";
+import { badRequest, json, type Router } from "@hipo/server";
+import type { Ctx } from "@hipo/auth";
+import {
+  type AppCtx,
+  type AppState,
+  requireAuth,
+} from "../middleware/session.ts";
 import {
   doCreateLoan,
   doDeleteLoan,
@@ -14,51 +18,50 @@ import type {
   LoanLenderInput,
   UpdateLoanInput,
 } from "../loans/types.ts";
-import { type AppEnv, requireAuth } from "../middleware/session.ts";
 
-function ctxOf(c: Context<AppEnv>): Ctx {
-  return { db: c.var.db, user: c.var.user };
+function ctxOf(c: AppCtx): Ctx {
+  return { db: c.state.db, user: c.state.user };
 }
 
-function parseId(c: Context<AppEnv>): number {
-  const raw = c.req.param("id");
+function parseId(c: AppCtx): number {
+  const raw = c.params.id;
   if (!raw) throw badRequest("id is required");
   const id = Number.parseInt(raw, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   return id;
 }
 
-export const loanRoutes = new Hono<AppEnv>();
-
-loanRoutes.use("*", requireAuth);
-
-loanRoutes.get("/", async (c) => c.json(await doListLoans(ctxOf(c))));
-
-loanRoutes.post("/", async (c) => {
-  const body = await c.req.json<CreateLoanInput>();
-  return c.json(await doCreateLoan(ctxOf(c), body));
-});
-
-loanRoutes.get("/:id", async (c) =>
-  c.json(await doGetLoan(ctxOf(c), { id: parseId(c) })),
-);
-
-loanRoutes.patch("/:id", async (c) => {
-  const body = await c.req.json<Omit<UpdateLoanInput, "id">>();
-  return c.json(await doUpdateLoan(ctxOf(c), { id: parseId(c), ...body }));
-});
-
-loanRoutes.put("/:id/lenders", async (c) => {
-  const body = await c.req.json<{ lenders: LoanLenderInput[] }>();
-  return c.json(
-    await doSetLoanLenders(ctxOf(c), {
-      loanId: parseId(c),
-      lenders: body.lenders,
-    }),
+export function registerLoanRoutes(app: Router<AppState>) {
+  app.get("/api/loans", requireAuth, async (c) =>
+    json(await doListLoans(ctxOf(c))),
   );
-});
 
-loanRoutes.delete("/:id", async (c) => {
-  await doDeleteLoan(ctxOf(c), { id: parseId(c) });
-  return c.json(null);
-});
+  app.post("/api/loans", requireAuth, async (c) => {
+    const body = (await c.req.json()) as CreateLoanInput;
+    return json(await doCreateLoan(ctxOf(c), body));
+  });
+
+  app.get("/api/loans/:id", requireAuth, async (c) =>
+    json(await doGetLoan(ctxOf(c), { id: parseId(c) })),
+  );
+
+  app.patch("/api/loans/:id", requireAuth, async (c) => {
+    const body = (await c.req.json()) as Omit<UpdateLoanInput, "id">;
+    return json(await doUpdateLoan(ctxOf(c), { id: parseId(c), ...body }));
+  });
+
+  app.put("/api/loans/:id/lenders", requireAuth, async (c) => {
+    const body = (await c.req.json()) as { lenders: LoanLenderInput[] };
+    return json(
+      await doSetLoanLenders(ctxOf(c), {
+        loanId: parseId(c),
+        lenders: body.lenders,
+      }),
+    );
+  });
+
+  app.delete("/api/loans/:id", requireAuth, async (c) => {
+    await doDeleteLoan(ctxOf(c), { id: parseId(c) });
+    return json(null);
+  });
+}

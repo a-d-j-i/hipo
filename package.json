@@ -6,7 +6,11 @@
     "apps/frontend",
     "apps/backend",
     "apps/desktop",
-    "packages/shared"
+    "packages/shared",
+    "packages/sqlite",
+    "packages/server",
+    "packages/auth",
+    "packages/audit"
   ],
   "scripts": {
     "dev:frontend": "npm run dev -w @hipo/frontend",

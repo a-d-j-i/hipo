@@ -1,19 +1,34 @@
-import { timingSafeEqual } from "node:crypto";
-import type { Context, MiddlewareHandler } from "hono";
-import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { and, eq, gt } from "drizzle-orm";
-import { sessions, type Session, users } from "../db/schema.ts";
-import type { Db } from "../db/client.ts";
-import { config, SESSION_COOKIE } from "../config.ts";
-import { publicUser, type User } from "../auth/types.ts";
+// Session middleware on the @hipo/server router. Provides:
+//   - sessionMiddleware(db): populates AppState (db, session, user)
+//   - requireLocalToken: optional X-Hipo-Token gate for Tauri sidecar
+//   - requireAuth / requireAdmin: per-route guards
+//   - createSession / revokeSession: pure helpers
+//   - attachSessionCookie / clearSessionCookie: cookie helpers
+//
+// Phase 1C: rewritten from Hono to the framework router.
 
-export type AppEnv = {
-  Variables: {
-    db: Db;
-    session: Session | null;
-    user: User | null;
-  };
+import { timingSafeEqual } from "node:crypto";
+import { and, eq, gt } from "drizzle-orm";
+import type { Db } from "@hipo/sqlite";
+import { sessions, type Session, users } from "@hipo/auth/schema";
+import { publicUser, type User } from "@hipo/auth";
+import {
+  type Middleware,
+  type RouteContext,
+  parseCookies,
+  serializeCookie,
+  unauthorized,
+  forbidden,
+} from "@hipo/server";
+import { config, SESSION_COOKIE } from "../config.ts";
+
+export type AppState = {
+  db: Db;
+  session: Session | null;
+  user: User | null;
 };
+
+export type AppCtx = RouteContext<AppState>;
 
 function randomSessionId(): string {
   const bytes = new Uint8Array(32);
@@ -48,44 +63,53 @@ export async function revokeSession(db: Db, sessionId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
 }
 
-export function attachSessionCookie(c: Context, sessionId: string): void {
-  setCookie(c, SESSION_COOKIE, sessionId, {
-    httpOnly: true,
-    secure: c.req.url.startsWith("https://"),
-    sameSite: "Strict",
-    path: "/",
-    maxAge: config.sessionTtlDays * 86_400,
-  });
+export function attachSessionCookie(c: AppCtx, sessionId: string): void {
+  c.resHeaders.append(
+    "Set-Cookie",
+    serializeCookie(SESSION_COOKIE, sessionId, {
+      httpOnly: true,
+      secure: c.url.protocol === "https:",
+      sameSite: "Strict",
+      path: "/",
+      maxAge: config.sessionTtlDays * 86_400,
+    }),
+  );
 }
 
-export function clearSessionCookie(c: Context): void {
-  deleteCookie(c, SESSION_COOKIE, { path: "/" });
+export function clearSessionCookie(c: AppCtx): void {
+  c.resHeaders.append(
+    "Set-Cookie",
+    serializeCookie(SESSION_COOKIE, "", {
+      httpOnly: true,
+      sameSite: "Strict",
+      path: "/",
+      maxAge: 0,
+    }),
+  );
 }
 
-/** Reads the session cookie, looks up the session row + user, attaches to ctx. */
-export function sessionMiddleware(db: Db): MiddlewareHandler<AppEnv> {
+/** Reads the session cookie, looks up the session row + user, attaches to state. */
+export function sessionMiddleware(db: Db): Middleware<AppState> {
   return async (c, next) => {
-    c.set("db", db);
-    c.set("session", null);
-    c.set("user", null);
+    c.state.db = db;
+    c.state.session = null;
+    c.state.user = null;
 
-    const cookie = getCookie(c, SESSION_COOKIE);
+    const cookies = parseCookies(c.req.headers.get("cookie"));
+    const cookie = cookies.get(SESSION_COOKIE);
     if (cookie) {
       const now = Math.floor(Date.now() / 1000);
       const rows = await db
-        .select({
-          session: sessions,
-          user: users,
-        })
+        .select({ session: sessions, user: users })
         .from(sessions)
         .innerJoin(users, eq(sessions.userId, users.id))
         .where(and(eq(sessions.id, cookie), gt(sessions.expiresAt, now)))
         .limit(1);
 
       if (rows.length > 0 && rows[0].user.deletedAt === null) {
-        c.set("session", rows[0].session);
-        c.set("user", publicUser(rows[0].user));
-        // Touch last_seen_at lazily; no need to await it for the response.
+        c.state.session = rows[0].session;
+        c.state.user = publicUser(rows[0].user);
+        // Touch last_seen_at lazily; no need to await for the response.
         db
           .update(sessions)
           .set({ lastSeenAt: now })
@@ -97,22 +121,21 @@ export function sessionMiddleware(db: Db): MiddlewareHandler<AppEnv> {
       }
     }
 
-    await next();
+    return await next();
   };
 }
 
-/** Hard guard: 401 if no authenticated user on the context. */
-export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (!c.var.user) return c.json({ error: "unauthorized" }, 401);
-  await next();
+/** Hard guard: 401 if no authenticated user. */
+export const requireAuth: Middleware<AppState> = async (c, next) => {
+  if (!c.state.user) throw unauthorized();
+  return await next();
 };
 
-/** Hard guard: 403 if the authenticated user is not an admin. */
-export const requireAdmin: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (!c.var.user) return c.json({ error: "unauthorized" }, 401);
-  if (c.var.user.role !== "admin")
-    return c.json({ error: "forbidden" }, 403);
-  await next();
+/** Hard guard: 403 if not admin. */
+export const requireAdmin: Middleware<AppState> = async (c, next) => {
+  if (!c.state.user) throw unauthorized();
+  if (c.state.user.role !== "admin") throw forbidden();
+  return await next();
 };
 
 function safeTokenEqual(provided: string | undefined, expected: string): boolean {
@@ -121,16 +144,11 @@ function safeTokenEqual(provided: string | undefined, expected: string): boolean
   return timingSafeEqual(enc.encode(provided), enc.encode(expected));
 }
 
-/**
- * Localhost-only API token check. Active when HIPO_AUTH_TOKEN is set
- * (Tauri shell injects it). Scoped to /api/* — static SPA assets (HTML,
- * JS, CSS) are public bundle output with no secrets, so gating them
- * would only block the initial page load while adding no protection.
- */
-export const requireLocalToken: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (!config.authToken) return next();
-  if (!c.req.path.startsWith("/api/")) return next();
-  if (!safeTokenEqual(c.req.header("X-Hipo-Token"), config.authToken))
-    return c.json({ error: "forbidden" }, 403);
-  await next();
+/** Localhost-only API token check, active when HIPO_AUTH_TOKEN is set. */
+export const requireLocalToken: Middleware<AppState> = async (c, next) => {
+  if (!config.authToken) return await next();
+  if (!c.url.pathname.startsWith("/api/")) return await next();
+  if (!safeTokenEqual(c.req.headers.get("X-Hipo-Token") ?? undefined, config.authToken))
+    throw forbidden();
+  return await next();
 };

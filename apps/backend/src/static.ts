@@ -1,6 +1,6 @@
 import { join, resolve, sep } from "node:path";
-import type { MiddlewareHandler } from "hono";
-import type { AppEnv } from "./middleware/session.ts";
+import { json, type Handler } from "@hipo/server";
+import type { AppState } from "./middleware/session.ts";
 import { config } from "./config.ts";
 
 const MIME: Record<string, string> = {
@@ -33,14 +33,18 @@ async function readIfExists(path: string): Promise<Uint8Array | null> {
   }
 }
 
-/** Serves staticDir as static files; falls back to index.html for SPA routes. */
-export const staticSpa: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (c.req.path.startsWith("/api/")) return next();
+/**
+ * SPA fallback handler — registered via `router.notFound`. For any
+ * unmatched non-`/api/*` request, serves the matching static file or
+ * falls back to `index.html`.
+ */
+export const staticSpa: Handler<AppState> = async (c) => {
+  if (c.url.pathname.startsWith("/api/")) {
+    return json({ error: "not found" }, { status: 404 });
+  }
 
-  // Resolve once; reject anything that escapes the static root after
-  // path normalization (handles `..`, redundant separators, etc.).
   const baseDir = resolve(config.staticDir);
-  const requested = c.req.path === "/" ? "/index.html" : c.req.path;
+  const requested = c.url.pathname === "/" ? "/index.html" : c.url.pathname;
   const candidate = resolve(join(baseDir, "." + requested));
   const insideBase =
     candidate === baseDir || candidate.startsWith(baseDir + sep);
@@ -49,14 +53,15 @@ export const staticSpa: MiddlewareHandler<AppEnv> = async (c, next) => {
   let path = candidate;
   if (insideBase) body = await readIfExists(candidate);
   if (!body) {
-    // SPA fallback — always index.html, always inside baseDir.
     path = resolve(baseDir, "index.html");
     body = await readIfExists(path);
   }
-  if (!body) return c.text("not found", 404);
+  if (!body)
+    return new Response("not found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
 
-  // TS 5.7 narrowed BodyInit's Uint8Array to <ArrayBuffer> but Deno.readFile
-  // returns <ArrayBufferLike>. Runtime is identical; cast through unknown.
   return new Response(body as unknown as BodyInit, {
     status: 200,
     headers: { "content-type": contentType(path) },

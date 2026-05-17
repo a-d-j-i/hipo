@@ -1,0 +1,12 @@
+{
+  "imports": {
+    "drizzle-orm": "npm:drizzle-orm@^0.36.0",
+    "drizzle-orm/libsql": "npm:drizzle-orm@^0.36.0/libsql",
+    "@libsql/client": "npm:@libsql/client@^0.14.0",
+    "@libsql/client/node": "npm:@libsql/client@^0.14.0/node"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}

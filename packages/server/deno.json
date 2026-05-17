@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@hipo/shared": "../shared/src/index.ts",
+    "@hipo/sqlite": "../sqlite/src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}

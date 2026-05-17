@@ -1,5 +1,6 @@
-import { type Context, Hono } from "hono";
+import { badRequest, json, type Router } from "@hipo/server";
 import {
+  type Ctx,
   doAuthStatus,
   doChangePassword,
   doChangeUserRole,
@@ -11,11 +12,10 @@ import {
   doLogout,
   doResetUserPassword,
   doSetupFirstAdmin,
-} from "../auth/operations.ts";
-import type { Ctx } from "../auth/types.ts";
-import { badRequest } from "../errors.ts";
+} from "@hipo/auth";
 import {
-  type AppEnv,
+  type AppCtx,
+  type AppState,
   attachSessionCookie,
   clearSessionCookie,
   createSession,
@@ -24,101 +24,106 @@ import {
   revokeSession,
 } from "../middleware/session.ts";
 
-function ctxOf(c: Context<AppEnv>): Ctx {
-  return { db: c.var.db, user: c.var.user };
+function ctxOf(c: AppCtx): Ctx {
+  return { db: c.state.db, user: c.state.user };
 }
 
-function reqMeta(c: Context<AppEnv>) {
+function reqMeta(c: AppCtx) {
   return {
-    ip: c.req.header("X-Forwarded-For")?.split(",")[0]?.trim() ?? undefined,
-    userAgent: c.req.header("User-Agent") ?? undefined,
+    ip:
+      c.req.headers
+        .get("x-forwarded-for")
+        ?.split(",")[0]
+        ?.trim() ?? undefined,
+    userAgent: c.req.headers.get("user-agent") ?? undefined,
   };
 }
 
-function parseId(c: Context<AppEnv>): number {
-  const raw = c.req.param("id");
+function parseId(c: AppCtx): number {
+  const raw = c.params.id;
   if (!raw) throw badRequest("id is required");
   const id = Number.parseInt(raw, 10);
   if (!Number.isFinite(id)) throw badRequest("invalid id");
   return id;
 }
 
-export const authRoutes = new Hono<AppEnv>();
+export function registerAuthRoutes(app: Router<AppState>) {
+  app.get("/api/auth/status", async (c) =>
+    json(await doAuthStatus(ctxOf(c))),
+  );
 
-authRoutes.get("/status", async (c) =>
-  c.json(await doAuthStatus(ctxOf(c))),
-);
+  app.get("/api/auth/me", async (c) =>
+    json(await doCurrentUser(ctxOf(c))),
+  );
 
-authRoutes.get("/me", async (c) =>
-  c.json(await doCurrentUser(ctxOf(c))),
-);
-
-authRoutes.post("/setup", async (c) => {
-  const body = await c.req.json<{ username: string; password: string }>();
-  const user = await doSetupFirstAdmin(ctxOf(c), body);
-  const session = await createSession(c.var.db, user.id, reqMeta(c));
-  attachSessionCookie(c, session.id);
-  return c.json(user);
-});
-
-authRoutes.post("/login", async (c) => {
-  const body = await c.req.json<{ username: string; password: string }>();
-  const user = await doLogin(ctxOf(c), body);
-  const session = await createSession(c.var.db, user.id, reqMeta(c));
-  attachSessionCookie(c, session.id);
-  return c.json(user);
-});
-
-authRoutes.post("/logout", async (c) => {
-  if (c.var.session) await revokeSession(c.var.db, c.var.session.id);
-  await doLogout(ctxOf(c));
-  clearSessionCookie(c);
-  return c.json(null);
-});
-
-authRoutes.post("/change_password", requireAuth, async (c) => {
-  const body = await c.req.json<{ oldPassword: string; newPassword: string }>();
-  await doChangePassword(ctxOf(c), body);
-  return c.json(null);
-});
-
-// ---- Admin: user management ----
-
-export const userRoutes = new Hono<AppEnv>();
-
-userRoutes.get("/", requireAdmin, async (c) =>
-  c.json(await doListUsers(ctxOf(c))),
-);
-
-userRoutes.post("/", requireAdmin, async (c) => {
-  const body = await c.req.json<{
-    username: string;
-    password: string;
-    role: "admin" | "user";
-  }>();
-  const user = await doCreateUser(ctxOf(c), body);
-  return c.json(user);
-});
-
-userRoutes.delete("/:id", requireAdmin, async (c) => {
-  await doDeleteUser(ctxOf(c), { id: parseId(c) });
-  return c.json(null);
-});
-
-userRoutes.post("/:id/reset_password", requireAdmin, async (c) => {
-  const body = await c.req.json<{ newPassword: string }>();
-  await doResetUserPassword(ctxOf(c), {
-    id: parseId(c),
-    newPassword: body.newPassword,
+  app.post("/api/auth/setup", async (c) => {
+    const body = (await c.req.json()) as { username: string; password: string };
+    const user = await doSetupFirstAdmin(ctxOf(c), body);
+    const session = await createSession(c.state.db, user.id, reqMeta(c));
+    attachSessionCookie(c, session.id);
+    return json(user);
   });
-  return c.json(null);
-});
 
-userRoutes.post("/:id/role", requireAdmin, async (c) => {
-  const body = await c.req.json<{ role: "admin" | "user" }>();
-  await doChangeUserRole(ctxOf(c), {
-    id: parseId(c),
-    role: body.role,
+  app.post("/api/auth/login", async (c) => {
+    const body = (await c.req.json()) as { username: string; password: string };
+    const user = await doLogin(ctxOf(c), body);
+    const session = await createSession(c.state.db, user.id, reqMeta(c));
+    attachSessionCookie(c, session.id);
+    return json(user);
   });
-  return c.json(null);
-});
+
+  app.post("/api/auth/logout", async (c) => {
+    if (c.state.session)
+      await revokeSession(c.state.db, c.state.session.id);
+    await doLogout(ctxOf(c));
+    clearSessionCookie(c);
+    return json(null);
+  });
+
+  app.post("/api/auth/change_password", requireAuth, async (c) => {
+    const body = (await c.req.json()) as {
+      oldPassword: string;
+      newPassword: string;
+    };
+    await doChangePassword(ctxOf(c), body);
+    return json(null);
+  });
+
+  // ---- Admin: user management ----
+  app.get("/api/users", requireAdmin, async (c) =>
+    json(await doListUsers(ctxOf(c))),
+  );
+
+  app.post("/api/users", requireAdmin, async (c) => {
+    const body = (await c.req.json()) as {
+      username: string;
+      password: string;
+      role: "admin" | "user";
+    };
+    const user = await doCreateUser(ctxOf(c), body);
+    return json(user);
+  });
+
+  app.delete("/api/users/:id", requireAdmin, async (c) => {
+    await doDeleteUser(ctxOf(c), { id: parseId(c) });
+    return json(null);
+  });
+
+  app.post("/api/users/:id/reset_password", requireAdmin, async (c) => {
+    const body = (await c.req.json()) as { newPassword: string };
+    await doResetUserPassword(ctxOf(c), {
+      id: parseId(c),
+      newPassword: body.newPassword,
+    });
+    return json(null);
+  });
+
+  app.post("/api/users/:id/role", requireAdmin, async (c) => {
+    const body = (await c.req.json()) as { role: "admin" | "user" };
+    await doChangeUserRole(ctxOf(c), {
+      id: parseId(c),
+      role: body.role,
+    });
+    return json(null);
+  });
+}

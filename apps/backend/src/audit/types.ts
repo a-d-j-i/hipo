@@ -1,1 +1,1 @@
-export type { AuditEntry, ListAuditLogInput } from "@hipo/shared";
+export type { AuditEntry, ListAuditLogInput } from "@hipo/audit";

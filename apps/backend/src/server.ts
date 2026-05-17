@@ -1,28 +1,25 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
+import { Router } from "@hipo/server";
 import { config } from "./config.ts";
 import { openDb } from "./db/client.ts";
-import { errorHandler } from "./error_handler.ts";
+import { cors } from "./middleware/cors.ts";
 import {
-  type AppEnv,
+  type AppState,
   requireLocalToken,
   sessionMiddleware,
 } from "./middleware/session.ts";
-import { auditRoutes } from "./routes/audit.ts";
-import { authRoutes, userRoutes } from "./routes/auth.ts";
-import { healthRoutes } from "./routes/health.ts";
-import { loanRoutes } from "./routes/loans.ts";
-import { partyRoutes } from "./routes/parties.ts";
-import { paymentRoutes } from "./routes/payments.ts";
-import { payoutRoutes } from "./routes/payouts.ts";
+import { registerAuditRoutes } from "./routes/audit.ts";
+import { registerAuthRoutes } from "./routes/auth.ts";
+import { registerHealthRoutes } from "./routes/health.ts";
+import { registerLoanRoutes } from "./routes/loans.ts";
+import { registerPartyRoutes } from "./routes/parties.ts";
+import { registerPaymentRoutes } from "./routes/payments.ts";
+import { registerPayoutRoutes } from "./routes/payouts.ts";
 import { staticSpa } from "./static.ts";
 
 async function main(): Promise<void> {
   const { db } = await openDb();
 
-  const app = new Hono<AppEnv>();
-
-  app.onError(errorHandler);
+  const app = new Router<AppState>();
 
   // Security headers on every response. CSP is HTML-only (other content
   // types ignore it); the rest are blanket. antd's css-in-js needs
@@ -38,58 +35,46 @@ async function main(): Promise<void> {
     "base-uri 'self'",
     "object-src 'none'",
   ].join("; ");
-  app.use("*", async (c, next) => {
-    await next();
-    c.res.headers.set("X-Content-Type-Options", "nosniff");
-    c.res.headers.set("Referrer-Policy", "no-referrer");
-    c.res.headers.set("X-Frame-Options", "DENY");
-    const ct = c.res.headers.get("content-type") ?? "";
+  app.use(async (c, next) => {
+    const res = await next();
+    res.headers.set("X-Content-Type-Options", "nosniff");
+    res.headers.set("Referrer-Policy", "no-referrer");
+    res.headers.set("X-Frame-Options", "DENY");
+    const ct = res.headers.get("content-type") ?? "";
     if (ct.startsWith("text/html")) {
-      c.res.headers.set("Content-Security-Policy", CSP);
+      res.headers.set("Content-Security-Policy", CSP);
     }
+    return res;
   });
 
-  // CORS allowlist. All production shapes are same-origin (Tauri webview
-  // hits the sidecar at its own host:port; cloud serves the SPA via
-  // staticSpa). Cross-origin only happens when a browser at the Vite dev
-  // port bypasses the proxy and hits the backend directly — that's the
-  // single legitimate origin we need to allow.
+  // CORS allowlist. Production shapes are same-origin; cross-origin only
+  // matters when a browser at the Vite dev port bypasses the proxy and
+  // hits the backend directly.
   const ALLOWED_ORIGINS = new Set([
     "http://localhost:1420",
     "http://127.0.0.1:1420",
   ]);
-  app.use(
-    "*",
-    cors({
-      origin: (origin) => {
-        if (!origin) return null;
-        return ALLOWED_ORIGINS.has(origin) ? origin : null;
-      },
-      credentials: true,
-    }),
-  );
-  app.use("*", requireLocalToken);
-  app.use("*", sessionMiddleware(db));
+  app.use(cors({ allowedOrigins: ALLOWED_ORIGINS, credentials: true }));
+  app.use(requireLocalToken);
+  app.use(sessionMiddleware(db));
 
-  app.route("/api", healthRoutes);
-  app.route("/api/auth", authRoutes);
-  app.route("/api/users", userRoutes);
-  app.route("/api/parties", partyRoutes);
-  app.route("/api/loans", loanRoutes);
-  app.route("/api/payments", paymentRoutes);
-  app.route("/api/payouts", payoutRoutes);
-  app.route("/api/audit", auditRoutes);
+  registerHealthRoutes(app);
+  registerAuthRoutes(app);
+  registerPartyRoutes(app);
+  registerLoanRoutes(app);
+  registerPaymentRoutes(app);
+  registerPayoutRoutes(app);
+  registerAuditRoutes(app);
 
-  // Static SPA fallback — must be last so it doesn't shadow /api/*.
-  app.use("*", staticSpa);
+  // Static SPA fallback — runs whenever no route matches.
+  app.notFound(staticSpa);
 
   Deno.serve(
     {
       hostname: "127.0.0.1",
       port: config.port,
       onListen: ({ hostname, port }) => {
-        // Single, parseable line so the Tauri shell can read the actual port
-        // from stdout once we wire up the sidecar (Phase 6).
+        // Single, parseable line so the Tauri shell can read the actual port.
         console.log(`HIPO_READY hostname=${hostname} port=${port}`);
       },
     },

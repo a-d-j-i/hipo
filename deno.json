@@ -1,6 +1,12 @@
 {
-  "comment": "Deno workspace root. apps/backend is the sole Deno package; this file holds settings Deno requires at the workspace root.",
-  "workspace": ["./apps/backend"],
+  "comment": "Deno workspace root. apps/backend is the entry point; framework packages live under packages/ and are wired into the workspace so their imports resolve regardless of which member runs them.",
+  "workspace": [
+    "./apps/backend",
+    "./packages/sqlite",
+    "./packages/server",
+    "./packages/auth",
+    "./packages/audit"
+  ],
   "lock": true,
   "nodeModulesDir": "auto"
 }

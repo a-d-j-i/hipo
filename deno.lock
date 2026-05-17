@@ -25,7 +25,6 @@
     "npm:eslint-plugin-react-refresh@~0.5.2": "0.5.2_eslint@10.3.0",
     "npm:eslint@^10.3.0": "10.3.0",
     "npm:globals@^17.6.0": "17.6.0",
-    "npm:hono@^4.6.0": "4.12.18",
     "npm:i18next-browser-languagedetector@^8.2.1": "8.2.1",
     "npm:i18next@^26.1.0": "26.1.0_typescript@5.8.3",
     "npm:jsdom@^29.1.1": "29.1.1",
@@ -2150,9 +2149,6 @@
         "hermes-estree"
       ]
     },
-    "hono@4.12.18": {
-      "integrity": "sha512-RWzP96k/yv0PQfyXnWjs6zot20TqfpfsNXhOnev8d1InAxubW93L11/oNUc3tQqn2G0bSdAOBpX+2uDFHV7kdQ=="
-    },
     "html-encoding-sniffer@6.0.0": {
       "integrity": "sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==",
       "dependencies": [
@@ -2841,8 +2837,7 @@
         "dependencies": [
           "npm:@libsql/client@0.14",
           "npm:@node-rs/argon2@2",
-          "npm:drizzle-orm@0.36",
-          "npm:hono@^4.6.0"
+          "npm:drizzle-orm@0.36"
         ]
       },
       "apps/desktop": {
@@ -2887,6 +2882,23 @@
             "npm:vitest@3"
           ]
         }
+      },
+      "packages/audit": {
+        "dependencies": [
+          "npm:drizzle-orm@0.36"
+        ]
+      },
+      "packages/auth": {
+        "dependencies": [
+          "npm:@node-rs/argon2@2",
+          "npm:drizzle-orm@0.36"
+        ]
+      },
+      "packages/sqlite": {
+        "dependencies": [
+          "npm:@libsql/client@0.14",
+          "npm:drizzle-orm@0.36"
+        ]
       }
     }
   }

@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "@hipo/shared": "../shared/src/index.ts",
+    "@hipo/sqlite": "../sqlite/src/index.ts",
+    "@hipo/auth": "../auth/src/index.ts",
+    "@hipo/auth/schema": "../auth/src/schema.ts",
+    "drizzle-orm": "npm:drizzle-orm@^0.36.0",
+    "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}
