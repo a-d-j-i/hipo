@@ -32,3 +32,12 @@ export {
   type WireRequest,
   type WireResponse,
 } from "./worker-bridge.ts";
+
+export {
+  STATUS_SCHEMA_VERSION,
+  type SystemStatus,
+  type SystemStatusShape,
+  type SystemStatusStorageBackend,
+  type SystemStatusTarget,
+  type SystemStatusRiskFlags,
+} from "./system-status.ts";

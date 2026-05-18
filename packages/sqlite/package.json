@@ -8,7 +8,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./client-deno": "./src/client-deno.ts",
-    "./client-browser": "./src/client-browser.ts"
+    "./client-browser": "./src/client-browser.ts",
+    "./binary-format-deno": "./src/binary-format-deno.ts",
+    "./binary-format-browser": "./src/binary-format-browser.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",

@@ -21,11 +21,35 @@ async function bootstrap() {
   }
 
   // In-page-backend shape: SW + Worker host the framework router and
-  // OPFS-backed SQLite. After this returns, vanilla `fetch("/api/...")`
-  // is served entirely in-browser. No Deno running.
+  // OPFS-backed SQLite. The boot sequence has two distinct phases now
+  // (Phase 6):
+  //   1. Register the SW + COI reload — always needed.
+  //   2. Check whether OPFS has been bootstrapped on this device:
+  //      - Not yet: render the Bootstrap page; the Worker is NOT
+  //        spawned (it would race against the bootstrap UI for the
+  //        OPFS sqlocal lock). User finishes new-install or restore,
+  //        page reloads, takes the bootstrapped branch on next boot.
+  //      - Already: spawn the Worker, then mount the full app.
   if (import.meta.env.VITE_INPAGE_BACKEND) {
-    const { bootInPageBackend } = await import("./in-page-backend");
-    await bootInPageBackend();
+    const { registerInPageSW, spawnInPageWorker } = await import(
+      "./in-page-backend"
+    );
+    await registerInPageSW();
+
+    const { isOpfsBootstrapped } = await import("./bootstrap/opfs-state");
+    const bootstrapped = await isOpfsBootstrapped();
+
+    if (!bootstrapped) {
+      const { default: BootstrapApp } = await import("./BootstrapApp");
+      ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+        <React.StrictMode>
+          <BootstrapApp />
+        </React.StrictMode>,
+      );
+      return;
+    }
+
+    await spawnInPageWorker();
   }
 
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

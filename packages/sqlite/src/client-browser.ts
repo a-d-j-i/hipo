@@ -20,16 +20,19 @@ export type OpenDbBrowserOptions = {
 
 /**
  * Open (or create) an OPFS-backed SQLite database. Returns a Drizzle
- * handle. The actual SQLite engine runs in a Worker that sqlocal
- * spawns; the returned `db` proxies through it.
+ * handle plus the live SQLocal client (for file-level operations like
+ * backup encode/decode). The SQLite engine runs in a Worker that
+ * sqlocal spawns; the returned `db` proxies through it.
  *
  * Requires the page to be cross-origin-isolated (COOP/COEP headers).
  * For dev, use `sqlocal/vite` plugin; for production GitHub Pages,
  * use packages/sw (the merged Service Worker injects them).
  */
-export async function openDb(
-  opts: OpenDbBrowserOptions,
-): Promise<{ db: Db; close: () => Promise<void> }> {
+export async function openDb(opts: OpenDbBrowserOptions): Promise<{
+  db: Db;
+  local: SQLocalDrizzle;
+  close: () => Promise<void>;
+}> {
   const local = new SQLocalDrizzle({ databasePath: opts.databasePath });
   // sqlocal's driver satisfies the same Drizzle interface libsql does
   // at the call-site level; the Db type widens to accommodate either.
@@ -39,12 +42,9 @@ export async function openDb(
 
   return {
     db,
+    local,
     close: async () => {
-      // sqlocal exposes destroy() to close the underlying worker.
-      // Call via cast since the types may not expose it.
-      const closer = (local as unknown as { destroy?: () => Promise<void> })
-        .destroy;
-      if (typeof closer === "function") await closer.call(local);
+      await local.destroy();
     },
   };
 }

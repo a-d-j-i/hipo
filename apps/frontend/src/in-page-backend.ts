@@ -14,19 +14,26 @@
 //      request/response round-trips.
 //   5. Resolve. After this, vanilla `fetch("/api/...")` from React
 //      goes SW → Worker → router → response with no further setup.
+//
+// Phase 6 split these into two phases so the bootstrap flow can run
+// after step 2 but before step 3 — bootstrap touches OPFS directly
+// in the main thread and shouldn't have to fight the Worker for the
+// sqlocal sync-access-handle.
 
 const BASE = import.meta.env.BASE_URL;
 
 /**
- * Idempotent boot. Resolves once the in-page backend is ready to serve
- * fetches; rejects (or triggers a reload) on hard failure.
+ * Phase 1+2 of the in-page backend boot: register the SW and wait
+ * for it to control the page in a crossOriginIsolated context.
+ * Returns true if SW + COI are ready; returns a never-resolving
+ * promise (after kicking off `location.reload()`) when a COI reload
+ * is required.
  */
-export async function bootInPageBackend(): Promise<void> {
+export async function registerInPageSW(): Promise<void> {
   if (!("serviceWorker" in navigator)) {
     throw new Error("serviceWorker not supported");
   }
 
-  // 1. Register SW + wait for control.
   const swUrl = `${BASE}sw.js`;
   const reg = await navigator.serviceWorker.register(swUrl, { scope: BASE });
   console.log(`[in-page backend] SW registered, scope=${reg.scope}`);
@@ -58,22 +65,25 @@ export async function bootInPageBackend(): Promise<void> {
     console.log("[in-page backend] SW already controlling on load");
   }
 
-  // 2. If we don't yet have crossOriginIsolated (host doesn't set
-  //    headers and this is the first load), reload so the SW can.
   if (!self.crossOriginIsolated) {
     console.log("[in-page backend] reloading once for SW-injected COOP/COEP…");
     document.body.style.visibility = "hidden";
     location.reload();
     // Promise never resolves — the page navigates away.
-    return new Promise(() => {});
+    await new Promise(() => {});
   }
+}
 
-  // 3. Spawn the dedicated Worker.
+/**
+ * Phase 3+4 of the in-page backend boot: spawn the Worker that owns
+ * the router + OPFS DB, wire a MessageChannel from main → Worker → SW.
+ * Must be called after `registerInPageSW()` has resolved.
+ */
+export async function spawnInPageWorker(): Promise<void> {
   console.log("[in-page backend] spawning Worker…");
-  const worker = new Worker(
-    new URL("./in-page-worker.ts", import.meta.url),
-    { type: "module" },
-  );
+  const worker = new Worker(new URL("./in-page-worker.ts", import.meta.url), {
+    type: "module",
+  });
 
   // Wait for "loaded".
   await new Promise<void>((resolve) => {
@@ -87,7 +97,6 @@ export async function bootInPageBackend(): Promise<void> {
   });
   console.log("[in-page backend] Worker loaded");
 
-  // 4. Wire MessageChannel: port1 → Worker, port2 → SW.
   const channel = new MessageChannel();
   const workerReady = new Promise<void>((resolve) => {
     const onMsg = (e: MessageEvent) => {
@@ -99,10 +108,19 @@ export async function bootInPageBackend(): Promise<void> {
     worker.addEventListener("message", onMsg);
   });
   worker.postMessage({ kind: "api-port" }, [channel.port1]);
-  navigator.serviceWorker.controller!.postMessage(
-    { kind: "api-port" },
-    [channel.port2],
-  );
+  navigator.serviceWorker.controller!.postMessage({ kind: "api-port" }, [
+    channel.port2,
+  ]);
   await workerReady;
   console.log("[in-page backend] api port wired (main → Worker, main → SW)");
+}
+
+/**
+ * Convenience wrapper used by paths that aren't bootstrap-aware
+ * (e.g. the Tauri / Deno proxy shapes never reach this anyway).
+ * Equivalent to calling `registerInPageSW()` then `spawnInPageWorker()`.
+ */
+export async function bootInPageBackend(): Promise<void> {
+  await registerInPageSW();
+  await spawnInPageWorker();
 }

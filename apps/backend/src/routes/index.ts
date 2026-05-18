@@ -5,6 +5,7 @@
 import type { Router } from "@hipo/server";
 import type { AppState } from "../middleware/session.ts";
 import { registerHealthRoutes } from "./health.ts";
+import { registerSystemRoutes } from "./system.ts";
 import { registerAuthRoutes } from "./auth.ts";
 import { registerPartyRoutes } from "./parties.ts";
 import { registerLoanRoutes } from "./loans.ts";
@@ -14,6 +15,7 @@ import { registerAuditRoutes } from "./audit.ts";
 
 export function registerAllRoutes(app: Router<AppState>) {
   registerHealthRoutes(app);
+  registerSystemRoutes(app);
   registerAuthRoutes(app);
   registerPartyRoutes(app);
   registerLoanRoutes(app);

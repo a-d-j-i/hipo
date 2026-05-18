@@ -36,6 +36,44 @@
     "logout": "Logout",
     "openMenu": "Open menu"
   },
+  "bootstrap": {
+    "title": "Set up backups",
+    "intro": "Before you start, choose how this device handles encrypted backups. Backups are the only way to recover after browser data clears or to move to a new device.",
+    "tab": {
+      "new": "Start fresh",
+      "restore": "Restore from backup"
+    },
+    "new": {
+      "title": "Start a new install",
+      "description": "Pick a passphrase. It encrypts every backup this device makes, end to end. Nobody else can decrypt without it.",
+      "passphrase": "Passphrase",
+      "confirm": "Confirm passphrase",
+      "passphraseRequired": "Passphrase is required",
+      "confirmRequired": "Confirm the passphrase",
+      "passphrasesDontMatch": "Passphrases do not match",
+      "passphraseTooShort": "At least 12 characters",
+      "warningTitle": "Write your passphrase down somewhere safe",
+      "warningDescription": "There is no recovery. If you lose this passphrase, every backup you make becomes unreadable. Save it in a password manager or on paper before continuing.",
+      "downloadInitial": "Download an initial backup file now",
+      "downloadHint": "Recommended. Proves the passphrase works and gives you a recovery file before any data exists.",
+      "continue": "Continue",
+      "downloadingBackup": "Preparing initial backup…",
+      "successMessage": "Setup complete — continuing to admin creation."
+    },
+    "restore": {
+      "title": "Restore from a backup file",
+      "description": "Pick a backup file you saved earlier and enter the same passphrase you used when it was made.",
+      "pickFile": "Choose backup file",
+      "fileSelected": "Selected: {{name}} ({{bytes}} bytes)",
+      "passphrase": "Passphrase",
+      "passphraseRequired": "Passphrase is required",
+      "restoreNow": "Restore and reload",
+      "fileRequired": "Pick a backup file first",
+      "restoring": "Decrypting and restoring…",
+      "decryptFailed": "Could not decrypt — the passphrase is wrong or the file is damaged.",
+      "successMessage": "Restored. Reloading…"
+    }
+  },
   "auth": {
     "setup": {
       "title": "Welcome to hipo",

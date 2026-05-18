@@ -36,6 +36,44 @@
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú"
   },
+  "bootstrap": {
+    "title": "Configurar respaldos",
+    "intro": "Antes de empezar, elegí cómo este dispositivo maneja los respaldos cifrados. Los respaldos son la única forma de recuperar los datos si se borran los del navegador o si cambiás de dispositivo.",
+    "tab": {
+      "new": "Empezar de cero",
+      "restore": "Restaurar desde respaldo"
+    },
+    "new": {
+      "title": "Empezar una instalación nueva",
+      "description": "Elegí una contraseña de respaldo. Cifra todos los respaldos de este dispositivo, de punta a punta. Nadie puede descifrarlos sin ella.",
+      "passphrase": "Contraseña de respaldo",
+      "confirm": "Confirmar contraseña",
+      "passphraseRequired": "La contraseña es requerida",
+      "confirmRequired": "Confirmá la contraseña",
+      "passphrasesDontMatch": "Las contraseñas no coinciden",
+      "passphraseTooShort": "Mínimo 12 caracteres",
+      "warningTitle": "Anotá tu contraseña en un lugar seguro",
+      "warningDescription": "No hay recuperación. Si perdés esta contraseña, todos tus respaldos se vuelven ilegibles. Guardala en un gestor de contraseñas o en papel antes de continuar.",
+      "downloadInitial": "Descargar un respaldo inicial ahora",
+      "downloadHint": "Recomendado. Comprueba que la contraseña funciona y te da un archivo de recuperación antes de tener datos.",
+      "continue": "Continuar",
+      "downloadingBackup": "Preparando respaldo inicial…",
+      "successMessage": "Configuración lista — continuando con la creación del administrador."
+    },
+    "restore": {
+      "title": "Restaurar desde un archivo de respaldo",
+      "description": "Elegí un archivo de respaldo que hayas guardado antes e ingresá la misma contraseña que usaste al crearlo.",
+      "pickFile": "Elegir archivo de respaldo",
+      "fileSelected": "Seleccionado: {{name}} ({{bytes}} bytes)",
+      "passphrase": "Contraseña de respaldo",
+      "passphraseRequired": "La contraseña es requerida",
+      "restoreNow": "Restaurar y recargar",
+      "fileRequired": "Elegí un archivo de respaldo primero",
+      "restoring": "Descifrando y restaurando…",
+      "decryptFailed": "No se pudo descifrar — la contraseña es incorrecta o el archivo está dañado.",
+      "successMessage": "Restaurado. Recargando…"
+    }
+  },
   "auth": {
     "setup": {
       "title": "Bienvenido a hipo",
