@@ -7,13 +7,18 @@
 //
 // Phase 7 adds backup_target_state (per-target backup/verify metadata
 // surfaced through /api/system/status).
+//
+// Phase 9 adds vault tables (via vaultMigrations, version 100+).
+
+import { vaultMigrations } from "@hipo/backup-vault-server/migrations";
 
 export type Migration = {
   version: number;
   sql: string;
 };
 
-export const migrations: Migration[] = [
+// hipo domain migrations (version 1–99).
+const hipoMigrations: Migration[] = [
   {
     version: 1,
     sql: `
@@ -150,3 +155,10 @@ export const migrations: Migration[] = [
     `,
   },
 ];
+
+// Combined migration list: hipo domain migrations + vault migrations.
+// Sorted by version so the runner applies them in order.
+export const migrations: Migration[] = [
+  ...hipoMigrations,
+  ...vaultMigrations,
+].sort((a, b) => a.version - b.version);

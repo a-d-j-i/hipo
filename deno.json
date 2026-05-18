@@ -6,7 +6,8 @@
     "./packages/server",
     "./packages/auth",
     "./packages/audit",
-    "./packages/backup"
+    "./packages/backup",
+    "./packages/backup-vault-server"
   ],
   "lock": true,
   "nodeModulesDir": "auto"

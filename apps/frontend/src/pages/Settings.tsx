@@ -35,6 +35,7 @@ import {
 } from "../api/backup";
 import { runBackup } from "../backup/orchestrate";
 import { RiskBanner } from "../backup/RiskBanner";
+import { vaultTarget } from "@hipo/backup-vault";
 import {
   clearGithubConfig,
   loadGithubConfig,
@@ -42,11 +43,18 @@ import {
   type GithubConfig,
 } from "../backup/github-config";
 import {
+  clearVaultConfig,
+  loadVaultConfig,
+  saveVaultConfig,
+  type VaultConfig,
+} from "../backup/vault-config";
+import {
   clearSecret,
   getOrCreateVaultSalt,
   getSecret,
   setSecret,
 } from "../backup/secrets-vault";
+import { mintVaultPat } from "../api/vault";
 import { usePassphrase } from "../bootstrap/PassphraseContext";
 import { useAuth } from "../auth/AuthContext";
 
@@ -191,6 +199,7 @@ function StoragePanel() {
           <BackupNowAction status={status} refresh={refresh} />
           <FsAccessSection status={status} refresh={refresh} />
           <GithubSection status={status} refresh={refresh} />
+          <VaultSection status={status} refresh={refresh} />
           <RestoreSection />
         </Space>
       )}
@@ -705,6 +714,254 @@ function RestoreSection() {
         <Typography.Paragraph>
           {t("settings.storage.restore.confirmBody")}
         </Typography.Paragraph>
+      </Modal>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Vault target — encrypted PAT in secrets-vault, config in localStorage
+// ---------------------------------------------------------------------------
+
+function VaultSection({
+  status,
+  refresh,
+}: {
+  status: SystemStatus;
+  refresh: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const passphrase = usePassphrase();
+  const [config, setConfig] = useState<VaultConfig | null>(() =>
+    loadVaultConfig(),
+  );
+  const [busy, setBusy] = useState(false);
+  // Form values.
+  const [baseUrl, setBaseUrl] = useState(config?.baseUrl ?? "");
+  const [blobId, setBlobId] = useState(config?.blobId ?? "backup.bin");
+  const [pat, setPat] = useState("");
+  // Mint PAT modal state.
+  const [mintedToken, setMintedToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const stateRow = status.backups.targets.find((tg) => tg.id === "vault");
+
+  const ensureVaultKey = async (): Promise<CryptoKey | null> => {
+    if (!passphrase.isSet) {
+      message.error(t("settings.storage.vault.needPassphrase"));
+      return null;
+    }
+    return passphrase.keyFor(getOrCreateVaultSalt());
+  };
+
+  const onMintPat = async () => {
+    if (!baseUrl) {
+      message.error(t("settings.storage.vault.fieldRequired"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const res = await mintVaultPat("hipo-backup");
+      setMintedToken(res.token);
+      setPat(res.token);
+      setCopied(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(t("settings.storage.vault.testFailed", { message: msg }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCopyToken = () => {
+    if (!mintedToken) return;
+    navigator.clipboard.writeText(mintedToken).then(() => {
+      setCopied(true);
+    });
+  };
+
+  const onTest = async () => {
+    if (!baseUrl || !pat) {
+      message.error(t("settings.storage.vault.fieldRequired"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const target = vaultTarget({ baseUrl, blobId, token: pat });
+      await target.checkAccess();
+      message.success(t("settings.storage.vault.testOk"));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(t("settings.storage.vault.testFailed", { message: msg }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSave = async () => {
+    if (!baseUrl || !blobId || !pat) {
+      message.error(t("settings.storage.vault.fieldRequired"));
+      return;
+    }
+    const key = await ensureVaultKey();
+    if (!key) return;
+    setBusy(true);
+    try {
+      const nextConfig: VaultConfig = {
+        baseUrl: baseUrl.trim(),
+        blobId: blobId.trim(),
+      };
+      saveVaultConfig(nextConfig);
+      await setSecret("vault.pat", pat, key);
+      await configureTarget("vault");
+      setConfig(nextConfig);
+      setPat("");
+      message.success(t("settings.storage.vault.savedAndConfigured"));
+      await refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(t("settings.storage.vault.saveFailed", { message: msg }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onUnlink = () => {
+    clearVaultConfig();
+    clearSecret("vault.pat");
+    setConfig(null);
+    setBaseUrl("");
+    setBlobId("backup.bin");
+    setPat("");
+    message.success(t("settings.storage.vault.unlinked"));
+    void refresh();
+  };
+
+  const onBackupNow = async () => {
+    if (!config) return;
+    const key = await ensureVaultKey();
+    if (!key) return;
+    setBusy(true);
+    try {
+      const token = await getSecret("vault.pat", key);
+      if (!token) {
+        message.error(t("settings.storage.vault.needPassphrase"));
+        return;
+      }
+      const target = vaultTarget({
+        baseUrl: config.baseUrl,
+        blobId: config.blobId,
+        token,
+      });
+      await runBackup({ target, keyFor: passphrase.keyFor });
+      message.success(t("settings.storage.backupNow.success"));
+      await refresh();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[hipo] vault backup:", e);
+      message.error(t("settings.storage.backupNow.failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card size="small">
+      <Typography.Title level={5} style={{ marginTop: 0 }}>
+        {t("settings.storage.vault.title")}
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        {t("settings.storage.vault.description")}
+      </Typography.Paragraph>
+      {config && (
+        <Typography.Text>
+          {t("settings.storage.vault.currentLabel")}: {config.baseUrl}/
+          {config.blobId}
+          {stateRow?.last_backup_at
+            ? " · " +
+              t("settings.storage.target.lastBackup", {
+                when: new Date(stateRow.last_backup_at * 1000).toLocaleString(),
+              })
+            : ""}
+        </Typography.Text>
+      )}
+      <Space direction="vertical" size={8} style={{ width: "100%", marginTop: 12 }}>
+        <Input
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          placeholder={t("settings.storage.vault.baseUrlPlaceholder")}
+          addonBefore={t("settings.storage.vault.baseUrlLabel")}
+        />
+        <Input
+          value={blobId}
+          onChange={(e) => setBlobId(e.target.value)}
+          placeholder={t("settings.storage.vault.blobIdPlaceholder")}
+          addonBefore={t("settings.storage.vault.blobIdLabel")}
+        />
+        <Input.Password
+          value={pat}
+          onChange={(e) => setPat(e.target.value)}
+          placeholder={t("settings.storage.vault.patLabel")}
+          autoComplete="off"
+        />
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t("settings.storage.vault.patHint")}
+        </Typography.Text>
+        <Space wrap>
+          <Button onClick={() => void onMintPat()} loading={busy}>
+            {t("settings.storage.vault.mintPat")}
+          </Button>
+          <Button onClick={() => void onTest()} loading={busy}>
+            {t("settings.storage.vault.testConnection")}
+          </Button>
+          <Button type="primary" onClick={() => void onSave()} loading={busy}>
+            {t("settings.storage.vault.save")}
+          </Button>
+          {config && (
+            <>
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                loading={busy}
+                onClick={() => void onBackupNow()}
+              >
+                {t("settings.storage.vault.backupNow")}
+              </Button>
+              <Button danger onClick={onUnlink} loading={busy}>
+                {t("settings.storage.vault.unlink")}
+              </Button>
+            </>
+          )}
+        </Space>
+      </Space>
+      {/* Minted PAT modal — shows the token exactly once */}
+      <Modal
+        title={t("settings.storage.vault.mintedTitle")}
+        open={mintedToken !== null}
+        footer={[
+          <Button
+            key="copy"
+            type={copied ? "default" : "primary"}
+            onClick={onCopyToken}
+          >
+            {copied
+              ? t("settings.storage.vault.mintedCopied")
+              : t("settings.storage.vault.mintedCopy")}
+          </Button>,
+          <Button key="close" onClick={() => setMintedToken(null)}>
+            {t("settings.storage.vault.mintedClose")}
+          </Button>,
+        ]}
+        onCancel={() => setMintedToken(null)}
+      >
+        <Typography.Paragraph type="warning">
+          {t("settings.storage.vault.mintedBody")}
+        </Typography.Paragraph>
+        <Input.Password
+          value={mintedToken ?? ""}
+          readOnly
+          autoFocus
+        />
       </Modal>
     </Card>
   );

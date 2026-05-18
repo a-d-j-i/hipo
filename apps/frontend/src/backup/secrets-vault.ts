@@ -64,7 +64,7 @@ export function getOrCreateVaultSalt(): Uint8Array {
   return salt;
 }
 
-export type SecretKey = "github.pat";
+export type SecretKey = "github.pat" | "vault.pat";
 
 function storageKey(name: SecretKey): string {
   return `${SECRET_PREFIX}${name}`;

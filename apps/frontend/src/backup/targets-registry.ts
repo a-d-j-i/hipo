@@ -15,10 +15,12 @@
 import type { BackupTarget } from "@hipo/backup";
 import { fsAccessTarget } from "@hipo/backup-local/fs-access";
 import { githubTarget } from "@hipo/backup-github";
+import { vaultTarget } from "@hipo/backup-vault";
 import {
   loadGithubConfig,
   type GithubConfig,
 } from "./github-config";
+import { loadVaultConfig } from "./vault-config";
 import { getSecret } from "./secrets-vault";
 
 export type ConfiguredTarget = {
@@ -65,6 +67,26 @@ export async function getConfiguredTargets(
     } catch {
       // Wrong key, tampered ciphertext, etc. Skip; UI surfaces this
       // separately via the explicit "Test connection" button.
+    }
+  }
+
+  // ---- vault ----
+  const vaultConfig = loadVaultConfig();
+  if (vaultConfig && key) {
+    try {
+      const token = await getSecret("vault.pat", key);
+      if (token) {
+        out.push({
+          target: vaultTarget({
+            baseUrl: vaultConfig.baseUrl,
+            blobId: vaultConfig.blobId,
+            token,
+          }),
+          cadenceEligible: true,
+        });
+      }
+    } catch {
+      // Wrong key, tampered ciphertext, etc. Skip silently.
     }
   }
 

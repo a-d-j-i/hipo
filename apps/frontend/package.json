@@ -24,6 +24,7 @@
     "@hipo/backup": "*",
     "@hipo/backup-local": "*",
     "@hipo/backup-github": "*",
+    "@hipo/backup-vault": "*",
     "@hipo/server": "*",
     "@hipo/shared": "*",
     "@hipo/sqlite": "*",

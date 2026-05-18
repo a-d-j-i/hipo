@@ -3096,6 +3096,7 @@
             "npm:@hipo/backend@*",
             "npm:@hipo/backup-github@*",
             "npm:@hipo/backup-local@*",
+            "npm:@hipo/backup-vault@*",
             "npm:@hipo/backup@*",
             "npm:@hipo/server@*",
             "npm:@hipo/shared@*",
@@ -3152,6 +3153,12 @@
       "packages/backup": {
         "dependencies": [
           "npm:hash-wasm@^4.11.0"
+        ]
+      },
+      "packages/backup-vault-server": {
+        "dependencies": [
+          "npm:@libsql/client@0.14",
+          "npm:drizzle-orm@0.36"
         ]
       },
       "packages/sqlite": {

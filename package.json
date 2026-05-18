@@ -14,6 +14,8 @@
     "packages/backup",
     "packages/backup-local",
     "packages/backup-github",
+    "packages/backup-vault",
+    "packages/backup-vault-server",
     "spikes/05-in-page-ops"
   ],
   "scripts": {

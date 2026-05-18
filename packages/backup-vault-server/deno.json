@@ -1,0 +1,21 @@
+{
+  "tasks": {
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys src/",
+    "check": "deno check src/operations.ts src/routes.ts src/middleware.ts src/migrations.ts src/schema.ts src/types.ts"
+  },
+  "imports": {
+    "@hipo/sqlite": "../sqlite/src/index.ts",
+    "@hipo/server": "../server/src/index.ts",
+    "@hipo/auth": "../auth/src/index.ts",
+    "@hipo/auth/schema": "../auth/src/schema.ts",
+    "@hipo/audit": "../audit/src/index.ts",
+    "drizzle-orm": "npm:drizzle-orm@^0.36.0",
+    "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core",
+    "drizzle-orm/libsql": "npm:drizzle-orm@^0.36.0/libsql",
+    "@libsql/client/node": "npm:@libsql/client@^0.14.0/node"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}
