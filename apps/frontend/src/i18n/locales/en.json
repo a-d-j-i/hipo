@@ -364,6 +364,37 @@
         "verifying": "Verifying…",
         "success": "Backup saved.",
         "failed": "Backup failed. Check the console for details."
+      },
+      "fsAccess": {
+        "title": "Persistent folder (recommended)",
+        "description": "Pick a folder on this computer. Every backup overwrites the same file there. Verified after every upload.",
+        "unsupported": "Your browser doesn't expose the File System Access API. Use a Chromium-based browser, or rely on download backups.",
+        "notConfigured": "No folder selected yet.",
+        "currentLabel": "Configured",
+        "pickFolder": "Pick folder",
+        "reconnectFolder": "Reconnect folder",
+        "disconnectFolder": "Disconnect folder",
+        "backupNow": "Back up to folder",
+        "configured": "Folder configured.",
+        "disconnected": "Folder disconnected.",
+        "pickFailed": "Couldn't open the folder picker — check browser permissions."
+      },
+      "restore": {
+        "title": "Restore from a backup file",
+        "description": "Replace the current database with the contents of a backup file. The app reloads after restore.",
+        "adminOnly": "Admin only.",
+        "pickFile": "Choose backup file",
+        "passphrasePlaceholder": "Passphrase",
+        "fileRequired": "Pick a backup file first",
+        "passphraseRequired": "Passphrase required",
+        "restoreNow": "Restore and reload",
+        "confirmTitle": "Replace current database?",
+        "confirmBody": "This overwrites every record on this device with the backup contents. Cannot be undone.",
+        "confirmOk": "Replace and reload",
+        "restoring": "Restoring…",
+        "decryptFailed": "Decryption failed — the passphrase is wrong or the file is damaged.",
+        "applyFailed": "Restore failed mid-apply: {{message}}. Reload the page to recover.",
+        "success": "Restored. Reloading…"
       }
     }
   }

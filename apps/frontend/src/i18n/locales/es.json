@@ -364,6 +364,37 @@
         "verifying": "Verificando…",
         "success": "Respaldo guardado.",
         "failed": "Falló el respaldo. Mirá la consola para detalles."
+      },
+      "fsAccess": {
+        "title": "Carpeta persistente (recomendado)",
+        "description": "Elegí una carpeta en esta computadora. Cada respaldo reemplaza el mismo archivo ahí. Se verifica después de cada subida.",
+        "unsupported": "Tu navegador no expone la API File System Access. Usá un navegador basado en Chromium, o usá respaldos por descarga.",
+        "notConfigured": "Aún no hay carpeta seleccionada.",
+        "currentLabel": "Configurada",
+        "pickFolder": "Elegir carpeta",
+        "reconnectFolder": "Reconectar carpeta",
+        "disconnectFolder": "Desconectar carpeta",
+        "backupNow": "Respaldar a carpeta",
+        "configured": "Carpeta configurada.",
+        "disconnected": "Carpeta desconectada.",
+        "pickFailed": "No se pudo abrir el selector de carpeta — revisá los permisos del navegador."
+      },
+      "restore": {
+        "title": "Restaurar desde un archivo de respaldo",
+        "description": "Reemplaza la base de datos actual con el contenido de un archivo de respaldo. La app recarga al terminar.",
+        "adminOnly": "Solo administradores.",
+        "pickFile": "Elegir archivo de respaldo",
+        "passphrasePlaceholder": "Contraseña",
+        "fileRequired": "Elegí un archivo de respaldo primero",
+        "passphraseRequired": "La contraseña es requerida",
+        "restoreNow": "Restaurar y recargar",
+        "confirmTitle": "¿Reemplazar la base de datos actual?",
+        "confirmBody": "Esto sobrescribe todos los registros de este dispositivo con el contenido del respaldo. No se puede deshacer.",
+        "confirmOk": "Reemplazar y recargar",
+        "restoring": "Restaurando…",
+        "decryptFailed": "Falló el descifrado — la contraseña es incorrecta o el archivo está dañado.",
+        "applyFailed": "Falló la restauración a mitad: {{message}}. Recargá la página para continuar.",
+        "success": "Restaurado. Recargando…"
       }
     }
   }
