@@ -9,6 +9,7 @@
     "dev:fast": "VITE_USE_MOCKS=1 VITE_AUTO_LOGIN=1 VITE_LOCALE=es vite",
     "dev:inpage": "VITE_INPAGE_BACKEND=1 vite",
     "build": "tsc --noEmit && vite build",
+    "build:inpage": "VITE_INPAGE_BACKEND=1 tsc --noEmit && VITE_INPAGE_BACKEND=1 vite build",
     "preview": "vite preview",
     "check": "tsc --noEmit",
     "lint": "eslint .",

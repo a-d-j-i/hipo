@@ -1,50 +1,55 @@
 # tauri-shell
 
-Framework crate: a generic Tauri shell for local-first apps. Spawns a
-sidecar backend, opens the webview at the announced port with a
-per-launch auth token in the URL hash, runs the auto-updater (release
-builds), gracefully shuts down the sidecar.
+Framework crate: a generic Tauri shell for local-first apps. Opens the
+webview at the consumer's bundled frontend, focuses the existing window
+on a second launch (single-instance), and runs the auto-updater on
+release builds.
 
-Extracted from hipo's `apps/desktop` in Phase 1D — same behaviour,
-parameterised on `ShellConfig`.
+The shell does **not** spawn a backend process. Local-first apps host
+their `/api/*` router in-page via Service Worker + dedicated Worker
+(see `packages/server`, `packages/sw`, `packages/sqlite`), so the Rust
+layer only has to bring the webview up.
 
 ## Usage
 
 ```rust
 // apps/<app>/src/lib.rs
 pub fn run() {
-    tauri_shell::build_app(tauri_shell::ShellConfig::from_prefix(
-        "myapp",                        // window title
-        "MYAPP",                        // env-var + ready-line prefix
-        "myapp-backend",                // sidecar binary basename
-        "http://localhost:1420",        // dev URL (debug builds)
-    ))
-    .run(tauri::generate_context!())
-    .expect("tauri runtime error");
+    tauri_shell::build_app(tauri_shell::ShellConfig::new("myapp"))
+        .run(tauri::generate_context!())
+        .expect("tauri runtime error");
 }
 ```
 
+For a non-default window size:
+
+```rust
+tauri_shell::build_app(tauri_shell::ShellConfig {
+    app_name: "myapp".into(),
+    window_size: (1024.0, 720.0),
+})
+```
+
 `tauri::generate_context!()` stays in the consumer crate so it reads
-the consumer's `tauri.conf.json` (icons, app id, window settings).
-This crate only owns the runtime behaviour.
+the consumer's `tauri.conf.json` (icons, identifier, frontend dist,
+updater pubkey, CSP). This crate only owns the runtime behaviour.
 
-## What the sidecar must do
+## What the consumer's frontend must do
 
-- Read its bind port from `<PREFIX>_PORT` (0 = any).
-- Read its auth token from `<PREFIX>_AUTH_TOKEN` and gate `/api/*` on
-  the `X-<App>-Token` header.
-- Read its data dir from `<PREFIX>_DATA_DIR`.
-- Emit a single line to stdout when listening:
-  `<PREFIX>_READY hostname=<host> port=<port>`.
+- Register a service worker that injects COOP/COEP on navigation
+  responses (required for OPFS sync-access-handle mode).
+- Spawn a dedicated Worker that owns the SQLite-WASM database and
+  the `app.fetch`-style router.
+- Route `/api/*` from the page through the SW to the Worker via
+  `MessageChannel`.
 
-The webview opens at `http://<host>:<port>/#token=<auth_token>`; the
-SPA bootstrap reads the token from `location.hash` and forwards it as
-the `X-<App>-Token` header on every fetch.
+`@hipo/frontend` is the reference consumer; `packages/sw` will be
+extracted once a second consumer materialises.
 
-## Phase 8 note
+## History
 
-This crate is the framework-provided Rust shell *today*. Phase 8 of the
-framework plan removes the sidecar entirely in favour of an in-page
-Hono via service-worker + dedicated Worker; at that point this crate
-shrinks dramatically (no sidecar logic, just window + updater) or gets
-deprecated outright.
+Pre-Phase-8 versions of this crate spawned a Deno sidecar, parsed
+`<PREFIX>_READY hostname=… port=…` from its stdout, and opened the
+webview at `http://127.0.0.1:<port>/#token=<random>`. Phase 8 of the
+framework plan moved the backend into the page; see
+`docs/local-first-framework.md` §530 for context.

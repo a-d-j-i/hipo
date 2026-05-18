@@ -74,11 +74,41 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(withCoiHeaders(event.request));
 });
 
+// Per Fetch spec, these status codes forbid a body argument to
+// `new Response(...)` — even passing `null` body throws on some
+// engines (webkit2gtk). Vite dev hits 304 on cached assets, so we
+// must propagate the response untouched in that case.
+const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
+
 async function withCoiHeaders(request) {
   const response = await fetch(request);
   // Don't touch opaque responses — we'd corrupt them.
   if (response.type === "opaque" || response.type === "opaqueredirect") {
     return response;
+  }
+  // If the origin already emits COEP at the network layer (Vite dev
+  // via sqlocal's middleware; a real server with the right config),
+  // pass through untouched. WebKit (webkit2gtk) evaluates COI
+  // eligibility from the original "basic" network response — an
+  // SW-synthesized Response with identical headers may not unlock
+  // OPFS sync-access-handle in nested Workers. Only inject when the
+  // origin actually needs the polyfill (e.g. GitHub Pages).
+  if (response.headers.get("Cross-Origin-Embedder-Policy") === "require-corp") {
+    return response;
+  }
+  if (NULL_BODY_STATUSES.has(response.status)) {
+    // Rewrap with new headers but no body. Some engines reject even
+    // `new Response(null, { status: 304 })`, so use the Headers API
+    // mutation path on a cloned response instead.
+    const headers = new Headers(response.headers);
+    headers.set("Cross-Origin-Embedder-Policy", "require-corp");
+    headers.set("Cross-Origin-Opener-Policy", "same-origin");
+    headers.set("Cross-Origin-Resource-Policy", "same-origin");
+    return new Response(null, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   }
   const headers = new Headers(response.headers);
   headers.set("Cross-Origin-Embedder-Policy", "require-corp");

@@ -1,21 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissions for the main window, the Deno sidecar, and the updater.",
+  "description": "Permissions for the main window and the auto-updater.",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "updater:default",
-    "process:default",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "name": "binaries/hipo-backend",
-          "sidecar": true,
-          "args": false
-        }
-      ]
-    }
-  ]
+  "permissions": ["core:default", "updater:default"]
 }

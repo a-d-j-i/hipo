@@ -21,16 +21,14 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["test"] }
 
 [dependencies]
-# Framework shell: window bring-up, sidecar lifecycle, updater plumbing.
+# Framework shell: window bring-up, single-instance focus, updater.
 tauri-shell = { path = "../../packages/tauri-shell" }
 tauri = { version = "2", features = [] }
 # Tauri's build script scans direct dependencies for plugin manifests
 # (capability schemas + permission lists). Even though tauri-shell uses
-# these internally, the consumer crate has to list them here so the
-# capabilities/default.json `updater:default`, shell permissions, etc.
-# resolve at build time.
-tauri-plugin-process = "2"
-tauri-plugin-shell = "2"
+# these internally, the consumer crate has to list them so the
+# capabilities/default.json `updater:default` permission resolves at
+# build time.
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 serde = { version = "1", features = ["derive"] }

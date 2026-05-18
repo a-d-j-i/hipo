@@ -1,7 +1,7 @@
 [package]
 name = "tauri-shell"
 version = "0.1.0"
-description = "Generic Tauri shell: spawns a sidecar backend, opens a webview at the announced port, runs the auto-updater"
+description = "Generic Tauri shell for local-first apps: window bring-up, single-instance focus, auto-updater"
 edition = "2021"
 
 [lib]
@@ -10,8 +10,13 @@ crate-type = ["rlib"]
 
 [dependencies]
 tauri = { version = "2", features = [] }
-tauri-plugin-process = "2"
-tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
-rand = "0.8"
+
+# Linux: Tauri's webview is webkit2gtk. webkit2gtk-rs 2.0.x (what Tauri
+# pulls in) doesn't expose webkit_settings_set_feature_enabled in its
+# safe bindings, so we link to libwebkit2gtk-4.1 directly and call the
+# C API via FFI to flip File System Access API features in Workers.
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = "2"
+glib = "0.18"

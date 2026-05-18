@@ -561,6 +561,35 @@ at roughly Rust shell + React + WASM, in the low tens of MB.
 - Encrypted backup round-trip on a real install (create → backup →
   restore on a fresh install → verify).
 
+### Phase 8A outcome (2026-05-18)
+
+Tauri trim shipped for **Windows only**. The in-page-backend topology
+needs `FileSystemSyncAccessHandle` for SQLite-WASM's OPFS pool VFS,
+and webkit2gtk 2.50.6 (Debian 12) doesn't implement it — the API is
+missing from the binary, not gated. We confirmed the gap with a
+`createSyncAccessHandle()` probe inside a real webkit2gtk Worker.
+WebKit's general FS Access surface (`navigator.storage`,
+`FileSystemFileHandle`, async writable streams) is gated off but
+present; we enable it for dev iteration via direct C-FFI to
+`webkit_settings_set_feature_enabled()` plus `JSC_useSharedArrayBuffer=1`
+(both in `packages/tauri-shell`'s Linux-only path), but the sync
+handle is the load-bearing piece sqlocal needs and can't be
+recovered.
+
+**Decision:** ship Tauri for Windows only; Linux users go to the
+Pages-hosted in-page build (Chromium/Firefox have full OPFS). The
+framework's in-page topology stays uniform across all *shipped*
+surfaces — no `target_os` branching in `packages/tauri-shell`'s
+runtime topology. If webkit2gtk ever adds the sync handle, the
+existing feature-flag enablement is already in place — the only
+gate left to remove is the Linux-Tauri-not-shipped policy itself.
+See `memory/project-webkit2gtk-opfs.md` for the full investigation.
+
+**Phase 8B (deferred):** drop `build:desktop:linux` from root npm
+scripts and `ubuntu-22.04` from the CI matrix in
+`.github/workflows/release.yml`. Cosmetic; cheap to redo if Linux
+Tauri eventually returns.
+
 ## Phase 9 — Decide what `apps/backend` becomes
 
 Three coherent endings:
