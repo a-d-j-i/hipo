@@ -1,0 +1,12 @@
+{
+  "tasks": {
+    "check": "deno check src/index.ts"
+  },
+  "imports": {
+    "@hipo/server": "../server/src/index.ts"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}

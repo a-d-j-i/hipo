@@ -1,21 +1,20 @@
 import type { Middleware } from "@hipo/server";
-import type { AppState } from "./session.ts";
 
 export type CorsOptions = {
   allowedOrigins: ReadonlySet<string>;
   credentials?: boolean;
   /** Methods echoed in preflight responses. */
   methods?: string[];
-  /** Headers echoed in preflight responses. */
+  /** Headers echoed in preflight responses. Defaults include
+   *  `content-type` + `x-hipo-token` for backwards-compat with the
+   *  framework's existing session-transport header. */
   allowedHeaders?: string[];
 };
 
-/**
- * Minimal CORS replacement for hono/cors. Origin allowlist via Set;
- * non-matching origins get no `Access-Control-Allow-Origin` (browser
- * blocks). Preflights short-circuit with 204.
- */
-export function cors(opts: CorsOptions): Middleware<AppState> {
+/** Origin-allowlist CORS. Non-matching origins get no
+ *  `Access-Control-Allow-Origin` (browser blocks). Preflights
+ *  short-circuit with 204. */
+export function cors(opts: CorsOptions): Middleware {
   const methods = (opts.methods ?? ["GET", "POST", "PUT", "PATCH", "DELETE"]).join(", ");
   const allowedHeaders = (opts.allowedHeaders ?? ["content-type", "x-hipo-token"]).join(", ");
 
@@ -32,9 +31,6 @@ export function cors(opts: CorsOptions): Middleware<AppState> {
     }
 
     if (c.req.method === "OPTIONS") {
-      // Preflight — answer here regardless of origin allowance so the
-      // response is well-formed; the browser enforces the allowlist via
-      // the Allow-Origin header presence.
       const headers = new Headers();
       if (allow) {
         headers.set("Access-Control-Allow-Origin", origin);

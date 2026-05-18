@@ -31,6 +31,7 @@
     "npm:i18next-browser-languagedetector@^8.2.1": "8.2.1",
     "npm:i18next@^26.1.0": "26.1.0_typescript@5.8.3",
     "npm:jsdom@^29.1.1": "29.1.1",
+    "npm:playwright@^1.60.0": "1.60.0",
     "npm:prettier@^3.8.3": "3.8.3",
     "npm:react-dom@^19.1.0": "19.2.6_react@19.2.6",
     "npm:react-i18next@^17.0.7": "17.0.7_i18next@26.1.0__typescript@5.8.3_react@19.2.6_typescript@5.8.3",
@@ -2313,6 +2314,11 @@
         "fetch-blob"
       ]
     },
+    "fsevents@2.3.2": {
+      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+      "os": ["darwin"],
+      "scripts": true
+    },
     "fsevents@2.3.3": {
       "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
       "os": ["darwin"],
@@ -2603,6 +2609,20 @@
     "picomatch@4.0.4": {
       "integrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A=="
     },
+    "playwright-core@1.60.0": {
+      "integrity": "sha512-9bW6zvX/m0lEbgTKJ6YppOKx8H3VOPBMOCFh2irXFOT4BbHgrx5hPjwJYLT40Lu+4qtD36qKc/Hn56StUW57IA==",
+      "bin": true
+    },
+    "playwright@1.60.0": {
+      "integrity": "sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==",
+      "dependencies": [
+        "playwright-core"
+      ],
+      "optionalDependencies": [
+        "fsevents@2.3.2"
+      ],
+      "bin": true
+    },
     "postcss@8.5.14": {
       "integrity": "sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==",
       "dependencies": [
@@ -2721,7 +2741,7 @@
         "@rollup/rollup-win32-ia32-msvc",
         "@rollup/rollup-win32-x64-gnu",
         "@rollup/rollup-win32-x64-msvc",
-        "fsevents"
+        "fsevents@2.3.3"
       ],
       "bin": true
     },
@@ -2935,7 +2955,7 @@
         "tinyglobby"
       ],
       "optionalDependencies": [
-        "fsevents"
+        "fsevents@2.3.3"
       ],
       "optionalPeers": [
         "@types/node"
@@ -2954,7 +2974,7 @@
         "tinyglobby"
       ],
       "optionalDependencies": [
-        "fsevents"
+        "fsevents@2.3.3"
       ],
       "optionalPeers": [
         "@types/node"
@@ -3187,6 +3207,33 @@
             "npm:sqlocal@0.18",
             "npm:typescript@^5.6.3",
             "npm:vite@6"
+          ]
+        }
+      },
+      "templates/minimal": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@hipo/audit@*",
+            "npm:@hipo/auth@*",
+            "npm:@hipo/backup-local@*",
+            "npm:@hipo/backup@*",
+            "npm:@hipo/server@*",
+            "npm:@hipo/sqlite@*",
+            "npm:@testing-library/jest-dom@^6.9.1",
+            "npm:@testing-library/react@^16.3.2",
+            "npm:@types/react-dom@^19.1.6",
+            "npm:@types/react@^19.1.8",
+            "npm:@vitejs/plugin-react@^4.6.0",
+            "npm:drizzle-orm@~0.36.4",
+            "npm:hash-wasm@^4.11.0",
+            "npm:jsdom@^29.1.1",
+            "npm:playwright@^1.60.0",
+            "npm:react-dom@^19.1.0",
+            "npm:react@^19.1.0",
+            "npm:sqlocal@0.18",
+            "npm:typescript@~5.8.3",
+            "npm:vite@^7.0.4",
+            "npm:vitest@3"
           ]
         }
       }

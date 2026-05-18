@@ -1,11 +1,12 @@
 // Session middleware on the @hipo/server router. Provides:
 //   - sessionMiddleware(db): populates AppState (db, session, user)
-//   - requireLocalToken: optional X-Hipo-Token gate for Tauri sidecar
 //   - requireAuth / requireAdmin: per-route guards
 //   - createSession / revokeSession: pure helpers
 //   - attachSessionCookie / clearSessionCookie: cookie helpers
 //
 // Phase 1C: rewritten from Hono to the framework router.
+// Phase 9 (server-deploy): requireLocalToken extracted to
+// @hipo/server-deploy — it's a deployment concern, not a session one.
 
 import { and, eq, gt } from "drizzle-orm";
 import type { Db } from "@hipo/sqlite";
@@ -159,24 +160,3 @@ export const requireAdmin: Middleware<AppState> = async (c, next) => {
   return await next();
 };
 
-// Pure-JS constant-time string compare. Avoids node:crypto so the
-// module bundles into the in-page Worker; equivalent guarantees on
-// short hex/base64 tokens (the actual call site is rare anyway —
-// only when HIPO_AUTH_TOKEN is set, ie Tauri sidecar mode).
-function safeTokenEqual(provided: string | undefined, expected: string): boolean {
-  if (!provided || provided.length !== expected.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < provided.length; i++) {
-    mismatch |= provided.charCodeAt(i) ^ expected.charCodeAt(i);
-  }
-  return mismatch === 0;
-}
-
-/** Localhost-only API token check, active when HIPO_AUTH_TOKEN is set. */
-export const requireLocalToken: Middleware<AppState> = async (c, next) => {
-  if (!config.authToken) return await next();
-  if (!c.url.pathname.startsWith("/api/")) return await next();
-  if (!safeTokenEqual(c.req.headers.get("X-Hipo-Token") ?? undefined, config.authToken))
-    throw forbidden();
-  return await next();
-};

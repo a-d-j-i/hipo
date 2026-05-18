@@ -16,6 +16,7 @@
     "packages/backup-github",
     "packages/backup-vault",
     "packages/backup-vault-server",
+    "packages/server-deploy",
     "spikes/05-in-page-ops",
     "templates/minimal"
   ],

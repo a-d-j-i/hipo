@@ -23,6 +23,7 @@
     "@hipo/backup-vault-server/routes": "../../packages/backup-vault-server/src/routes.ts",
     "@hipo/backup-vault-server/middleware": "../../packages/backup-vault-server/src/middleware.ts",
     "@hipo/backup-vault-server/schema": "../../packages/backup-vault-server/src/schema.ts",
+    "@hipo/server-deploy": "../../packages/server-deploy/src/index.ts",
     "drizzle-orm": "npm:drizzle-orm@^0.36.0",
     "drizzle-orm/libsql": "npm:drizzle-orm@^0.36.0/libsql",
     "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core",
