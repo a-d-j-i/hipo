@@ -87,7 +87,23 @@ export const lenderPayouts = sqliteTable("lender_payouts", {
   deletedAt: integer("deleted_at"),
 });
 
+// Per-backup-target metadata. One row per `BackupTarget.id` ever
+// configured on this device. Updated by `do_recordBackup` /
+// `do_recordVerify` after each `put` (and optional verify).
+export const backupTargetState = sqliteTable("backup_target_state", {
+  targetId: text("target_id").primaryKey(),
+  configuredAt: integer("configured_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  lastBackupAt: integer("last_backup_at"),
+  lastBackupSizeBytes: integer("last_backup_size_bytes"),
+  lastVerifyAt: integer("last_verify_at"),
+  // 0/1 nullable — `null` = never verified, 1 = ok, 0 = failed.
+  lastVerifyOk: integer("last_verify_ok"),
+});
+
 // Domain row types
 export type PartyRow = typeof parties.$inferSelect;
 export type LoanRow = typeof loans.$inferSelect;
 export type LoanLenderRow = typeof loanLenders.$inferSelect;
+export type BackupTargetStateRow = typeof backupTargetState.$inferSelect;

@@ -313,6 +313,58 @@
       "later": "Later",
       "updateFailed": "Update failed"
     },
-    "placeholderNote": "More options coming soon (theme, backups, etc.)."
+    "placeholderNote": "More options coming soon (theme, backups, etc.).",
+    "storage": {
+      "title": "Storage & backups",
+      "shape": {
+        "label": "Where this install runs",
+        "browser": "Browser (in-page)",
+        "pwa": "Installed web app (PWA)",
+        "tauri": "Native desktop app",
+        "server": "Shared server",
+        "server-replica": "Shared server (replica)"
+      },
+      "backend": {
+        "label": "Storage backend",
+        "opfs": "Origin Private File System",
+        "libsql-local": "Local SQLite file",
+        "libsql-remote": "Remote SQLite"
+      },
+      "usage": "Using {{used}} of {{quota}}",
+      "usageUnknown": "Browser hasn't reported storage estimates yet.",
+      "framework": "Framework version {{version}}",
+      "targetsTitle": "Backup targets",
+      "noTargets": "No backup targets configured yet.",
+      "target": {
+        "lastBackup": "Last backup: {{when}}",
+        "lastVerify": "Last verify: {{when}} ({{ok}})",
+        "neverBackedUp": "Never backed up",
+        "neverVerified": "Never verified",
+        "verifyOk": "ok",
+        "verifyFailed": "failed",
+        "sizeBytes": "{{n}} bytes"
+      },
+      "risk": {
+        "title": "Backup health",
+        "ok": "Your data is protected by a recent, verified backup.",
+        "noBackupConfigured": "You have no backup configured. If browser data is cleared, you'll lose everything.",
+        "noRecentBackup": "Your most recent backup is more than 7 days old.",
+        "lastVerifyFailed": "The last backup verification failed. Re-run the backup and check the target.",
+        "nearStorageQuota": "Storage is nearly full. Free space or move to a different backend.",
+        "clearedByBrowserDataClear": "Running in the browser — clearing site data wipes the install. A backup is the only recovery."
+      },
+      "backupNow": {
+        "button": "Back up now (download)",
+        "passphraseRequired": "Enter your backup passphrase",
+        "passphraseHint": "Same passphrase you set during initial setup. It never leaves this device.",
+        "passphrasePlaceholder": "Passphrase",
+        "passphraseEmpty": "Passphrase is required",
+        "preparing": "Preparing backup…",
+        "uploading": "Saving backup…",
+        "verifying": "Verifying…",
+        "success": "Backup saved.",
+        "failed": "Backup failed. Check the console for details."
+      }
+    }
   }
 }

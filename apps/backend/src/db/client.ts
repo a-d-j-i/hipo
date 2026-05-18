@@ -15,7 +15,11 @@ import { migrations } from "./migrations.ts";
 
 export type { Db, Migration };
 
-export async function openDb(): Promise<{ db: Db; client: Client }> {
+export async function openDb(): Promise<{
+  db: Db;
+  client: Client;
+  dbPath: string;
+}> {
   return await openDbBase({
     dataDir: config.dataDir,
     filename: "hipo.db",

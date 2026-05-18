@@ -19,3 +19,8 @@ export {
   type ExportDbInput,
   type ImportDbInput,
 } from "./do-backup.ts";
+export {
+  putAndVerify,
+  type PutAndVerifyInput,
+  type PutAndVerifyResult,
+} from "./put-verify.ts";

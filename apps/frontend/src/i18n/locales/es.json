@@ -313,6 +313,58 @@
       "later": "Más tarde",
       "updateFailed": "Falló la actualización"
     },
-    "placeholderNote": "Más opciones llegarán pronto (tema, respaldos, etc.)."
+    "placeholderNote": "Más opciones llegarán pronto (tema, respaldos, etc.).",
+    "storage": {
+      "title": "Almacenamiento y respaldos",
+      "shape": {
+        "label": "Dónde corre esta instalación",
+        "browser": "Navegador (en página)",
+        "pwa": "App web instalada (PWA)",
+        "tauri": "App de escritorio",
+        "server": "Servidor compartido",
+        "server-replica": "Servidor compartido (réplica)"
+      },
+      "backend": {
+        "label": "Backend de almacenamiento",
+        "opfs": "Sistema de archivos privado del origen",
+        "libsql-local": "Archivo SQLite local",
+        "libsql-remote": "SQLite remoto"
+      },
+      "usage": "Usando {{used}} de {{quota}}",
+      "usageUnknown": "El navegador todavía no reportó estimaciones de almacenamiento.",
+      "framework": "Versión del framework {{version}}",
+      "targetsTitle": "Destinos de respaldo",
+      "noTargets": "Aún no hay destinos de respaldo configurados.",
+      "target": {
+        "lastBackup": "Último respaldo: {{when}}",
+        "lastVerify": "Última verificación: {{when}} ({{ok}})",
+        "neverBackedUp": "Nunca respaldado",
+        "neverVerified": "Nunca verificado",
+        "verifyOk": "ok",
+        "verifyFailed": "falló",
+        "sizeBytes": "{{n}} bytes"
+      },
+      "risk": {
+        "title": "Salud de los respaldos",
+        "ok": "Tus datos están protegidos por un respaldo reciente y verificado.",
+        "noBackupConfigured": "No tenés respaldos configurados. Si se borran los datos del navegador, perdés todo.",
+        "noRecentBackup": "Tu respaldo más reciente tiene más de 7 días.",
+        "lastVerifyFailed": "La última verificación del respaldo falló. Volvé a respaldar y revisá el destino.",
+        "nearStorageQuota": "El almacenamiento está casi lleno. Liberá espacio o cambiá de backend.",
+        "clearedByBrowserDataClear": "Corriendo en el navegador — borrar los datos del sitio elimina todo. Un respaldo es la única recuperación."
+      },
+      "backupNow": {
+        "button": "Respaldar ahora (descargar)",
+        "passphraseRequired": "Ingresá tu contraseña de respaldo",
+        "passphraseHint": "La misma contraseña que elegiste en la configuración inicial. Nunca sale de este dispositivo.",
+        "passphrasePlaceholder": "Contraseña",
+        "passphraseEmpty": "La contraseña es requerida",
+        "preparing": "Preparando respaldo…",
+        "uploading": "Guardando respaldo…",
+        "verifying": "Verificando…",
+        "success": "Respaldo guardado.",
+        "failed": "Falló el respaldo. Mirá la consola para detalles."
+      }
+    }
   }
 }

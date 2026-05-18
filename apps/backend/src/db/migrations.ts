@@ -4,6 +4,9 @@
 //
 // Phase 5 will port the domain tables (parties, loans, loan_lenders,
 // debtor_payments, debtor_payment_splits, lender_payouts, audit_log).
+//
+// Phase 7 adds backup_target_state (per-target backup/verify metadata
+// surfaced through /api/system/status).
 
 export type Migration = {
   version: number;
@@ -131,6 +134,19 @@ export const migrations: Migration[] = [
       CREATE INDEX idx_lender_payouts_paid_at ON lender_payouts(paid_at DESC);
       CREATE INDEX idx_lender_payouts_currency ON lender_payouts(currency_code);
       CREATE INDEX idx_lender_payouts_deleted ON lender_payouts(deleted_at);
+    `,
+  },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE backup_target_state (
+        target_id TEXT PRIMARY KEY,
+        configured_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        last_backup_at INTEGER,
+        last_backup_size_bytes INTEGER,
+        last_verify_at INTEGER,
+        last_verify_ok INTEGER
+      );
     `,
   },
 ];

@@ -1,4 +1,6 @@
 import { Router } from "@hipo/server";
+import { gzipped } from "@hipo/backup";
+import { binaryFormat } from "@hipo/sqlite/binary-format-deno";
 import { config } from "./config.ts";
 import { openDb } from "./db/client.ts";
 import { cors } from "./middleware/cors.ts";
@@ -11,7 +13,11 @@ import { registerAllRoutes } from "./routes/index.ts";
 import { staticSpa } from "./static.ts";
 
 async function main(): Promise<void> {
-  const { db } = await openDb();
+  const { db, client, dbPath } = await openDb();
+  // Envelope format = gzipped raw SQLite file. Same identifier
+  // ("binary-gzip") as the in-page Worker so a backup taken on the
+  // Deno shape can be restored on the in-page shape and vice versa.
+  const backupFormat = gzipped(binaryFormat({ client, dbPath }));
 
   const app = new Router<AppState>();
 
@@ -52,7 +58,7 @@ async function main(): Promise<void> {
   app.use(requireLocalToken);
   app.use(sessionMiddleware(db));
 
-  registerAllRoutes(app);
+  registerAllRoutes(app, { backupFormat });
 
   // Static SPA fallback — runs whenever no route matches.
   app.notFound(staticSpa);

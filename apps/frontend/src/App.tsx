@@ -8,6 +8,7 @@ import {
   RequireLogin,
   RequireSetup,
 } from "./auth/AuthContext";
+import { PassphraseProvider } from "./bootstrap/PassphraseContext";
 import AppLayout from "./layouts/AppLayout";
 
 // Per-route code splitting. Each page becomes its own chunk and is fetched
@@ -44,7 +45,8 @@ export default function App() {
     <ConfigProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<PageFallback />}>
+          <PassphraseProvider>
+            <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route
                 path="/setup"
@@ -93,6 +95,7 @@ export default function App() {
               </Route>
             </Routes>
           </Suspense>
+          </PassphraseProvider>
         </AuthProvider>
       </BrowserRouter>
     </ConfigProvider>

@@ -10,6 +10,8 @@
 /// <reference lib="webworker" />
 
 import { openDb } from "@hipo/sqlite/client-browser";
+import { binaryFormat } from "@hipo/sqlite/binary-format-browser";
+import { gzipped } from "@hipo/backup";
 import { Router, serveOnPort } from "@hipo/server";
 import {
   type AppState,
@@ -19,10 +21,13 @@ import { registerAllRoutes } from "@hipo/backend/routes";
 import { migrations } from "@hipo/backend/migrations";
 
 async function main(): Promise<void> {
-  const { db } = await openDb({
+  const { db, local } = await openDb({
     databasePath: "hipo.sqlite3",
     migrations,
   });
+  // Same "binary-gzip" envelope as the Deno shape so backups
+  // round-trip between shapes.
+  const backupFormat = gzipped(binaryFormat({ local }));
 
   const app = new Router<AppState>();
 
@@ -41,7 +46,7 @@ async function main(): Promise<void> {
   // undefined in browser, so it would be a no-op anyway.
   app.use(sessionMiddleware(db));
 
-  registerAllRoutes(app);
+  registerAllRoutes(app, { backupFormat });
 
   // Listen for the MessageChannel port from the main thread.
   self.addEventListener("message", (e: MessageEvent) => {

@@ -7,5 +7,7 @@ import type { AppState } from "../middleware/session.ts";
 import { do_getSystemStatus } from "../system/operations.ts";
 
 export function registerSystemRoutes(app: Router<AppState>) {
-  app.get("/api/system/status", async (c) => json(await do_getSystemStatus(c)));
+  app.get("/api/system/status", async (c) =>
+    json(await do_getSystemStatus(c.state)),
+  );
 }

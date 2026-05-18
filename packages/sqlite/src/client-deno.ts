@@ -25,9 +25,10 @@ async function ensureDataDir(dir: string): Promise<void> {
 
 export async function openDb(
   opts: OpenDbOptions,
-): Promise<{ db: Db; client: Client }> {
+): Promise<{ db: Db; client: Client; dbPath: string }> {
   await ensureDataDir(opts.dataDir);
-  const url = `file:${opts.dataDir}/${opts.filename}`;
+  const dbPath = `${opts.dataDir}/${opts.filename}`;
+  const url = `file:${dbPath}`;
   const client = createClient({ url });
 
   // SQLite-side hardening — WAL for concurrent readers + foreign keys on.
@@ -39,5 +40,5 @@ export async function openDb(
   const db = drizzle(client);
   await runMigrations(db, opts.migrations);
 
-  return { db, client };
+  return { db, client, dbPath };
 }
