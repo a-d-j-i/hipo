@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "hash-wasm": "npm:hash-wasm@^4.11.0"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "dom"],
+    "strict": true
+  }
+}

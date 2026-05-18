@@ -11,6 +11,7 @@
     "packages/server",
     "packages/auth",
     "packages/audit",
+    "packages/backup",
     "spikes/05-in-page-ops"
   ],
   "scripts": {

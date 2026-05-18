@@ -5,7 +5,8 @@
     "./packages/sqlite",
     "./packages/server",
     "./packages/auth",
-    "./packages/audit"
+    "./packages/audit",
+    "./packages/backup"
   ],
   "lock": true,
   "nodeModulesDir": "auto"

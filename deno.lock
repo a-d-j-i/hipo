@@ -3146,6 +3146,11 @@
           ]
         }
       },
+      "packages/backup": {
+        "dependencies": [
+          "npm:hash-wasm@^4.11.0"
+        ]
+      },
       "packages/sqlite": {
         "dependencies": [
           "npm:@libsql/client@0.14",

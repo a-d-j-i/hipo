@@ -16,6 +16,8 @@
     "@hipo/auth/schema": "../../packages/auth/src/schema.ts",
     "@hipo/audit": "../../packages/audit/src/index.ts",
     "@hipo/audit/schema": "../../packages/audit/src/schema.ts",
+    "@hipo/backup": "../../packages/backup/src/index.ts",
+    "@hipo/sqlite/binary-format-deno": "../../packages/sqlite/src/binary-format-deno.ts",
     "drizzle-orm": "npm:drizzle-orm@^0.36.0",
     "drizzle-orm/libsql": "npm:drizzle-orm@^0.36.0/libsql",
     "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core",
