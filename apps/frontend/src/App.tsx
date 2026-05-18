@@ -9,6 +9,7 @@ import {
   RequireSetup,
 } from "./auth/AuthContext";
 import { PassphraseProvider } from "./bootstrap/PassphraseContext";
+import { CadenceRunner } from "./backup/CadenceRunner";
 import AppLayout from "./layouts/AppLayout";
 
 // Per-route code splitting. Each page becomes its own chunk and is fetched
@@ -46,6 +47,7 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <PassphraseProvider>
+            <CadenceRunner />
             <Suspense fallback={<PageFallback />}>
             <Routes>
               <Route

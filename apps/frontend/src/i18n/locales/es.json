@@ -293,6 +293,9 @@
     "deletedUser": "usuario eliminado",
     "emptyText": "Sin entradas de auditoría"
   },
+  "cadence": {
+    "success": "Respaldo automático guardado en {{target}}."
+  },
   "settings": {
     "title": "Configuración",
     "language": {
@@ -378,6 +381,33 @@
         "configured": "Carpeta configurada.",
         "disconnected": "Carpeta desconectada.",
         "pickFailed": "No se pudo abrir el selector de carpeta — revisá los permisos del navegador."
+      },
+      "github": {
+        "title": "Respaldo en GitHub",
+        "description": "Publica el archivo de respaldo cifrado en un repo vía la API Contents de GitHub. Ideal con un PAT fino limitado a un solo repo.",
+        "ownerLabel": "Dueño",
+        "ownerPlaceholder": "tu-usuario-github",
+        "repoLabel": "Repositorio",
+        "repoPlaceholder": "hipo-backup",
+        "pathLabel": "Ruta del archivo",
+        "pathPlaceholder": "backup.bin",
+        "branchLabel": "Rama (opcional)",
+        "branchPlaceholder": "main",
+        "patLabel": "Token de acceso personal",
+        "patHint": "PAT fino con Contents: lectura y escritura en el repo elegido. Se guarda cifrado con tu contraseña de respaldo.",
+        "testConnection": "Probar conexión",
+        "save": "Guardar y conectar",
+        "saving": "Guardando…",
+        "savedAndConfigured": "GitHub conectado.",
+        "unlink": "Desconectar",
+        "unlinked": "GitHub desconectado.",
+        "backupNow": "Respaldar en GitHub",
+        "needPassphrase": "Ingresá tu contraseña de respaldo primero (ver sección de descarga).",
+        "testOk": "Conexión OK — el PAT y el repo lucen bien.",
+        "testFailed": "No se pudo conectar con GitHub: {{message}}",
+        "currentLabel": "Conectado",
+        "saveFailed": "Falló al guardar: {{message}}",
+        "fieldRequired": "Requerido"
       },
       "restore": {
         "title": "Restaurar desde un archivo de respaldo",

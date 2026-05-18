@@ -20,6 +20,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { downloadTarget } from "@hipo/backup-local/download";
 import { fsAccessTarget } from "@hipo/backup-local/fs-access";
+import { githubTarget } from "@hipo/backup-github";
 import { unpackEnvelope } from "@hipo/backup";
 import {
   LOCALE_STORAGE_KEY,
@@ -34,6 +35,18 @@ import {
 } from "../api/backup";
 import { runBackup } from "../backup/orchestrate";
 import { RiskBanner } from "../backup/RiskBanner";
+import {
+  clearGithubConfig,
+  loadGithubConfig,
+  saveGithubConfig,
+  type GithubConfig,
+} from "../backup/github-config";
+import {
+  clearSecret,
+  getOrCreateVaultSalt,
+  getSecret,
+  setSecret,
+} from "../backup/secrets-vault";
 import { usePassphrase } from "../bootstrap/PassphraseContext";
 import { useAuth } from "../auth/AuthContext";
 
@@ -177,6 +190,7 @@ function StoragePanel() {
           <TargetsList status={status} />
           <BackupNowAction status={status} refresh={refresh} />
           <FsAccessSection status={status} refresh={refresh} />
+          <GithubSection status={status} refresh={refresh} />
           <RestoreSection />
         </Space>
       )}
@@ -692,6 +706,221 @@ function RestoreSection() {
           {t("settings.storage.restore.confirmBody")}
         </Typography.Paragraph>
       </Modal>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GitHub target — encrypted PAT in localStorage, config in localStorage
+// ---------------------------------------------------------------------------
+
+function GithubSection({
+  status,
+  refresh,
+}: {
+  status: SystemStatus;
+  refresh: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const passphrase = usePassphrase();
+  const [config, setConfig] = useState<GithubConfig | null>(() =>
+    loadGithubConfig(),
+  );
+  const [busy, setBusy] = useState(false);
+  // Form values for the configuration drawer.
+  const [owner, setOwner] = useState(config?.owner ?? "");
+  const [repo, setRepo] = useState(config?.repo ?? "");
+  const [path, setPath] = useState(config?.path ?? "backup.bin");
+  const [branch, setBranch] = useState(config?.branch ?? "");
+  const [pat, setPat] = useState("");
+
+  const stateRow = status.backups.targets.find((tg) => tg.id === "github");
+
+  const ensureVaultKey = async (): Promise<CryptoKey | null> => {
+    if (!passphrase.isSet) {
+      message.error(t("settings.storage.github.needPassphrase"));
+      return null;
+    }
+    return passphrase.keyFor(getOrCreateVaultSalt());
+  };
+
+  const onTest = async () => {
+    if (!owner || !repo || !path || !pat) {
+      message.error(t("settings.storage.github.fieldRequired"));
+      return;
+    }
+    setBusy(true);
+    try {
+      const target = githubTarget({
+        owner,
+        repo,
+        path,
+        branch: branch || undefined,
+        token: pat,
+      });
+      await target.checkAccess();
+      message.success(t("settings.storage.github.testOk"));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(
+        t("settings.storage.github.testFailed", { message: msg }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onSave = async () => {
+    if (!owner || !repo || !path || !pat) {
+      message.error(t("settings.storage.github.fieldRequired"));
+      return;
+    }
+    const key = await ensureVaultKey();
+    if (!key) return;
+    setBusy(true);
+    try {
+      const nextConfig: GithubConfig = {
+        owner: owner.trim(),
+        repo: repo.trim(),
+        path: path.trim(),
+        branch: branch.trim() || undefined,
+      };
+      saveGithubConfig(nextConfig);
+      await setSecret("github.pat", pat, key);
+      await configureTarget("github");
+      setConfig(nextConfig);
+      setPat("");
+      message.success(t("settings.storage.github.savedAndConfigured"));
+      await refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(t("settings.storage.github.saveFailed", { message: msg }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onUnlink = () => {
+    clearGithubConfig();
+    clearSecret("github.pat");
+    setConfig(null);
+    setOwner("");
+    setRepo("");
+    setPath("backup.bin");
+    setBranch("");
+    setPat("");
+    message.success(t("settings.storage.github.unlinked"));
+    void refresh();
+  };
+
+  const onBackupNow = async () => {
+    if (!config) return;
+    const key = await ensureVaultKey();
+    if (!key) return;
+    setBusy(true);
+    try {
+      const token = await getSecret("github.pat", key);
+      if (!token) {
+        message.error(t("settings.storage.github.needPassphrase"));
+        return;
+      }
+      const target = githubTarget({
+        owner: config.owner,
+        repo: config.repo,
+        path: config.path,
+        branch: config.branch,
+        token,
+      });
+      await runBackup({ target, keyFor: passphrase.keyFor });
+      message.success(t("settings.storage.backupNow.success"));
+      await refresh();
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("[hipo] github backup:", e);
+      message.error(t("settings.storage.backupNow.failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card size="small">
+      <Typography.Title level={5} style={{ marginTop: 0 }}>
+        {t("settings.storage.github.title")}
+      </Typography.Title>
+      <Typography.Paragraph type="secondary">
+        {t("settings.storage.github.description")}
+      </Typography.Paragraph>
+      {config && (
+        <Typography.Text>
+          {t("settings.storage.github.currentLabel")}: {config.owner}/{config.repo}/
+          {config.path}
+          {stateRow?.last_backup_at
+            ? " · " +
+              t("settings.storage.target.lastBackup", {
+                when: new Date(stateRow.last_backup_at * 1000).toLocaleString(),
+              })
+            : ""}
+        </Typography.Text>
+      )}
+      <Space direction="vertical" size={8} style={{ width: "100%", marginTop: 12 }}>
+        <Input
+          value={owner}
+          onChange={(e) => setOwner(e.target.value)}
+          placeholder={t("settings.storage.github.ownerPlaceholder")}
+          addonBefore={t("settings.storage.github.ownerLabel")}
+        />
+        <Input
+          value={repo}
+          onChange={(e) => setRepo(e.target.value)}
+          placeholder={t("settings.storage.github.repoPlaceholder")}
+          addonBefore={t("settings.storage.github.repoLabel")}
+        />
+        <Input
+          value={path}
+          onChange={(e) => setPath(e.target.value)}
+          placeholder={t("settings.storage.github.pathPlaceholder")}
+          addonBefore={t("settings.storage.github.pathLabel")}
+        />
+        <Input
+          value={branch}
+          onChange={(e) => setBranch(e.target.value)}
+          placeholder={t("settings.storage.github.branchPlaceholder")}
+          addonBefore={t("settings.storage.github.branchLabel")}
+        />
+        <Input.Password
+          value={pat}
+          onChange={(e) => setPat(e.target.value)}
+          placeholder={t("settings.storage.github.patLabel")}
+          autoComplete="off"
+        />
+        <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+          {t("settings.storage.github.patHint")}
+        </Typography.Text>
+        <Space wrap>
+          <Button onClick={() => void onTest()} loading={busy}>
+            {t("settings.storage.github.testConnection")}
+          </Button>
+          <Button type="primary" onClick={() => void onSave()} loading={busy}>
+            {t("settings.storage.github.save")}
+          </Button>
+          {config && (
+            <>
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                loading={busy}
+                onClick={() => void onBackupNow()}
+              >
+                {t("settings.storage.github.backupNow")}
+              </Button>
+              <Button danger onClick={onUnlink} loading={busy}>
+                {t("settings.storage.github.unlink")}
+              </Button>
+            </>
+          )}
+        </Space>
+      </Space>
     </Card>
   );
 }

@@ -293,6 +293,9 @@
     "deletedUser": "deleted user",
     "emptyText": "No audit entries"
   },
+  "cadence": {
+    "success": "Auto-backup saved to {{target}}."
+  },
   "settings": {
     "title": "Settings",
     "language": {
@@ -378,6 +381,33 @@
         "configured": "Folder configured.",
         "disconnected": "Folder disconnected.",
         "pickFailed": "Couldn't open the folder picker — check browser permissions."
+      },
+      "github": {
+        "title": "GitHub backup",
+        "description": "Pushes the encrypted backup file to a repo via the GitHub Contents API. Best for a private fine-grained PAT scoped to one repo.",
+        "ownerLabel": "Owner",
+        "ownerPlaceholder": "your-github-username",
+        "repoLabel": "Repository",
+        "repoPlaceholder": "hipo-backup",
+        "pathLabel": "File path",
+        "pathPlaceholder": "backup.bin",
+        "branchLabel": "Branch (optional)",
+        "branchPlaceholder": "main",
+        "patLabel": "Personal access token",
+        "patHint": "Fine-grained PAT with Contents: read & write on the selected repo. Stored encrypted under your backup passphrase.",
+        "testConnection": "Test connection",
+        "save": "Save & link",
+        "saving": "Saving…",
+        "savedAndConfigured": "GitHub target linked.",
+        "unlink": "Unlink",
+        "unlinked": "GitHub target unlinked.",
+        "backupNow": "Back up to GitHub",
+        "needPassphrase": "Enter your backup passphrase first (see the download section).",
+        "testOk": "Reached GitHub — PAT and repo look good.",
+        "testFailed": "Could not reach GitHub: {{message}}",
+        "currentLabel": "Linked",
+        "saveFailed": "Save failed: {{message}}",
+        "fieldRequired": "Required"
       },
       "restore": {
         "title": "Restore from a backup file",
