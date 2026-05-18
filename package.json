@@ -16,7 +16,8 @@
     "packages/backup-github",
     "packages/backup-vault",
     "packages/backup-vault-server",
-    "spikes/05-in-page-ops"
+    "spikes/05-in-page-ops",
+    "templates/minimal"
   ],
   "scripts": {
     "dev:frontend": "npm run dev -w @hipo/frontend",

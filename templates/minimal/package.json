@@ -1,0 +1,39 @@
+{
+  "name": "@hipo/templates-minimal",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@hipo/auth": "*",
+    "@hipo/audit": "*",
+    "@hipo/backup": "*",
+    "@hipo/backup-local": "*",
+    "@hipo/server": "*",
+    "@hipo/sqlite": "*",
+    "hash-wasm": "^4.11.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sqlocal": "^0.18.0",
+    "drizzle-orm": "^0.36.4"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "^29.1.1",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^3",
+    "playwright": "^1.60.0"
+  }
+}
