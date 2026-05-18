@@ -1,13 +1,25 @@
 # hipo
 
-Desktop admin app for tracking **mortgage loans with multiple lenders**.
-Tauri 2 shell + Deno backend (sidecar) + React/TypeScript frontend, all in
-one monorepo. Targets **Windows** and **Linux**. SQLite-only persistence,
-full audit trail, Spanish-default UI with English toggle.
+Desktop + browser app for tracking **mortgage loans with multiple
+lenders**. Built on top of a small **local-first TypeScript framework**
+that lives in `packages/` — hipo is the framework's first consumer.
 
-> The same Deno backend binary can also be deployed as a regular HTTP server
-> for a hosted (browser-only) flavor of the app. The Tauri shell is just a
-> launcher around it.
+Three deployment shapes from one codebase:
+
+- **GitHub Pages (in-page)** — primary demo target. React + sqlocal +
+  OPFS-backed SQLite + service-worker-routed `/api/*` to a dedicated
+  Web Worker. No backend process. Works in Chromium, Firefox.
+- **Tauri desktop (Windows only)** — same in-page bundle, wrapped in a
+  ~135-LOC Rust shell with auto-updater and signed releases. Linux
+  Tauri was sunset in Phase 8A — webkit2gtk 2.50 is missing
+  `FileSystemSyncAccessHandle`, which sqlocal's OPFS pool VFS needs.
+  Linux users go to the Pages build (Chromium / Firefox have it).
+- **Local Deno backend (Shape 2)** — same router and `do_*` ops, but
+  served over real HTTP by `apps/backend`. Path forward when "one DB
+  per device" needs to become "one DB shared by a team."
+
+Full audit trail of every mutation; Spanish-default UI with English
+toggle; integer-cents money math everywhere.
 
 ---
 
@@ -16,209 +28,267 @@ full audit trail, Spanish-default UI with English toggle.
 ```
 hipo/
 ├── apps/
-│   ├── frontend/   React + Vite + antd (browser bundle)
-│   ├── backend/    Deno + Hono + Drizzle + libsql (HTTP server)
-│   └── desktop/    Tauri shell — spawns backend, opens webview
-└── packages/
-    └── shared/     (stub) source-only TS shared by frontend + backend
+│   ├── frontend/     React + Vite + antd (the SPA)
+│   ├── backend/      Deno HTTP server — hipo routes + vault-server
+│   └── desktop/      Tauri shell (Windows)
+├── packages/         The local-first framework
+│   ├── sqlite/         data layer: libsql (Deno) + sqlocal (browser)
+│   ├── server/         hand-rolled router (~50 LOC), Ctx, AppError
+│   ├── auth/           users + sessions + Argon2id (PHC-encoded both sides)
+│   ├── audit/          audit_log table + writeAudit() helper
+│   ├── backup/         AES-GCM + Argon2id + gzip primitives + target interface
+│   ├── backup-local/   <a download>, FS Access API, Tauri plugin-fs
+│   ├── backup-github/  GitHub Contents API target
+│   ├── backup-vault/   client for @hipo/backup-vault-server
+│   ├── backup-vault-server/  PAT-authed blob storage HTTP routes
+│   ├── tauri-shell/    generic Tauri Rust shell (consumed by apps/desktop)
+│   └── shared/         hipo-specific shared types + validators + split algorithm
+├── docs/
+│   └── local-first-framework.md   the load-bearing strategic plan
+└── spikes/             Phase-0 derisk spikes + Playwright smoke harnesses
 ```
 
-Workspaces are managed by **npm workspaces** (no yarn, no turbo).
-Each app keeps its native config: `package.json` + `vite.config.ts` in
-frontend, `deno.json` in backend, `Cargo.toml` + `tauri.conf.json` in
-desktop. The thin `package.json` files in `apps/{backend,desktop}` only
-exist so npm workspaces can resolve them by name.
+Workspaces are npm + Deno simultaneously: npm-workspaces resolve
+`@hipo/*` via symlinks for the frontend, and `apps/backend/deno.json`'s
+`imports` map resolves them for Deno. Source-only TypeScript — no build
+step for any framework package while it lives in this monorepo
+(publishing to npm is Phase 10, deferred).
+
+The plan document `docs/local-first-framework.md` is the load-bearing
+spec — read it before making package-boundary changes.
 
 ---
 
 ## Architecture
 
+### Shape 1: in-page (Pages + Tauri share this bundle)
+
 ```
-                ┌──────────────────────────────┐
-                │  apps/desktop (Tauri shell)   │
-                │  • generates auth token       │
-                │  • spawns sidecar             │
-                │  • opens window at backend URL│
-                │  • auto-updater               │
-                └──────────────┬───────────────┘
-                               │ spawns
-                               ▼
-                ┌──────────────────────────────┐
-                │  apps/backend (Deno sidecar)  │
-                │  • Hono + Drizzle + libsql    │
-                │  • cookie sessions            │
-                │  • full domain API + audit log│
-                │  • serves the React SPA       │
-                └──────────────▲───────────────┘
-                               │ fetch (cookie + X-Hipo-Token)
-                               │
-                ┌──────────────┴───────────────┐
-                │  apps/frontend (React)        │
-                │  • antd 5, responsive         │
-                │  • no `invoke()` — fetch only │
-                │  • i18n (es default + en)     │
-                └──────────────────────────────┘
+Main thread (UI)           Service Worker            Dedicated Worker
+─────────────────          ─────────────────         ──────────────────
+React + httpRequest()  ──► intercept /api/*  ──►   router.fetch(req)
+                           inject COOP/COEP        Drizzle
+                                                   SQLite-WASM + OPFS
+       ◄──── Response ──────────  ◄──── postMessage(response)
 ```
 
-**Localhost token (Tauri build only).** The shell generates a 256-bit
-random token, passes it to the Deno child via `HIPO_AUTH_TOKEN`, and
-embeds it in the webview URL as `#token=...`. The SPA's
-`extractAuthToken()` reads and clears the hash on boot; `httpRequest`
-adds `X-Hipo-Token` to every fetch. The backend's `requireLocalToken`
-middleware enforces it when the env var is set — preventing other
-processes on the machine from hitting the local API. Cloud / browser-dev
-leaves the env var unset and the middleware is a no-op.
+`httpRequest` calls `fetch("/api/...")`. The SW intercepts and proxies
+to the Worker via MessageChannel. SQLite-WASM lives in the Worker
+because `FileSystemSyncAccessHandle` (OPFS fast mode) only exists in
+dedicated Workers — that's a browser spec constraint, not a choice.
+
+The same SW also injects `Cross-Origin-Opener-Policy` and
+`Cross-Origin-Embedder-Policy` headers so the page becomes
+cross-origin-isolated — required for SQLite-WASM. This is what makes
+GitHub Pages work without any header configuration on the host.
+
+### Shape 2: Deno HTTP server
+
+```
+┌──────────────────────────────┐
+│  apps/backend (Deno)          │   Hono → hand-rolled router
+│  • libsql via @libsql/client  │   cookie sessions or X-Hipo-Token
+│  • hipo domain routes         │
+│  • @hipo/backup-vault-server  │   PAT-authed vault endpoints
+│  • serves the React SPA       │
+└──────────────▲───────────────┘
+               │ fetch (cookie + X-Hipo-Token)
+┌──────────────┴───────────────┐
+│  apps/frontend (React SPA)    │
+└──────────────────────────────┘
+```
+
+Same router and `do_*(ctx, args)` operations as Shape 1 — only the
+substrate differs. The Vite dev server proxies `/api/*` to whatever
+port the Deno backend is on (`HIPO_BACKEND_PORT`, default 8787). Same
+auth, same migrations, same backup pipeline — promotion is
+configuration, not rewrite.
+
+### Tauri shell (Windows)
+
+The Tauri Rust shell is now ~135 LOC after Phase 8A's trim — it just
+opens a webview against the bundled in-page SPA. No sidecar to spawn,
+no `externalBin`, no auth-token bootstrap. Auto-updater + signing
+pipeline intact (see "Releases" below). Bundle size for Windows: low
+tens of MB (was ~117 MB `.deb` / ~387 MB sidecar before).
 
 ---
 
 ## Prerequisites
 
 - **Node 20+** with **npm 10+** (workspaces support)
-- **Rust stable** with `cargo` on PATH
 - **Deno 2.x** — `curl -fsSL https://deno.com/install.sh | sh`
-- **Linux build deps** (only if dev'ing on Linux):
+- **Rust stable** with `cargo` on PATH (only if you'll build the Tauri shell)
+- **Windows build deps** (only if cross-compiling Linux → Windows):
   ```bash
-  sudo apt-get install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+  cargo install cargo-xwin --locked
+  rustup target add x86_64-pc-windows-msvc
   ```
-
-### For cross-compiling Linux → Windows (optional, dev-only)
-
-```bash
-cargo install cargo-xwin --locked
-rustup target add x86_64-pc-windows-msvc
-```
-
-CI uses a native `windows-latest` runner instead — see `.github/workflows/release.yml`.
+  First `cargo-xwin` run downloads the Microsoft Windows SDK (~600 MB).
 
 ---
 
 ## First-time setup
 
 ```bash
-npm install        # installs frontend + desktop JS deps via npm workspaces
-                   # (apps/backend deps are managed by Deno separately)
+npm install        # installs JS deps via npm workspaces
+                   # (apps/backend deps come from Deno on first `deno task` run)
 ```
-
-Deno auto-installs its own deps to `node_modules/` on first `deno task` run.
 
 ---
 
-## Dev workflow
+## Dev workflows
 
-Two long-running processes, hot-reload on both sides:
+There are three modes; pick by what you're building.
+
+### Mode A: Pages-style in-page dev (no Deno process)
 
 ```bash
-# Terminal 1 — the Deno backend (with --watch)
+npm run dev:frontend -- --port 1420
+# Open http://localhost:1420 in Chromium or Firefox
+```
+
+The SPA runs entirely in-browser. SQLite lives in OPFS; first launch
+shows a Bootstrap page (start fresh / restore from backup). The
+service worker registers on first load and triggers a one-time reload
+to activate cross-origin isolation — subsequent boots are direct.
+
+> **Set `VITE_INPAGE_BACKEND=1`** for this mode if you want it through
+> `apps/frontend`'s native `npm run dev` (the dev:frontend script
+> doesn't set it by default — Mode B does, see below).
+
+### Mode B: Local Deno backend + Vite SPA (Shape 2 dev)
+
+Two terminals, hot-reload on both sides:
+
+```bash
+# Terminal 1
 npm run dev:backend
 # → HIPO_READY hostname=127.0.0.1 port=8787
 
-# Terminal 2 — the Tauri shell (which runs Vite under the hood)
-npm run dev:desktop
-# Window opens at http://localhost:1420; Vite proxies /api/* → :8787
+# Terminal 2
+npm run dev:frontend
+# Vite proxies /api/* to :8787
 ```
 
-Browser-only dev (skips Tauri entirely):
+This is the "hipo as a regular web app with a backend" path. Setup
+flow on first launch: `/api/auth/setup` creates the admin; subsequent
+boots go through the login form.
+
+### Mode C: Tauri shell (Windows-only target; works on Linux for dev iteration)
 
 ```bash
-# Terminal 1: same as above
-# Terminal 2:
-npm run dev:frontend
-# Open http://localhost:1420 in any browser
+# Tauri shell + Vite under the hood (in-page bundle)
+npm run dev:desktop
 ```
 
-In dev, the backend's `HIPO_AUTH_TOKEN` env var is unset, so `requireLocalToken`
-is a no-op — fetch calls work without the `X-Hipo-Token` header.
+No separate backend terminal — the in-page Worker IS the backend.
+Window opens at the bundled Vite page. On Linux dev, the
+`packages/tauri-shell` Rust crate flips a webkit2gtk feature flag
+through C-FFI to enable the partial OPFS surface — fine for iteration,
+not enough for actual shipping (the sync access handle is missing,
+which sqlocal needs).
+
+### Mock-based fast iteration
+
+```bash
+npm run dev:mock        # browser-only with in-memory mock backend
+npm run dev:fast        # mock backend + auto-login + Spanish locale
+```
+
+Seed users: `admin/admin123` (admin), `alice/alice123` (user). Mocks
+live in `apps/frontend/src/mocks/ipc.ts` and stub `window.fetch` for
+`/api/*` URLs.
 
 ### Useful commands (from repo root)
 
 | Command | What it does |
 |---|---|
-| `npm run dev:desktop` | Tauri webview pointing at Vite dev (sidecar **not** spawned in dev) |
-| `npm run dev:frontend` | Vite only — open in browser; proxies `/api/*` to the Deno backend |
-| `npm run dev:mock` | Vite + mock IPC for fast UI iteration (no real backend needed) |
+| `npm run dev:frontend` | Vite only (Shape 2 expects a backend at `:8787`) |
 | `npm run dev:backend` | Deno backend with `--watch` |
+| `npm run dev:desktop` | Tauri shell + in-page Vite build |
+| `npm run dev:mock` | Vite + in-memory mock backend |
+| `npm run dev:fast` | Mock backend + auto-login + es locale |
+| `npm run build:frontend` | Vite build (Shape 2 SPA, expects a backend) |
+| `npm run build:frontend:inpage` | Vite build with `VITE_INPAGE_BACKEND=1` |
+| `npm run build:desktop:windows` | Full Tauri installer for Windows (Linux→Windows via cargo-xwin) |
 | `npm run check:frontend` / `check:backend` | Type-check each |
-| `npm run test:frontend` / `test:backend` | Run unit tests |
+| `npm run test:frontend` / `test:backend` | Unit tests (Vitest / Deno) |
 | `npm run lint` | ESLint over the frontend |
+| `npm run format` | Prettier across the repo |
 
-You can also `cd` into any workspace and use its native tools directly:
-`cd apps/backend && deno task test`, `cd apps/desktop && cargo check`, etc.
+Inside individual workspaces use the native tools directly:
+`cd apps/backend && deno task test`, `cd apps/desktop && cargo check`,
+`cd apps/frontend && npm run test:watch`, etc.
 
 ---
 
-## Building for release
+## Backup system (Phase 4–7, 9)
 
-The build chains the Deno sidecar (compiled to a single native binary) with
-the Tauri wrapper:
+Every install has an end-to-end encrypted backup story. Pipeline:
 
-```bash
-npm run build:desktop:linux      # Linux x86_64
-npm run build:desktop:windows    # Linux host → Windows x86_64 via cargo-xwin
+```
+exportDb()        VACUUM INTO → Uint8Array (consistent snapshot)
+   ↓
+compress()        CompressionStream("gzip")
+   ↓
+encryptBlob()     AES-256-GCM(key derived via Argon2id from passphrase)
+   ↓
+upload()          to a chosen BackupTarget
+   ↓
+verify()          re-fetch + decrypt + byte-equal compare (when target supports get)
 ```
 
-Output paths:
-- `apps/desktop/binaries/hipo-backend-<target>(.exe)` — the Deno sidecar
-- `apps/desktop/target/<target>/release/bundle/{deb,nsis,msi,...}/` — the installers
+Targets that ship today, all behind the same `BackupTarget` interface:
 
-CI alternative: push a `v*` tag to trigger `.github/workflows/release.yml`,
-which builds for Linux + Windows in parallel using native runners and uploads
-signed installers + `latest.json` to a draft GitHub Release.
+- `@hipo/backup-local/download` — `<a download>`-based one-shot backup. Universal fallback.
+- `@hipo/backup-local/fs-access` — File System Access API for a persistent folder (Chromium).
+- `@hipo/backup-local/tauri` — `@tauri-apps/plugin-fs` injection (caller supplies the surface).
+- `@hipo/backup-github` — single rolling `backup.bin` in a repo via Contents API + fine-grained PAT.
+- `@hipo/backup-vault` + `@hipo/backup-vault-server` — Phase 9, PAT-authed blob storage running on your own Deno backend.
 
-**Bundle sizes (verified Linux x86_64, 2026-05-14):**
+The passphrase never leaves the device. PATs are encrypted with a
+passphrase-derived AES-GCM key (`secrets-vault.ts`) and stored in
+localStorage. Lose the passphrase and PAT/blob recovery is gone — same
+as losing a GPG private key.
 
-- Tauri shell executable: **~20 MB**.
-- Compiled Deno sidecar (libsql + V8 + std + npm deps): **~387 MB** —
-  the npm-deps embed via Deno's auto-managed `node_modules` is the
-  bulk (~266 MB unique).
-- `.deb` / `.rpm` installer: **~117 MB** each (compressed).
-- `.AppImage`: **~197 MB**.
-- Comparison: pure Tauri+Rust ~25 MB, Electron-equivalent ~250 MB.
+A `CadenceRunner` mounted at the app root checks every 5 min after a
+30 s warm-up and runs a backup against the first cadence-eligible
+target when the last backup was >24 h ago. Preference order:
+fs-access > github > vault. `local-download` is deliberately excluded
+from cadence (would pop save dialogs randomly).
 
-The size delta vs. pure Rust buys backend code reuse with the cloud
-build (same binary deploys hosted). Windows installers aren't measured
-locally — expect roughly similar shapes.
+`/api/system/status` returns a structured "where is my data, how safe
+is it, what can lose it" picture that drives a banner in the dashboard
+and a panel in Settings.
 
-**Build-order gotcha.** `deno compile` embeds the workspace tree
-reachable from the repo root. If `apps/desktop/target/` contains stale
-Rust artifacts when you run `deno task compile:linux` *manually*, the
-sidecar binary balloons to **5.8 GB** (the entire Rust target/ gets
-dragged in). The orchestrated `npm run build:desktop:*` scripts and
-`.github/workflows/release.yml` chain steps in the right order (Deno
-compile *before* `tauri build`/`cargo build`), so official build paths
-are unaffected. Direct `deno task compile:*` invocations: `cargo
-clean` first, or just use the orchestrated script.
+See `docs/local-first-framework.md` Phase 4–7 for the full design.
 
 ---
 
-## Auto-updater setup
+## Releases (Tauri)
 
-`apps/desktop` ships with `tauri-plugin-updater` wired up. On launch (release
+`apps/desktop` ships with `tauri-plugin-updater`. On launch (release
 builds only) the frontend calls `check()`; if a newer signed bundle is
-available the user gets an antd modal offering to install and relaunch. A
-manual "Check for updates" button lives in the Settings page.
+available the user gets an antd modal offering to install and relaunch.
 
 ### One-time setup before your first release
 
 1. **Generate a signing keypair:**
    ```bash
    npm run signer:generate -w @hipo/desktop
-   # or equivalently: cd apps/desktop && tauri signer generate
    ```
-   - **Public key** → paste into `apps/desktop/tauri.conf.json` at
-     `plugins.updater.pubkey` (replace the `PLACEHOLDER_…` value).
-   - **Private key** + password → store as repo secrets
-     `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
-   - **Keep the private key safe** — losing it means existing installations
-     can no longer accept updates and need a fresh install.
+   - Public key → `apps/desktop/tauri.conf.json` at `plugins.updater.pubkey` (replace the `PLACEHOLDER_…` value).
+   - Private key + password → repo secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+   - Keep the private key safe — losing it means existing installs can't accept updates.
 
 2. **Replace the placeholder URL** in `apps/desktop/tauri.conf.json` at
-   `plugins.updater.endpoints` with your GitHub org/repo:
+   `plugins.updater.endpoints` with your repo:
    ```
    https://github.com/<owner>/<repo>/releases/latest/download/latest.json
    ```
 
-3. **Verify cross-compile** (only if you'll build Windows locally —
-   otherwise CI handles it):
+3. **Verify local cross-compile** (only if you'll cut releases manually):
    ```bash
    npm run build:desktop:windows
    ```
@@ -228,64 +298,82 @@ manual "Check for updates" button lives in the Settings page.
 ```bash
 git tag v0.2.0
 git push --tags
-# → triggers .github/workflows/release.yml
-# → matrix build (Linux + Windows) with signed bundles
-# → draft GitHub Release created with installers + latest.json attached
+# → .github/workflows/release.yml builds + signs + drafts a release
 ```
 
-Flip the draft to published when you're happy with the build. Existing
-installations will pick it up on next launch via the `latest.json` endpoint.
+The workflow currently matrix-builds Linux + Windows. **Linux is not
+a supported target** (Phase 8A decision); the workflow's Linux job
+remains for dev iteration and can be trimmed when we're sure
+webkit2gtk 2.52 won't fix the OPFS gap — see Phase 8B in the plan.
 
 ---
 
-## Lost-password recovery (V1)
+## Lost-password / lost-data recovery
 
-No in-app reset flow. If the sole admin forgets their password, recover
-manually:
+The recovery story depends on which shape you're in.
+
+### In-page (Pages, Tauri, browser-only dev)
+
+SQLite lives in OPFS, which the browser owns. You cannot edit it with
+`sqlite3` from a terminal — the path is sandboxed and per-origin.
+
+- **Lost password** → Restore from an encrypted backup made earlier
+  (Settings → "Restore from a backup file"), or wipe OPFS and start
+  fresh (DevTools → Application → Storage → Clear site data).
+- **Lost passphrase, no backup** → unrecoverable. The first-install
+  flow strongly encourages an initial backup before any data is entered.
+
+### Deno backend (Shape 2)
 
 ```bash
-# Locate the data dir (default: OS app_data_dir for ar.com.adjimann.hipo).
-# Linux:   ~/.local/share/ar.com.adjimann.hipo/hipo.db
-# Windows: %APPDATA%\ar.com.adjimann.hipo\hipo.db
-
-sqlite3 hipo.db \
+# Default data dir: ./data (override with HIPO_DATA_DIR)
+sqlite3 ./data/hipo.db \
   "UPDATE users SET password_hash = '<new-argon2id-encoded-hash>' WHERE username = 'admin'"
 ```
 
-Generate the hash with any argon2id tool (or the wrappers in
-`apps/backend/src/auth/passwords.ts`). Alternatively, delete `hipo.db`
-to re-bootstrap from scratch (data loss). The cloud build will add a
-real email-based reset flow.
+Generate the hash with any argon2id tool, or via `packages/auth/src/passwords.ts`.
+
+### Tauri (Windows) — Mechanism B fallback
+
+Tauri's webview stores OPFS under a known per-app directory on disk.
+Copying that directory between two installs of the same Tauri app on
+the same OS gives you "portable install" semantics. Paths:
+
+| OS | Path |
+|---|---|
+| Windows | `%LOCALAPPDATA%\ar.com.adjimann.hipo\` |
+| Linux (dev only) | `~/.local/share/ar.com.adjimann.hipo/` |
+
+Same OS + same webview only. Cross-version copy is undefined — use a
+framework-managed encrypted backup (Mechanism A) instead.
 
 ---
 
 ## Conventions & rules
 
 - **Money in integer cents** — `i64`/`number` everywhere in storage;
-  `decimal.js` on the frontend for arithmetic.
-- **Payment splits** use largest-remainder cents allocation — every payment
-  reconciles exactly to the lender shares. See
-  `apps/backend/src/payments/split.ts`.
+  `decimal.js` on the frontend for arithmetic; `BigInt` in the backend
+  payment-split algorithm (cent × cent overflows
+  `Number.MAX_SAFE_INTEGER`).
+- **Payment splits** use largest-remainder cents allocation —
+  reconciles exactly. See `packages/shared/src/split.ts`.
 - **Soft delete** on `users`, `parties`, `loans`, `debtor_payments`,
-  `lender_payouts`. Reads filter `WHERE deleted_at IS NULL`. Junction tables
-  (`loan_lenders`, `debtor_payment_splits`) aren't soft-deleted.
+  `lender_payouts`. Reads filter `WHERE deleted_at IS NULL`. Junction
+  tables aren't soft-deleted.
 - **Every mutation writes an audit row** inside the same transaction.
-  `action` is `entity.verb` (`party.create`, `loan.update`, etc.). Payload
-  is `{before, after}` JSON.
-- **Migrations are append-only** — never edit a migration that has shipped.
-  Add a new one with the next version number.
-- **No `Deno.*` namespace in business logic** — only Web Standard APIs +
-  Hono + Drizzle. Keeps the backend runnable on Node/Bun/Workers if needed.
-- **i18n: Spanish default + English.** Rust shell error strings remain
-  English (sidecar-internal only; never user-visible).
-- **Users ≠ parties.** Separate tables on purpose: parties include
-  entities (banks, trusts) that don't authenticate, plus there are
-  hundreds of them vs. 1–10 staff `users`. If lender-portal access ever
-  lands, add a `users.party_id` FK then — bridge pattern, not
-  inheritance. Forward-compatible.
-- **Cross-domain guards** enforced in `do_*` operations + tests:
-  - Can't change a loan's lenders if it has payments.
-  - Can't delete a loan with payments — close it instead.
+  Action format is `entity.verb` (`party.create`, `vault.blob.put`,
+  etc.); payload is `{before, after}` JSON.
+- **Migrations are append-only** — never edit a migration that has
+  shipped. Hipo domain claims versions 1–2; vault tables claim
+  versions 100+; new framework packages get their own version range.
+- **Every backend command is `do_*(ctx, args)`** — plain function, no
+  HTTP dependency, callable directly from tests. Route handlers are
+  one-liners.
+- **No `Deno.*` namespace in business logic** — only Web Standard APIs
+  + Drizzle. Same code runs in Deno and in the in-page Worker.
+- **No hipo-specific code in `packages/*`** — framework principle 1.
+- **i18n: Spanish default + English.** Backend error strings stay
+  English; UI catalogs translate `risk_flags` and other facts.
 
 ---
 
@@ -294,94 +382,76 @@ real email-based reset flow.
 Decisions taken during architecture exploration, recorded here so we
 don't re-litigate them.
 
-**Backend runtime / topology:**
+**Substrate:**
 
-- **Embedded Deno** (`deno_core` / `deno_runtime`) — single-process
-  feels tighter but pulls slow Rust compiles, runtime drift, and
-  frontend transport divergence. The sidecar's "problems" (port
-  allocation, auth token) are ~30 LOC each.
-- **Bun rewrite** — Bun statically links **LGPL 2.1**
-  JavaScriptCore; commercial closed-source would require NOTICE +
-  offer-to-relink paperwork. Deno (MIT + V8 BSD) is cleaner.
-- **Pure Rust + axum** — preserves the old Rust backend but blocks the
-  actual goal: sharing TS code with the frontend (`types`, validators,
-  split, format).
-- **Third-party Tauri plugins** (`tauri-plugin-deno`, `tauri-plugin-js`)
-  — documented Windows production bugs, single-maintainer projects.
-  Tauri's built-in `externalBin` instead.
+- `@libsql/client-wasm` (Turso) — rejected per Spike #1b: 1.76 MB WASM
+  vs 399 KB vanilla SQLite-WASM (4.4× the bundle for a Turso path we
+  don't plan to take).
+- DuckDB / pglite / RxDB / Dexie / PouchDB — wrong fit for relational
+  domains, document model mismatch, or licensing uncertainty. See
+  `docs/local-first-framework.md` "Alternatives considered."
+
+**Backend topology:**
+
+- **Embedded Deno** (`deno_core` / `deno_runtime`) — slow Rust
+  compiles + runtime drift. We did this for a while, then Phase 8A
+  removed the embedded sidecar entirely in favour of the in-page
+  topology.
+- **Bun rewrite** — Bun statically links **LGPL 2.1** JavaScriptCore;
+  commercial closed-source would require NOTICE + offer-to-relink
+  paperwork. Deno (MIT + V8 BSD) is cleaner.
+- **Hono** — replaced by a 53-LOC hand-rolled router per Spike #2.
+  Hono is fine but redundant once `Request`/`Response` are the
+  isomorphic contract.
 
 **Frontend libraries:**
 
 - **Zod** — parallel schema layer with no upside given the shared
   `check*` validators in `@hipo/shared` already cover both sides.
 - **Jotai / Zustand / Redux** — source of truth is the backend; React
-  only holds ephemeral UI state. `useState` / `useReducer` /
-  `useContext` are enough.
-- **TanStack Query** — deferred until 3+ views share data and manual
-  invalidation gets painful. Migration is mechanical when needed.
-- **Sass / CSS-in-JS** — plain CSS at this size.
-- **Sentry / telemetry** — not at this scale.
-- **Native file dialogs** (`@tauri-apps/plugin-dialog` / `plugin-fs`) —
-  prefer browser APIs (`<input type="file">`, `Blob` downloads) so the
-  frontend is identical across Tauri and cloud builds.
+  only holds ephemeral UI state.
+- **TanStack Query** — deferred until 3+ views share data.
+- **Sass / CSS-in-JS / Sentry** — not at this scale.
+- **Native file dialogs** — prefer browser APIs so the frontend stays
+  identical across Tauri and Pages builds.
 
 **Money / domain:**
 
-- **Floats for money** — rejected. Integer cents in storage; BigInt for
-  intermediate products in the split (cent × cent overflows
-  `Number.MAX_SAFE_INTEGER` at realistic loan sizes). Largest-remainder
-  allocation guarantees the total reconciles exactly.
-- **Amortization tables / interest-rate math** — out of scope.
-  `principal_cents` + flat `interest_cents` matches the use case.
+- **Floats for money** — rejected. Integer cents in storage; BigInt
+  for intermediate products; largest-remainder for splits.
+- **Amortization tables** — out of scope; flat `principal_cents` +
+  `interest_cents` matches the use case.
 
 ---
 
 ## Cloud deployment caveats (when wired)
 
-The same Deno binary runs as a hosted server, but several things flip
-from "deferred" to "required" the moment it does:
+The same Deno binary that runs `apps/backend` locally also runs as a
+hosted server, but several things flip from "deferred" to "required"
+the moment it does:
 
-- **Multi-tenancy: one SQLite file per org.** Filesystem-enforced
-  isolation, so a missed `WHERE org_id = ?` can't leak data; per-customer
-  backup/restore is `cp`. Not yet implemented (single-tenant currently);
-  architecture supports it without breaking changes — subdomain → path.
-- **Encryption at rest** becomes required (SQLCipher or platform disk
-  encryption). Local desktop installs run plain SQLite by design — the
-  user's filesystem is the trust boundary there.
-- **AR regulatory flags** (per the `ar.com.adjimann.hipo` identifier):
-  - **Ley 25.326 (PDPA)** — AAIP registration likely required for SaaS
-    that stores third-party data.
-  - **Right-of-access / right-of-deletion** endpoints needed;
-    soft-delete may need to become hard-delete for compliance requests.
-  - **SOC 2 / ISO 27001** for B2B sales eventually.
+- **Multi-tenancy** — one SQLite file per org, filesystem-isolated.
+  Subdomain or path routes to the right DB. Architecture supports it
+  without breaking changes; do_* ops stay single-`Ctx.db`.
+- **Encryption at rest** — SQLCipher or platform disk encryption.
+  Local desktop installs run plain SQLite by design (the user's
+  filesystem is the trust boundary there).
+- **`packages/server-deploy`** — Phase 9 strict-mode extraction
+  (deferred). Will hold the generic `Deno.serve` bootstrap +
+  Dockerfile + fly.toml template + Litestream config so a hosted
+  deployment is configuration, not rewrite.
+- **AR regulatory flags** (`ar.com.adjimann.hipo`): Ley 25.326 (PDPA)
+  AAIP registration likely required; right-of-access / right-of-
+  deletion endpoints; SOC 2 / ISO 27001 for B2B sales eventually.
 
-Not blocking now — factor into the timeline when cloud SaaS goes live.
-
----
-
-## Prior art
-
-If you're considering extracting `apps/desktop` into a generic
-"wrap-a-web-app-as-a-desktop-app" tool, **CrabNebula's Taurify**
-(`https://docs.crabnebula.dev/taurify/`) already covers substantially
-the same ground: `npx taurify init/dev/build`, no Rust required,
-first-class Deno backend config (`backend: { flavor: "deno", path,
-entryPoint }`), auto-updates, multi-platform output (desktop + iOS +
-Android).
-
-The only meaningful differentiator identified for an OSS alternative is
-licensing / lock-in: Taurify is paired with CrabNebula's commercial
-Cloud (billing page + `cloud/ci/taurify-workflow` doc), and the CLI has
-no visible OSS license — only `vscode-taurify` is on GitHub.
-
-**Recommended path** (2026-05-14 finding): try Taurify on hipo first —
-cheapest experiment. If it fits, the OSS-tool idea is moot. If it
-doesn't, the gap list becomes the actual scope.
+Not blocking now — factor into the timeline when SaaS goes live.
 
 ---
 
 ## Licensing
 
-Commercial closed-source — all runtime deps are MIT/Apache. Tauri
-(MIT/Apache), Deno (MIT + V8 BSD), Hono / Drizzle / Zod / decimal.js
-(MIT/Apache), @node-rs/argon2 (MIT), libsql (MIT). No LGPL exposure.
+Commercial closed-source. All runtime deps are MIT/Apache. Tauri
+(MIT/Apache), Deno (MIT + V8 BSD), Drizzle / decimal.js / antd
+(MIT), `@node-rs/argon2` (MIT), libsql (MIT), `sqlocal` (MIT),
+`@sqlite.org/sqlite-wasm` (Public Domain / MIT), `hash-wasm` (MIT).
+No LGPL exposure. See `memory/feedback-licensing.md`.
