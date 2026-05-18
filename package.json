@@ -12,6 +12,8 @@
     "packages/auth",
     "packages/audit",
     "packages/backup",
+    "packages/backup-local",
+    "packages/backup-github",
     "spikes/05-in-page-ops"
   ],
   "scripts": {

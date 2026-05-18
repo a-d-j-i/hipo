@@ -11,6 +11,7 @@ export {
   type Envelope,
 } from "./envelope.ts";
 export type { BackupFormat } from "./format.ts";
+export type { BackupTarget } from "./target.ts";
 export {
   exportDb,
   gzipped,
