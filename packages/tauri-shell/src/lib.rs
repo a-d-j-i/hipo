@@ -45,6 +45,11 @@ use tauri::{Builder, Manager, WebviewUrl, WebviewWindowBuilder, Wry};
 pub use tauri;
 pub use tauri_plugin_updater;
 
+// Phase 12: native SQLite via rusqlite, exposed to the frontend's
+// Drizzle proxy (`@hipo/sqlite/client-tauri`) through Tauri commands.
+pub mod sql;
+pub use sql::SqlState;
+
 /// Configuration parameters for the generic shell.
 #[derive(Clone)]
 pub struct ShellConfig {
@@ -52,14 +57,27 @@ pub struct ShellConfig {
     pub app_name: String,
     /// Initial window inner size (width, height) in logical px.
     pub window_size: (f64, f64),
+    /// Filename of the SQLite database the shell opens at startup,
+    /// resolved under Tauri's `app_data_dir()`. When `Some`, the
+    /// shell registers `sql_exec` / `sql_query` Tauri commands so
+    /// the frontend's Drizzle proxy (`@hipo/sqlite/client-tauri`)
+    /// can drive a native SQLite engine instead of SQLite-WASM. Set
+    /// to `None` to disable the SQL surface entirely (useful for
+    /// shells that ship a frontend doing its own storage). Default
+    /// via `new(...)` is `Some("<app_name>.db")`.
+    pub db_filename: Option<String>,
 }
 
 impl ShellConfig {
-    /// Convenience constructor with the default 800×600 window size.
+    /// Convenience constructor with the default 800×600 window and
+    /// `<app_name>.db` as the SQLite filename.
     pub fn new(app_name: impl Into<String>) -> Self {
+        let name: String = app_name.into();
+        let db_filename = Some(format!("{name}.db"));
         Self {
-            app_name: app_name.into(),
+            app_name: name,
             window_size: (800.0, 600.0),
+            db_filename,
         }
     }
 }
@@ -220,15 +238,21 @@ pub fn build_app(config: ShellConfig) -> Builder<Wry> {
     enable_jsc_shared_array_buffer();
 
     #[allow(unused_mut)]
-    let mut builder = Builder::default().plugin(
-        tauri_plugin_single_instance::init(|app, _args, _cwd| {
+    let mut builder = Builder::default()
+        // SQL commands are always registered; if `db_filename` is None
+        // the corresponding state is never managed and the commands
+        // return a clear "state not present" error if invoked.
+        .invoke_handler(tauri::generate_handler![
+            sql::sql_exec,
+            sql::sql_query,
+        ])
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.unminimize();
                 let _ = w.show();
                 let _ = w.set_focus();
             }
-        }),
-    );
+        }));
 
     // Updater is release-only: dev builds skip it so signing keys are
     // only required when shipping. The release pipeline writes the
@@ -243,6 +267,18 @@ pub fn build_app(config: ShellConfig) -> Builder<Wry> {
         build_main_window(&handle, &config.app_name, config.window_size)?;
         if let Some(window) = handle.get_webview_window("main") {
             enable_webkit_fs_access_features(&window);
+        }
+        if let Some(name) = &config.db_filename {
+            let data_dir = handle.path().app_data_dir()?;
+            std::fs::create_dir_all(&data_dir)?;
+            let db_path = data_dir.join(name);
+            let state = sql::SqlState::open(&db_path).map_err(|e| {
+                format!(
+                    "tauri-shell: opening SQLite at {}: {e}",
+                    db_path.display()
+                )
+            })?;
+            app.manage(state);
         }
         Ok(())
     })

@@ -13,6 +13,15 @@ tauri = { version = "2", features = [] }
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 
+# Phase 12: native SQLite via rusqlite (bundled — so the same source
+# cross-compiles Linux→Windows via cargo-xwin without an external
+# libsqlite3 dep on the target). The TS side of `@hipo/sqlite`
+# (`client-tauri.ts`) routes Drizzle queries through `sql_exec` /
+# `sql_query` Tauri commands defined in `src/sql.rs`.
+rusqlite = { version = "0.32", features = ["bundled"] }
+serde_json = "1"
+base64 = "0.22"
+
 # Linux: Tauri's webview is webkit2gtk. webkit2gtk-rs 2.0.x (what Tauri
 # pulls in) doesn't expose webkit_settings_set_feature_enabled in its
 # safe bindings, so we link to libwebkit2gtk-4.1 directly and call the
