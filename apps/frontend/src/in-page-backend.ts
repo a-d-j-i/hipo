@@ -74,39 +74,99 @@ export async function registerInPageSW(): Promise<void> {
   }
 }
 
+type Shape = "tauri" | "browser";
+
+function detectShape(): Shape {
+  // Same probe `main.tsx` uses for the updater branch. The Worker
+  // can't see `window` so the main thread tells it which shape it's
+  // running in via the `config` message below.
+  const w = globalThis as unknown as { __TAURI_INTERNALS__?: unknown };
+  return typeof w.__TAURI_INTERNALS__ !== "undefined" ? "tauri" : "browser";
+}
+
+/**
+ * Bridge SQL `invoke()` calls from the Worker to the Tauri Rust
+ * shell. The Worker postMessages `{ kind: "sql.invoke", id, cmd,
+ * args }`; we forward to `invoke(cmd, args)` and post the result
+ * back. Only installed inside Tauri — non-Tauri shapes don't dynamic-
+ * import `@tauri-apps/api` at all, so the dependency stays out of
+ * the browser/Pages bundle's critical path.
+ */
+async function installSqlBridge(worker: Worker): Promise<void> {
+  const core = await import("@tauri-apps/api/core");
+  const invoke = core.invoke as (
+    cmd: string,
+    args: unknown,
+  ) => Promise<unknown>;
+  worker.addEventListener("message", async (e: MessageEvent) => {
+    if (e.data?.kind !== "sql.invoke") return;
+    const { id, cmd, args } = e.data as {
+      id: number;
+      cmd: string;
+      args: unknown;
+    };
+    try {
+      const result = await invoke(cmd, args);
+      worker.postMessage({ kind: "sql.result", id, ok: true, result });
+    } catch (err) {
+      worker.postMessage({
+        kind: "sql.result",
+        id,
+        ok: false,
+        error: String(err),
+      });
+    }
+  });
+}
+
+function waitForWorkerMessage(worker: Worker, kind: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.kind === kind) {
+        worker.removeEventListener("message", onMsg);
+        resolve();
+      }
+    };
+    worker.addEventListener("message", onMsg);
+  });
+}
+
 /**
  * Phase 3+4 of the in-page backend boot: spawn the Worker that owns
- * the router + OPFS DB, wire a MessageChannel from main → Worker → SW.
+ * the router + DB, wire a MessageChannel from main → Worker → SW.
  * Must be called after `registerInPageSW()` has resolved.
+ *
+ * Boot sequence (added by Phase 12 to support the Tauri shape):
+ *   1. Spawn Worker, wait "loaded".
+ *   2. If Tauri shape, install sql.invoke bridge listener.
+ *   3. Post `config` message telling the Worker which shape it's in.
+ *   4. Worker opens DB (sqlocal on browser, sql-proxy bridge on
+ *      Tauri), then signals "db-ready".
+ *   5. Post `api-port` to Worker + SW; wait "ready".
  */
 export async function spawnInPageWorker(): Promise<void> {
-  console.log("[in-page backend] spawning Worker…");
+  const shape = detectShape();
+  console.log(`[in-page backend] spawning Worker (shape=${shape})…`);
+
   const worker = new Worker(new URL("./in-page-worker.ts", import.meta.url), {
     type: "module",
   });
 
-  // Wait for "loaded".
-  await new Promise<void>((resolve) => {
-    const onMsg = (e: MessageEvent) => {
-      if (e.data?.kind === "loaded") {
-        worker.removeEventListener("message", onMsg);
-        resolve();
-      }
-    };
-    worker.addEventListener("message", onMsg);
-  });
+  await waitForWorkerMessage(worker, "loaded");
   console.log("[in-page backend] Worker loaded");
 
+  if (shape === "tauri") {
+    await installSqlBridge(worker);
+    console.log("[in-page backend] Tauri SQL bridge installed");
+  }
+
+  const dbReady = waitForWorkerMessage(worker, "db-ready");
+  worker.postMessage({ kind: "config", shape });
+  await dbReady;
+  console.log("[in-page backend] Worker DB ready");
+
   const channel = new MessageChannel();
-  const workerReady = new Promise<void>((resolve) => {
-    const onMsg = (e: MessageEvent) => {
-      if (e.data?.kind === "ready") {
-        worker.removeEventListener("message", onMsg);
-        resolve();
-      }
-    };
-    worker.addEventListener("message", onMsg);
-  });
+  const workerReady = waitForWorkerMessage(worker, "ready");
   worker.postMessage({ kind: "api-port" }, [channel.port1]);
   navigator.serviceWorker.controller!.postMessage({ kind: "api-port" }, [
     channel.port2,

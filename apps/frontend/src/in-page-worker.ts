@@ -1,17 +1,14 @@
-// In-page Worker entry. Opens an OPFS-backed SQLite DB, builds the
-// framework Router with hipo's full route surface, listens for
-// requests on a MessageChannel port and dispatches via the router.
+// In-page Worker entry. Opens the DB (sqlocal+OPFS on browsers,
+// Tauri-IPC bridge on Tauri per Phase 12), builds the framework
+// Router with hipo's full route surface, and dispatches /api/*
+// requests sent by the Service Worker over a MessageChannel port.
 //
-// Loaded by the main thread (via `new Worker(...)`) at startup when
-// `VITE_INPAGE_BACKEND=1`. Same source as apps/backend/src/server.ts
-// minus Deno.serve + static SPA fallback (the SW handles non-/api
-// fetches).
+// Same source as apps/backend/src/server.ts minus `Deno.serve` and
+// the static-SPA fallback (the SW handles non-/api fetches).
 
 /// <reference lib="webworker" />
 
-import { openDb } from "@hipo/sqlite/client-browser";
-import { binaryFormat } from "@hipo/sqlite/binary-format-browser";
-import { gzipped } from "@hipo/backup";
+import { gzipped, type BackupFormat } from "@hipo/backup";
 import { Router, serveOnPort } from "@hipo/server";
 import {
   type AppState,
@@ -19,20 +16,61 @@ import {
 } from "@hipo/backend/middleware-session";
 import { registerAllRoutes } from "@hipo/backend/routes";
 import { migrations } from "@hipo/backend/migrations";
+import type { Db } from "@hipo/sqlite";
 
-async function main(): Promise<void> {
-  const { db, local } = await openDb({
+type Shape = "tauri" | "browser";
+
+function waitForMessage<T>(kind: string): Promise<T> {
+  return new Promise<T>((resolve) => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.kind === kind) {
+        self.removeEventListener("message", onMsg);
+        resolve(e.data as T);
+      }
+    };
+    self.addEventListener("message", onMsg);
+  });
+}
+
+async function openForShape(shape: Shape): Promise<{
+  db: Db;
+  backupFormat: BackupFormat | null;
+}> {
+  if (shape === "tauri") {
+    // Tauri shape: sqlocal/OPFS is replaced by rusqlite via the
+    // sql.invoke bridge on the main thread (see in-page-backend.ts).
+    // No binary-format yet — Phase 12 follow-on adds rusqlite-side
+    // VACUUM INTO and the Tauri-side file read; until then backup
+    // routes return "backup format not configured" cleanly.
+    const { openDb } = await import("@hipo/sqlite/client-tauri-bridge");
+    const opened = await openDb({ migrations });
+    return { db: opened.db, backupFormat: null };
+  }
+  // Browser / Pages shape — sqlocal + OPFS, with the binary backup
+  // format wired against the live SQLocal handle.
+  const [{ openDb }, { binaryFormat }] = await Promise.all([
+    import("@hipo/sqlite/client-browser"),
+    import("@hipo/sqlite/binary-format-browser"),
+  ]);
+  const opened = await openDb({
     databasePath: "hipo.sqlite3",
     migrations,
   });
-  // Same "binary-gzip" envelope as the Deno shape so backups
-  // round-trip between shapes.
-  const backupFormat = gzipped(binaryFormat({ local }));
+  return {
+    db: opened.db,
+    backupFormat: gzipped(binaryFormat({ local: opened.local })),
+  };
+}
+
+async function main(): Promise<void> {
+  const { shape } = await waitForMessage<{ shape: Shape }>("config");
+
+  const { db, backupFormat } = await openForShape(shape);
 
   const app = new Router<AppState>();
 
   // Security headers: not strictly needed for in-page (no cross-origin
-  // surface), but the same middleware that runs on Deno runs here so
+  // surface) but the same middleware that runs on Deno runs here so
   // route handlers don't see two different worlds.
   app.use(async (_c, next) => {
     const res = await next();
@@ -48,7 +86,8 @@ async function main(): Promise<void> {
 
   registerAllRoutes(app, { backupFormat });
 
-  // Listen for the MessageChannel port from the main thread.
+  // Install api-port listener before signalling db-ready so any
+  // immediately-following api-port message dispatches correctly.
   self.addEventListener("message", (e: MessageEvent) => {
     if (e.data?.kind === "api-port" && e.ports[0]) {
       serveOnPort(e.ports[0], app as unknown as Router<object>);
@@ -58,9 +97,13 @@ async function main(): Promise<void> {
     }
   });
 
-  // Tell the main thread we're loaded (before the port arrives).
-  (self as unknown as Worker).postMessage({ kind: "loaded" });
+  (self as unknown as Worker).postMessage({ kind: "db-ready" });
 }
+
+// Signal "loaded" before awaiting config so the main thread knows
+// the Worker is alive (and can install the SQL bridge in Tauri mode
+// before the Worker tries to run any query).
+(self as unknown as Worker).postMessage({ kind: "loaded" });
 
 main().catch((e) => {
   // eslint-disable-next-line no-console
