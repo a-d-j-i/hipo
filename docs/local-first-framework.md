@@ -585,10 +585,21 @@ existing feature-flag enablement is already in place — the only
 gate left to remove is the Linux-Tauri-not-shipped policy itself.
 See `memory/project-webkit2gtk-opfs.md` for the full investigation.
 
-**Phase 8B (deferred):** drop `build:desktop:linux` from root npm
-scripts and `ubuntu-22.04` from the CI matrix in
-`.github/workflows/release.yml`. Cosmetic; cheap to redo if Linux
-Tauri eventually returns.
+**Reopened by Phase 12.** "Sunsetted" was the right call given the
+information available 2026-05-18, but the architectural answer
+turned out simpler than the OPFS gap implies: stop using SQLite-WASM
+on the Tauri shape entirely. Phase 12 routes Drizzle's queries to a
+native-SQLite Rust backend via `drizzle-orm/sqlite-proxy` —
+webkit2gtk's missing API stops mattering because the in-page SQLite
+engine isn't part of the Tauri shape. Phase 8A's scaffolding (JSC
+SAB env var, C-FFI feature flags, COI in the merged SW) stays
+useful for non-SQL storage paths.
+
+**Phase 8B (deferred, conditional):** drop `build:desktop:linux`
+from root npm scripts and `ubuntu-22.04` from the CI matrix in
+`.github/workflows/release.yml`. **Skip if Phase 12 ships first** —
+the CI matrix and root script are exactly what Phase 12 needs to
+keep alive.
 
 ## Phase 9 — Decide what `apps/backend` becomes
 
@@ -632,6 +643,326 @@ When publishing is wanted, per-package:
 The packages most likely to want publishing first:
 `packages/sw`, `packages/sqlite`, `packages/backup`. The ones
 most likely to evolve = `auth`, `audit`, `i18n` — defer those longest.
+
+## Phase 11 — Hosting, headers, docs
+
+The framework's primary demo deploy. Required by
+[[feedback-github-pages-mandatory]] and load-bearing for Linux users
+post-Phase-8A — the documented Linux path is "open the Pages build in
+Chromium / Firefox" and that URL doesn't exist yet.
+
+### Deliverables
+
+1. **GitHub Pages workflow** (`.github/workflows/pages.yml`):
+   - Triggers on push to `main` + manual dispatch.
+   - Runs `npm run build:frontend:inpage` against the chosen demo
+     consumer (`templates/minimal` first, hipo later if wanted).
+   - Deploys via `actions/deploy-pages@v4` to
+     `https://<owner>.github.io/<repo>/`.
+   - Pre-deploy step asserts the merged SW lands at the right path
+     and `index.html` registers it.
+2. **Post-deploy smoke** — a Playwright job hits the deployed URL,
+   confirms the SW forces the COI reload, `crossOriginIsolated`
+   resolves to `true`, and the bootstrap → setup → take-a-backup
+   round-trip succeeds. Runs on a Chromium-only matrix in v1 (the
+   templates/minimal local harness already covers Firefox + WebKit
+   surface-area).
+3. **`packages/sw` extraction** — promote `apps/frontend/public/sw.js`
+   into a real package per Phase 1's original structure. Required so
+   future consumers don't copy-paste the COI + `/api/*`-routing SW.
+   Vite plugin or static-copy hook handles build-time placement.
+4. **Release index page** — `apps/frontend/public/releases.html` (or
+   served by Pages) lists: current Pages demo URL, latest Tauri
+   installer per OS (links to GitHub Releases), updater feed URL,
+   signing-key fingerprint. Small static HTML; updated by the same
+   release workflow that publishes installers.
+5. **ESLint `no-restricted-imports`** — enforce "no `apps/*` imports
+   inside `packages/*`" per Phase 1 principle #1. Convention only
+   today; one ESLint rule closes the loophole.
+6. **Documentation refresh** — root README links the Pages URL at
+   the top; `packages/tauri-shell/README` declares the Linux path
+   (Pages today, native via Phase 12 later); CLAUDE.md gets a
+   pointer to the demo URL.
+7. **Phase 8B cleanup** — drop `build:desktop:linux` from root +
+   `ubuntu-22.04` from the release-workflow matrix. **Skip if
+   Phase 12 lands first** (it relies on those exact scripts).
+
+### Why now
+
+Pages is the documented Linux escape hatch after Phase 8A. Until
+the URL exists, Linux is undocumented. Bootstrap (Phase 6) and the
+backup pipeline (Phases 4–7) had to land first — a Pages site with
+an empty stub would have looked broken on first contact.
+
+### Versioning
+
+The Pages deploy is the rolling "latest main" build. Tauri installers
+on GitHub Releases are tagged versions. They diverge; the release
+index page exposes the divergence explicitly ("Pages: commit `<sha>`
+of `<date>` — Installers: v0.3.1").
+
+## Phase 12 — Linux Tauri via native SQLite + Drizzle proxy
+
+Reopens Phase 8A's decision. Instead of polyfilling the missing OPFS
+sync API in the webview, **stop using SQLite-WASM on the Tauri shape
+entirely**: route Drizzle's queries to a native-SQLite Rust backend
+via `drizzle-orm/sqlite-proxy`. The webkit2gtk gap stops mattering
+because the in-page SQLite engine isn't part of the Tauri shape.
+
+### Topology (Tauri only — Pages unchanged)
+
+```
+Frontend Worker
+  └─ Drizzle (sqlite-proxy driver)   ← thin adapter
+       │
+       │  invoke("db.exec" | "db.query" | "db.txn.*")
+       ▼
+Tauri Rust process
+  └─ rusqlite   →   <app_data_dir>/hipo.db   (real SQLite file)
+```
+
+Pages / browser shape stays sqlocal + SQLite-WASM + OPFS. Server
+shape stays libsql + Drizzle. The framework's `Ctx { db, user }`,
+`do_*` ops, and migration runner are unchanged across all three —
+Drizzle's proxy driver is the isomorphism point.
+
+### Approach pick: rusqlite vs `tauri-plugin-sql`
+
+- **rusqlite (hand-rolled commands)** — `db_exec(sql, params)`,
+  `db_query(sql, params) → rows`, `db_txn_begin() → handle`,
+  `db_txn_exec(handle, …)`, `db_txn_commit(handle)`,
+  `db_txn_rollback(handle)`. ~150 LOC Rust, full control over
+  pragmas, WAL settings, prepared-statement caching. Apache/MIT.
+- **`@tauri-apps/plugin-sql`** — official, MIT/Apache, less code,
+  opinionated API. The Drizzle proxy still has to adapt to its
+  `execute()/select()` surface.
+
+Decide during the Phase 12 spike. Default: rusqlite for control.
+
+### Code surface (rough)
+
+| Piece | LOC | Where |
+|---|---|---|
+| Rust SQL commands (exec / query / txn lifecycle) | ~150 | `packages/tauri-shell/src/sql.rs` |
+| Drizzle proxy driver | ~30 | `packages/sqlite/src/client-tauri.ts` |
+| Connection factory: detect shape, return proxy or sqlocal | ~20 | `packages/sqlite/src/openDb.ts` |
+| Capability allow-list | ~10 | `apps/desktop/capabilities/default.json` |
+| Vite build condition: omit SQLite-WASM from Tauri inpage build | ~5 | `apps/frontend/vite.config.ts` |
+| Tests (parity smoke + transaction lifetime) | ~150 | new |
+
+**~365 LOC total**, about half the OPFS-polyfill alternative. No
+`target_os` cfg in the Rust shell — Rust SQL commands compile on
+all platforms; the Drizzle proxy is runtime-selected based on shape
+detection.
+
+### Pre-commit spikes
+
+1. **SQL parity.** Pin SQLite-WASM version (whatever sqlocal ships
+   today) and match rusqlite's `bundled` SQLite to within a patch
+   version. Run every existing hipo + framework migration against
+   both engines plus a representative SELECT set; diff results
+   byte-for-byte where possible.
+2. **IPC throughput.** Time `BEGIN; INSERT × 10k; COMMIT;` and a
+   1000-row SELECT via the proxy. Budget: ≤ 3× the in-process
+   SQLite-WASM number. If worse, batch via "execute many" commands.
+3. **Transaction lifetime over IPC.** Verify rusqlite (or
+   tauri-plugin-sql) supports holding a transaction across
+   multiple IPC calls (open txn handle, several statements, commit).
+   Drizzle's proxy mode expects this. If unsupported, fall back to
+   "submit the whole txn body in one call" pattern.
+
+### Risks
+
+- **Engine drift.** SQLite-WASM is built with specific compile-time
+  options (FTS5, JSON1, RTREE). rusqlite's bundled build may differ.
+  Mitigation: pin both; parity smoke per release.
+- **Connection ownership.** Multi-window Tauri (not on the roadmap)
+  would need explicit per-window or per-app connection pooling.
+- **Build complexity.** rusqlite's `bundled` feature adds C
+  compilation to the Tauri build. Already true for other native
+  Rust crates in the shell; not a new burden.
+- **Cross-compile.** Linux→Windows via `cargo-xwin` (already wired)
+  must include rusqlite's bundled SQLite. Verify in the Phase 12
+  spike — falling back to `tauri-plugin-sql` is the easy out.
+
+### What stays from Phase 8A
+
+- The `JSC_useSharedArrayBuffer=1` env var and
+  `webkit_settings_set_feature_enabled()` C-FFI block stay — they
+  enable async `navigator.storage` / `FileSystemFileHandle` /
+  Cache API for non-SQL paths.
+- COI in the merged SW remains required.
+- Tauri 2 shell topology is unchanged; Phase 12 only adds new IPC
+  commands.
+
+### Bundle impact
+
+- **Tauri:** drops SQLite-WASM (~600 KB gz). Net Tauri installer
+  shrinks proportionally.
+- **Pages:** no change (still SQLite-WASM in the Worker).
+- **Server shape:** no change (still libsql in Deno).
+
+### Triggers (when to actually start)
+
+- A Linux user reports the Pages-only workflow as friction (terminal
+  launchers, system-tray integration, `.desktop` entries — things
+  Pages can't deliver).
+- A second consumer needs Linux Tauri.
+- Windows installer bundle weight becomes a complaint (in which
+  case extend Phase 12 to Windows Tauri too — see below).
+
+### Optional extension: native SQLite on Windows Tauri too
+
+Same proxy on Windows. Drops SQLite-WASM from every Tauri build,
+unifies the Tauri data path. Pages remains SQLite-WASM. Defer until
+Linux works end-to-end — clean follow-on, not a prerequisite.
+
+### Decision on Phase 8A
+
+Moves from **"Linux Tauri sunsetted"** to **"Linux Tauri deferred
+pending Phase 12 (native SQLite via Drizzle proxy)."** Phase 8B
+(CI cleanup) is conditional: skip if Phase 12 lands first.
+
+### Rejected alternative: OPFS polyfill via SAB + Tauri-IPC bridge
+
+A previous Phase 12 draft proposed polyfilling
+`FileSystemSyncAccessHandle` via a `SharedArrayBuffer + Atomics.wait`
+bridge to Tauri-Rust file I/O. That would have kept SQL-engine
+parity at the cost of ~700 LOC of clever browser-API
+reimplementation, per-syscall IPC round-trips (vs per-query), and a
+hard barrier to SQLite WAL mode. Rejected 2026-05-19 in favour of
+the Drizzle proxy approach — same engine-divergence outcome at the
+backup-format / migration layer (none), but substantially less novel
+code and a smaller Tauri bundle. The polyfill approach remains
+viable if engine parity ever becomes a hard requirement and the
+LOC cost is acceptable.
+
+## Phase 13 — Multi-tab support for the hosted shape
+
+OPFS sync access handles are exclusive per origin. Without
+coordination, opening a second tab of the hosted app makes
+sqlocal's `opfs-sahpool` VFS fail to acquire the handle; the second
+tab silently falls back to in-memory and diverges from the first.
+The plan's Phase-3 "Risks" entry deferred a BroadcastChannel
+"only-one-writer" mitigation; user direction 2026-05-19 promotes
+this to a real phase with a cleaner design.
+
+### Topology change vs Phase 3
+
+```
+Phase 3 (current)                      Phase 13
+─────────────────                      ────────
+Per-tab dedicated Worker owns the      One SharedWorker per origin
+OPFS handle.                           owns the OPFS handle.
+Per-tab SW routes /api/* to the        Per-tab SW routes /api/* to the
+per-tab Worker.                        SharedWorker (one MessagePort
+                                       per tab).
+```
+
+The Service Worker per tab is unchanged (a single SW already serves
+every tab in scope). What changes is what the SW connects to:
+`new SharedWorker(...)` instead of `new Worker(...)`. Same
+request/response protocol on the wire.
+
+The SharedWorker holds an exclusive Web Lock on `"hipo-db"` for the
+duration of its life. Two purposes: (1) lifecycle observability —
+reincarnations after a browser-initiated termination can detect
+clean handoff; (2) the fallback path's "is the DB already owned?"
+probe.
+
+### Fallback: refuse to open (per user direction 2026-05-19)
+
+When `typeof SharedWorker === "undefined"` or instantiation fails,
+the app boots a dedicated Worker per tab and tries to acquire the
+`"hipo-db"` Web Lock with `{ mode: "exclusive", ifAvailable: true }`:
+
+- **Lock acquired** → only-tab; proceed normally.
+- **Lock unavailable** → another tab owns it. Render a modal:
+  *"This app is already open in another tab. Close the other tab to
+  continue here, or switch back to it."* The Worker does not boot;
+  no SQLite-WASM loaded; no partial-functionality state to design,
+  document, or test. Poll `navigator.locks.query()` every ~1 s so
+  the modal dismisses automatically when the other tab closes.
+
+The deliberate choice: no read-only mode. Browsers that support
+SharedWorker get full multi-tab; browsers that don't get
+single-tab-or-modal. Cleaner code path, narrower test matrix.
+
+### Supported-browser matrix
+
+| Browser | Path |
+|---|---|
+| Chromium / Edge / Brave | SharedWorker — full multi-tab |
+| Firefox | SharedWorker — full multi-tab |
+| Safari (desktop ≥ 15) | SharedWorker — full multi-tab |
+| Safari iOS | SharedWorker disabled on iOS — modal fallback |
+| WebKitGTK ≥ 2.42 (Pages on Linux) | SharedWorker supported — verify in pre-commit spike |
+
+### Code surface
+
+| Piece | LOC | Where |
+|---|---|---|
+| SharedWorker entry + `onconnect` per-port routing | ~40 | `packages/server/src/shared-worker.ts` |
+| SW → SharedWorker port wiring | ~30 | `apps/frontend/public/sw.js` |
+| Boot path: detect SharedWorker, fall back to lock-probe | ~50 | `apps/frontend/src/in-page-backend.ts` |
+| "Already open elsewhere" modal | ~60 | `apps/frontend/src/MultiTabBlock.tsx` |
+| Web Lock helpers (acquire, release-on-unload, observe release) | ~40 | `packages/server/src/tab-lock.ts` |
+| Tests (Playwright multi-context: 3 tabs, mutate, observe) | ~120 | new |
+
+**~340 LOC total.**
+
+### Tauri shape
+
+Phase 12 puts SQLite in the Rust process. Multi-tab is moot on the
+Tauri shape: a Tauri app is one window by default; multi-window
+would need a Rust-side connection pool — different problem,
+different phase, off the v1 roadmap.
+
+### Server shape
+
+Shape 2 / Shape 3 are inherently multi-tab: each tab is just a
+session against the shared DB. The Phase 13 work is hosted-shape-
+specific; nothing changes server-side.
+
+### Pre-commit spike
+
+Open three Chromium tabs against a deployed Pages build (Phase 11
+prerequisite). Verify:
+1. All three see the same DB state after a mutation from any one.
+2. Closing the SharedWorker's last surviving tab and reopening
+   immediately does not corrupt the DB.
+3. Force the fallback path (override `globalThis.SharedWorker =
+   undefined` before boot) and confirm the modal appears + clears
+   when the holding tab closes.
+4. WebKitGTK Pages path: confirm SharedWorker actually works
+   (probe early — fall back to modal-only on WebKitGTK if not).
+
+### Risks
+
+- **SharedWorker termination under memory pressure.** Same risk
+  Phase 3 already flagged for dedicated Workers. Reconnect logic in
+  the SW + the request-replay path extends naturally.
+- **iOS Safari.** PWA-installed on iOS hits the modal on every
+  second-tab attempt. Acceptable but worth documenting; the iPad
+  story for hipo isn't a v1 target anyway.
+- **SharedWorker DevTools UX.** Browsers expose SharedWorker
+  DevTools separately; document the path in CONTRIBUTING.
+- **Lock-release polling.** No event API for "released" in some
+  browsers; polling `navigator.locks.query()` is cheap but inelegant.
+
+### Triggers
+
+User stated 2026-05-19: required for the hosted shape. Sequence
+after Phase 11 so the Playwright multi-context test runs against
+the real deployed URL.
+
+### Supersedes
+
+The "Multi-tab with same OPFS" risk in the **Risks** section below
+(originally tagged "Add in Phase 3 once the Worker topology lands";
+the topology did land but the mitigation didn't — Phase 13 closes
+that loop with a cleaner SharedWorker-based design than the
+originally-sketched BroadcastChannel approach).
 
 ## Promotion path: local-first → shared server
 
@@ -1098,10 +1429,10 @@ shipping.
   Phase 1, not from Phase 10.
 - **Multi-tab with same OPFS.** Two tabs of the same app open at once
   contend for the OPFS sync access handle. SQLite-WASM holds an
-  exclusive lock; the second tab will fail to open. Mitigation: a
-  BroadcastChannel-based "only one tab is the writer" lock; other
-  tabs go read-only or show a "already open in another tab" prompt.
-  Add in Phase 3 once the Worker topology lands.
+  exclusive lock; the second tab will fail to open. **Addressed by
+  Phase 13** — SharedWorker owns the DB, all tabs route through it;
+  fallback (no SharedWorker) is a refuse-to-open modal per user
+  direction 2026-05-19.
 - **Worker / SW lifecycle traps.** Workers can be terminated by the
   browser under memory pressure; service workers can update mid-
   session and leave the Worker orphaned. Make the SW → Worker
