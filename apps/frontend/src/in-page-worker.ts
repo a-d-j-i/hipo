@@ -37,14 +37,16 @@ async function openForShape(shape: Shape): Promise<{
   backupFormat: BackupFormat | null;
 }> {
   if (shape === "tauri") {
-    // Tauri shape: sqlocal/OPFS is replaced by rusqlite via the
-    // sql.invoke bridge on the main thread (see in-page-backend.ts).
-    // No binary-format yet — Phase 12 follow-on adds rusqlite-side
-    // VACUUM INTO and the Tauri-side file read; until then backup
-    // routes return "backup format not configured" cleanly.
-    const { openDb } = await import("@hipo/sqlite/client-tauri-bridge");
+    // Tauri shape: rusqlite via the sql.invoke bridge on the main
+    // thread (see in-page-backend.ts). Backups go through Rust
+    // `VACUUM INTO` + file read; restores through atomic file
+    // rename + reopen (see `binary-format-tauri.ts`).
+    const [{ openDb }, { binaryFormat }] = await Promise.all([
+      import("@hipo/sqlite/client-tauri-bridge"),
+      import("@hipo/sqlite/binary-format-tauri"),
+    ]);
     const opened = await openDb({ migrations });
-    return { db: opened.db, backupFormat: null };
+    return { db: opened.db, backupFormat: gzipped(binaryFormat()) };
   }
   // Browser / Pages shape — sqlocal + OPFS, with the binary backup
   // format wired against the live SQLocal handle.

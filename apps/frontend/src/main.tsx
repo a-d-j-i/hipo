@@ -21,32 +21,40 @@ async function bootstrap() {
   }
 
   // In-page-backend shape: SW + Worker host the framework router and
-  // OPFS-backed SQLite. The boot sequence has two distinct phases now
-  // (Phase 6):
-  //   1. Register the SW + COI reload — always needed.
-  //   2. Check whether OPFS has been bootstrapped on this device:
-  //      - Not yet: render the Bootstrap page; the Worker is NOT
-  //        spawned (it would race against the bootstrap UI for the
-  //        OPFS sqlocal lock). User finishes new-install or restore,
-  //        page reloads, takes the bootstrapped branch on next boot.
-  //      - Already: spawn the Worker, then mount the full app.
+  // a SQLite engine that varies by shape:
+  //   - Browser / Pages: sqlocal + OPFS. Bootstrap UI gates the
+  //     worker so the encrypted-backup ceremony can write the marker
+  //     before the worker contends for sqlocal's OPFS lock. The
+  //     ceremony is meaningful on browsers because OPFS can be wiped
+  //     by browser data-clear or quota eviction.
+  //   - Tauri (Phase 12): native SQLite in the Rust shell at
+  //     <app_data_dir>/hipo.db. The DB is durable across reloads /
+  //     reinstalls (Mechanism B per the plan), so there's no first-
+  //     boot bootstrap to gate the worker behind. Spawn the worker
+  //     immediately; let App.tsx's RequireSetup / RequireLogin
+  //     guards route the user. Restore-from-backup on Tauri happens
+  //     in Settings, not as a bootstrap-only path.
   if (import.meta.env.VITE_INPAGE_BACKEND) {
-    const { registerInPageSW, spawnInPageWorker } = await import(
+    const { registerInPageSW, spawnInPageWorker, detectShape } = await import(
       "./in-page-backend"
     );
     await registerInPageSW();
 
-    const { isOpfsBootstrapped } = await import("./bootstrap/opfs-state");
-    const bootstrapped = await isOpfsBootstrapped();
+    if (detectShape() === "browser") {
+      const { isOpfsBootstrapped } = await import("./bootstrap/opfs-state");
+      const bootstrapped = await isOpfsBootstrapped();
 
-    if (!bootstrapped) {
-      const { default: BootstrapApp } = await import("./BootstrapApp");
-      ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-        <React.StrictMode>
-          <BootstrapApp />
-        </React.StrictMode>,
-      );
-      return;
+      if (!bootstrapped) {
+        const { default: BootstrapApp } = await import("./BootstrapApp");
+        ReactDOM.createRoot(
+          document.getElementById("root") as HTMLElement,
+        ).render(
+          <React.StrictMode>
+            <BootstrapApp />
+          </React.StrictMode>,
+        );
+        return;
+      }
     }
 
     await spawnInPageWorker();

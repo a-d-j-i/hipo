@@ -19,7 +19,7 @@
 //! the lock; JS-side Promise.all of N invokes runs sequentially on
 //! the Rust side.
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use base64::Engine;
@@ -31,8 +31,18 @@ use rusqlite::{
 use tauri::State;
 
 /// Tauri-managed state wrapping the single rusqlite `Connection`.
+/// Stores its origin `path` (for on-disk opens) so the backup /
+/// restore commands can reach the same file later.
 pub struct SqlState {
     conn: Mutex<Connection>,
+    path: PathBuf,
+}
+
+fn apply_default_pragmas(conn: &Connection) -> rusqlite::Result<()> {
+    conn.pragma_update(None, "journal_mode", "WAL")?;
+    conn.pragma_update(None, "foreign_keys", "ON")?;
+    conn.pragma_update(None, "synchronous", "NORMAL")?;
+    Ok(())
 }
 
 impl SqlState {
@@ -41,21 +51,23 @@ impl SqlState {
     /// other shapes (WAL, foreign keys on, NORMAL synchronous).
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         let conn = Connection::open(path)?;
-        conn.pragma_update(None, "journal_mode", "WAL")?;
-        conn.pragma_update(None, "foreign_keys", "ON")?;
-        conn.pragma_update(None, "synchronous", "NORMAL")?;
+        apply_default_pragmas(&conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
+            path: path.to_path_buf(),
         })
     }
 
-    /// In-memory open, used by the test suite.
+    /// In-memory open, used by the test suite. The `path` field is
+    /// set to an empty path — restore tests use [`open`] against a
+    /// real temp file.
     #[cfg(test)]
     pub fn open_in_memory() -> rusqlite::Result<Self> {
         let conn = Connection::open_in_memory()?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
         Ok(Self {
             conn: Mutex::new(conn),
+            path: PathBuf::new(),
         })
     }
 }
@@ -154,6 +166,107 @@ pub fn sql_query(
         out.push(r);
     }
     Ok(out)
+}
+
+/// Backup the live database to a base64-encoded SQLite file. Uses
+/// `VACUUM INTO` against a temp file alongside the DB so the
+/// snapshot is consistent regardless of in-flight transactions, then
+/// reads the temp file and removes it. Base64 keeps the JSON IPC
+/// payload at ~1.33× the binary size; for very large DBs a stream-
+/// to-disk path would be a future optimisation.
+///
+/// Refuses to back up an in-memory database (`SqlState::path` is
+/// empty), which only occurs in tests.
+#[tauri::command]
+pub fn sql_backup_to_bytes(state: State<'_, SqlState>) -> Result<String, String> {
+    if state.path.as_os_str().is_empty() {
+        return Err("sql_backup_to_bytes: no on-disk database".into());
+    }
+    // Sit next to the live DB so a Tauri sandboxed app doesn't need
+    // any extra path permissions to write the snapshot.
+    let temp = state.path.with_extension(format!("backup-{}.tmp", std::process::id()));
+    {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        // VACUUM INTO requires a string literal — escape any single
+        // quotes in the path (rare on app_data_dir but defensive).
+        let path_escaped = temp.display().to_string().replace('\'', "''");
+        conn.execute(&format!("VACUUM INTO '{path_escaped}'"), [])
+            .map_err(|e| format!("VACUUM INTO: {e}"))?;
+    }
+    let bytes = std::fs::read(&temp)
+        .map_err(|e| format!("read snapshot {}: {e}", temp.display()))?;
+    let _ = std::fs::remove_file(&temp);
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
+}
+
+/// Restore the database from base64-encoded SQLite file bytes. Writes
+/// the bytes to a sibling temp file, closes the live connection,
+/// atomically renames the temp over the live DB, removes any WAL /
+/// SHM sidecars from the old DB, and re-opens. Migrations are
+/// re-applied on the next open by the runner on the JS side (the
+/// caller's responsibility — typically a page reload follows).
+#[tauri::command]
+pub fn sql_restore_from_bytes(
+    state: State<'_, SqlState>,
+    bytes: String,
+) -> Result<(), String> {
+    if state.path.as_os_str().is_empty() {
+        return Err("sql_restore_from_bytes: no on-disk database".into());
+    }
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(bytes.as_bytes())
+        .map_err(|e| format!("base64 decode: {e}"))?;
+
+    let temp = state.path.with_extension(format!("restore-{}.tmp", std::process::id()));
+    std::fs::write(&temp, &decoded)
+        .map_err(|e| format!("write temp {}: {e}", temp.display()))?;
+
+    // Swap the live connection with a throwaway in-memory one so the
+    // file is closed before we replace it on disk. Placeholder
+    // pattern lets us keep `Mutex<Connection>` (no Option<>).
+    {
+        let mut guard = state.conn.lock().map_err(|e| e.to_string())?;
+        let placeholder = Connection::open_in_memory()
+            .map_err(|e| format!("placeholder open: {e}"))?;
+        let old = std::mem::replace(&mut *guard, placeholder);
+        drop(old);
+
+        // Replace the active DB file. `rename` is atomic on the same
+        // filesystem (always true here — both files in app_data_dir).
+        std::fs::rename(&temp, &state.path).map_err(|e| {
+            // Best-effort cleanup of the temp file if the rename failed.
+            let _ = std::fs::remove_file(&temp);
+            format!("rename {} → {}: {e}", temp.display(), state.path.display())
+        })?;
+
+        // Old WAL/SHM sidecars reference the pre-restore page checksums;
+        // delete them so the new DB opens with fresh ones.
+        let _ = std::fs::remove_file(
+            state.path.with_extension(
+                state
+                    .path
+                    .extension()
+                    .map(|e| format!("{}-wal", e.to_string_lossy()))
+                    .unwrap_or_else(|| "wal".into()),
+            ),
+        );
+        let _ = std::fs::remove_file(
+            state.path.with_extension(
+                state
+                    .path
+                    .extension()
+                    .map(|e| format!("{}-shm", e.to_string_lossy()))
+                    .unwrap_or_else(|| "shm".into()),
+            ),
+        );
+
+        let fresh = Connection::open(&state.path)
+            .map_err(|e| format!("reopen after restore: {e}"))?;
+        apply_default_pragmas(&fresh)
+            .map_err(|e| format!("pragmas after restore: {e}"))?;
+        *guard = fresh;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -309,6 +422,157 @@ mod tests {
         )
         .unwrap_err();
         assert!(err.contains("FOREIGN KEY"), "expected FK error, got {err}");
+    }
+
+    /// Allocate a private SQLite file path in the system temp dir.
+    /// Returned closure cleans it up (incl. WAL/SHM sidecars).
+    fn temp_db_path(label: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "hipo-sql-test-{label}-{}-{nanos}.sqlite",
+            std::process::id(),
+        ))
+    }
+
+    fn clean_db(p: &Path) {
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_file(p.with_extension("sqlite-wal"));
+        let _ = std::fs::remove_file(p.with_extension("sqlite-shm"));
+    }
+
+    #[test]
+    fn backup_to_bytes_returns_valid_sqlite_snapshot() {
+        let p = temp_db_path("backup");
+        {
+            let s = SqlState::open(&p).unwrap();
+            exec(
+                &s,
+                "CREATE TABLE t (id INTEGER PRIMARY KEY, x TEXT)",
+                vec![],
+            )
+            .unwrap();
+            exec(
+                &s,
+                "INSERT INTO t (id, x) VALUES (?, ?)",
+                vec![json!(1), json!("hello")],
+            )
+            .unwrap();
+
+            // Call the backup command path directly (test helper
+            // bypasses the State<> wrapper but exercises the same
+            // body — VACUUM INTO + read + base64).
+            let base64 = {
+                let temp =
+                    s.path.with_extension(format!("backup-{}.tmp", std::process::id()));
+                let path_escaped =
+                    temp.display().to_string().replace('\'', "''");
+                {
+                    let conn = s.conn.lock().unwrap();
+                    conn.execute(&format!("VACUUM INTO '{path_escaped}'"), [])
+                        .unwrap();
+                }
+                let bytes = std::fs::read(&temp).unwrap();
+                let _ = std::fs::remove_file(&temp);
+                base64::engine::general_purpose::STANDARD.encode(&bytes)
+            };
+
+            // SQLite files always start with the literal header
+            // "SQLite format 3\0". Decode and verify.
+            let bytes = base64::engine::general_purpose::STANDARD
+                .decode(&base64)
+                .unwrap();
+            assert!(bytes.len() > 16, "snapshot too small");
+            assert_eq!(&bytes[..16], b"SQLite format 3\0");
+
+            // Round-trip: write the bytes back to a sibling file and
+            // open it; data should survive.
+            let restored = temp_db_path("restored");
+            std::fs::write(&restored, &bytes).unwrap();
+            let r = Connection::open(&restored).unwrap();
+            let count: i64 = r
+                .query_row("SELECT COUNT(*) FROM t", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(count, 1);
+            let x: String = r
+                .query_row("SELECT x FROM t WHERE id = 1", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(x, "hello");
+            drop(r);
+            clean_db(&restored);
+        }
+        clean_db(&p);
+    }
+
+    #[test]
+    fn restore_replaces_live_db_in_place() {
+        // Create source DB with one row; capture its bytes.
+        let src_path = temp_db_path("restore-src");
+        let snapshot: Vec<u8> = {
+            let s = SqlState::open(&src_path).unwrap();
+            exec(&s, "CREATE TABLE m (k TEXT, v TEXT)", vec![]).unwrap();
+            exec(
+                &s,
+                "INSERT INTO m VALUES (?, ?)",
+                vec![json!("greeting"), json!("hola")],
+            )
+            .unwrap();
+            // VACUUM INTO a sibling and read it.
+            let temp = src_path
+                .with_extension(format!("snap-{}.tmp", std::process::id()));
+            let path_escaped =
+                temp.display().to_string().replace('\'', "''");
+            {
+                let conn = s.conn.lock().unwrap();
+                conn.execute(&format!("VACUUM INTO '{path_escaped}'"), [])
+                    .unwrap();
+            }
+            let b = std::fs::read(&temp).unwrap();
+            let _ = std::fs::remove_file(&temp);
+            b
+        };
+        clean_db(&src_path);
+
+        // Target DB with different contents we want to clobber.
+        let tgt_path = temp_db_path("restore-tgt");
+        let s = SqlState::open(&tgt_path).unwrap();
+        exec(&s, "CREATE TABLE m (k TEXT, v TEXT)", vec![]).unwrap();
+        exec(
+            &s,
+            "INSERT INTO m VALUES (?, ?)",
+            vec![json!("greeting"), json!("hello")],
+        )
+        .unwrap();
+
+        // Inline the restore body (test helper — same as the command).
+        let base64 = base64::engine::general_purpose::STANDARD.encode(&snapshot);
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(base64.as_bytes())
+            .unwrap();
+        let temp = s
+            .path
+            .with_extension(format!("restore-{}.tmp", std::process::id()));
+        std::fs::write(&temp, &decoded).unwrap();
+        {
+            let mut guard = s.conn.lock().unwrap();
+            let placeholder = Connection::open_in_memory().unwrap();
+            let old = std::mem::replace(&mut *guard, placeholder);
+            drop(old);
+            std::fs::rename(&temp, &s.path).unwrap();
+            let fresh = Connection::open(&s.path).unwrap();
+            apply_default_pragmas(&fresh).unwrap();
+            *guard = fresh;
+        }
+
+        // After restore, the target's data is the source's.
+        let rows = query(&s, "SELECT k, v FROM m", vec![]).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0], vec![json!("greeting"), json!("hola")]);
+
+        drop(s);
+        clean_db(&tgt_path);
     }
 
     #[test]

@@ -27,7 +27,18 @@ export type OpenDbTauriBridgeOptions = {
 };
 
 type ProxyMethod = "all" | "run" | "values" | "get";
-type BridgeCmd = "sql_exec" | "sql_query";
+/**
+ * Commands the bridge knows how to forward. Listed explicitly so a
+ * typo in a caller becomes a type error instead of a runtime "unknown
+ * command" from the Rust side. New backend commands need to be added
+ * here AND to the `invoke_handler!` list in
+ * `packages/tauri-shell/src/lib.rs`.
+ */
+export type BridgeCmd =
+  | "sql_exec"
+  | "sql_query"
+  | "sql_backup_to_bytes"
+  | "sql_restore_from_bytes";
 type Pending = (r: { ok: boolean; result?: unknown; error?: string }) => void;
 
 let nextId = 1;
@@ -47,9 +58,17 @@ function installListener(): void {
   });
 }
 
-function bridgeInvoke<T>(
+/**
+ * Generic Tauri-IPC bridge invoke from a Worker. The main thread's
+ * SQL bridge handler (see `apps/frontend/src/in-page-backend.ts`)
+ * forwards every `sql.invoke` it receives to `invoke(cmd, args)`,
+ * regardless of command name — so this primitive is reusable by the
+ * Tauri-side BinaryFormat (`binary-format-tauri.ts`) on top of the
+ * built-in `sql_exec` / `sql_query` paths used by the proxy below.
+ */
+export function bridgeInvoke<T>(
   cmd: BridgeCmd,
-  args: { sql: string; params: unknown[] },
+  args: Record<string, unknown>,
 ): Promise<T> {
   installListener();
   const id = nextId++;

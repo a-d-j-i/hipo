@@ -245,6 +245,8 @@ pub fn build_app(config: ShellConfig) -> Builder<Wry> {
         .invoke_handler(tauri::generate_handler![
             sql::sql_exec,
             sql::sql_query,
+            sql::sql_backup_to_bytes,
+            sql::sql_restore_from_bytes,
         ])
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(w) = app.get_webview_window("main") {

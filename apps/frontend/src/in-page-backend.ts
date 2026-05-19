@@ -74,12 +74,15 @@ export async function registerInPageSW(): Promise<void> {
   }
 }
 
-type Shape = "tauri" | "browser";
+export type Shape = "tauri" | "browser";
 
-function detectShape(): Shape {
-  // Same probe `main.tsx` uses for the updater branch. The Worker
-  // can't see `window` so the main thread tells it which shape it's
-  // running in via the `config` message below.
+/**
+ * Probes the runtime for Tauri. Exported so `main.tsx` can branch
+ * the bootstrap flow (Tauri skips the OPFS marker check entirely).
+ * The Worker can't see `window`, so the main thread tells it which
+ * shape it's running in via the `config` message below.
+ */
+export function detectShape(): Shape {
   const w = globalThis as unknown as { __TAURI_INTERNALS__?: unknown };
   return typeof w.__TAURI_INTERNALS__ !== "undefined" ? "tauri" : "browser";
 }
