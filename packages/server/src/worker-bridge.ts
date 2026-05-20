@@ -93,8 +93,15 @@ function deserializeRequest(wire: WireRequest): Request {
   });
 }
 
+// Per the Fetch spec these statuses must have a null body. Passing
+// `""` (which is what `await res.text()` produces for empty bodies)
+// trips webkit2gtk with "Response cannot have a body with the given
+// status". Matches the same guard in `packages/sw/src/sw.js`.
+const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
+
 function deserializeResponse(wire: WireResponse): Response {
-  return new Response(wire.body, {
+  const body = NULL_BODY_STATUSES.has(wire.status) ? null : wire.body;
+  return new Response(body, {
     status: wire.status,
     statusText: wire.statusText,
     headers: entriesToHeaders(wire.headers),
