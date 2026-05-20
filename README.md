@@ -4,10 +4,9 @@ Desktop + browser app for tracking **mortgage loans with multiple lenders**.
 Built on top of a small **local-first TypeScript framework** that lives in
 `packages/` — hipo is the framework's first consumer.
 
-**Live demos:** `https://<owner>.github.io/<repo>/` (release index) →
-`/hipo/` (full product) · `/minimal/` (framework template). The Pages
-deploy is the rolling "latest main" build; tagged installer releases live
-on GitHub Releases.
+**Live demos:** `https://<owner>.github.io/<repo>/` (release index) → `/hipo/`
+(full product) · `/minimal/` (framework template). The Pages deploy is the
+rolling "latest main" build; tagged installer releases live on GitHub Releases.
 
 Three deployment shapes from one codebase:
 
@@ -435,9 +434,8 @@ re-litigate them.
 
 ## Cloud deployment caveats (when wired)
 
-The same Deno binary that runs `apps/hipo` locally also runs as a hosted
-server, but several things flip from "deferred" to "required" the moment it
-does:
+The same Deno binary that runs `apps/hipo` locally also runs as a hosted server,
+but several things flip from "deferred" to "required" the moment it does:
 
 - **Multi-tenancy** — one SQLite file per org, filesystem-isolated. Subdomain or
   path routes to the right DB. Architecture supports it without breaking

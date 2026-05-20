@@ -6,7 +6,12 @@ import { auditLog } from "../db/schema.ts";
 import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "@hipo/server";
-import { type Ctx, doCreateUser, doSetupFirstAdmin, type User } from "@hipo/auth";
+import {
+  type Ctx,
+  doCreateUser,
+  doSetupFirstAdmin,
+  type User,
+} from "@hipo/auth";
 import { doCreateParty } from "../parties/operations.ts";
 import { doCreateLoan } from "../loans/operations.ts";
 import { doCreateDebtorPayment } from "../payments/operations.ts";

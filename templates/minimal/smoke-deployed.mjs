@@ -26,7 +26,9 @@ const TARGET = new URL("minimal/", SMOKE_URL).toString();
 const SHOTS_DIR = process.env.SHOTS_DIR ?? "/tmp/pages-smoke-shots";
 
 function log(line) {
-  console.log(`[smoke-deployed ${new Date().toISOString().slice(11, 19)}] ${line}`);
+  console.log(
+    `[smoke-deployed ${new Date().toISOString().slice(11, 19)}] ${line}`,
+  );
 }
 
 async function main() {

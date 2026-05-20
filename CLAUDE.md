@@ -2,11 +2,11 @@
 
 Guidance for Claude Code when working in this repository.
 
-**Live Pages demos:** `https://<owner>.github.io/<repo>/{hipo,minimal}/` —
-the full product + the framework's smallest working consumer. The Pages
-deploy is the "latest main" build; Tauri installers ship via GitHub
-Releases on tag pushes. See `.github/workflows/pages.yml` for the build
-+ post-deploy Playwright smoke.
+**Live Pages demos:** `https://<owner>.github.io/<repo>/{hipo,minimal}/` — the
+full product + the framework's smallest working consumer. The Pages deploy is
+the "latest main" build; Tauri installers ship via GitHub Releases on tag
+pushes. See `.github/workflows/pages.yml` for the build and post-deploy
+Playwright smoke.
 
 ## Project goals
 
