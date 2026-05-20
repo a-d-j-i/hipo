@@ -1,5 +1,6 @@
-// Composes the backup pipeline from raw bytes (provided by the Worker
-// through /api/backup/snapshot) → gzip → AES-GCM → packed envelope →
+// Composes the backup pipeline from the bytes returned by
+// /api/backup/snapshot (already gzipped by the Worker's
+// `gzipped(binaryFormat(...))`) → AES-GCM → packed envelope →
 // `target.put` (+ verify when the target supports `get`).
 //
 // Pulled into a single function so the Settings "Back up now"
@@ -7,7 +8,6 @@
 // flow share one path.
 
 import {
-  compress,
   encryptBlob,
   freshSalt,
   packEnvelope,
@@ -42,12 +42,16 @@ export async function runBackup(
   opts: RunBackupInput,
 ): Promise<RunBackupResult> {
   opts.onProgress?.("preparing");
-  const rawBytes = await getSnapshot();
-  const compressed = await compress(rawBytes);
+  // /api/backup/snapshot is plumbed through the Worker's BackupFormat,
+  // which is `gzipped(binaryFormat(...))` for every shape — so these
+  // bytes are already gzipped SQLite. The envelope's `format` field
+  // ("binary-gzip") matches what's actually inside; the symmetric
+  // server-side `format.decode` will decompress on restore.
+  const snapshotBytes = await getSnapshot();
   const salt = freshSalt();
   const key = await opts.keyFor(salt);
   const envelope = await encryptBlob({
-    bytes: compressed,
+    bytes: snapshotBytes,
     key,
     salt,
     format: "binary-gzip",
