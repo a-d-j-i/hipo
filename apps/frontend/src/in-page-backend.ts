@@ -158,9 +158,24 @@ export async function spawnInPageWorker(): Promise<void> {
   await waitForWorkerMessage(worker, "loaded");
   console.log("[in-page backend] Worker loaded");
 
-  if (shape === "tauri") {
+  // `import.meta.env.VITE_TARGET` is a build-time literal — only the
+  // Tauri build pulls `@tauri-apps/api/core` into the bundle, so the
+  // hosted/Pages bundle stays sqlocal-only. The `shape` check guards
+  // against a build run against the wrong target.
+  if (import.meta.env.VITE_TARGET === "tauri") {
+    if (shape !== "tauri") {
+      throw new Error(
+        "VITE_TARGET=tauri build but no __TAURI_INTERNALS__ detected — " +
+          "open via the Tauri shell, not a regular browser.",
+      );
+    }
     await installSqlBridge(worker);
     console.log("[in-page backend] Tauri SQL bridge installed");
+  } else if (shape === "tauri") {
+    throw new Error(
+      "Running inside Tauri but this build targets the hosted shape — " +
+        "use VITE_TARGET=tauri (or `npm run dev:desktop` / a Tauri build).",
+    );
   }
 
   const dbReady = waitForWorkerMessage(worker, "db-ready");

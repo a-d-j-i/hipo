@@ -36,11 +36,25 @@ async function openForShape(shape: Shape): Promise<{
   db: Db;
   backupFormat: BackupFormat | null;
 }> {
-  if (shape === "tauri") {
-    // Tauri shape: rusqlite via the sql.invoke bridge on the main
-    // thread (see in-page-backend.ts). Backups go through Rust
-    // `VACUUM INTO` + file read; restores through atomic file
-    // rename + reopen (see `binary-format-tauri.ts`).
+  // `import.meta.env.VITE_TARGET` is replaced by Vite with a literal
+  // string ("tauri" or undefined) at build time, so exactly one
+  // branch survives tree-shaking in any given bundle:
+  //   - VITE_TARGET=tauri: sqlocal + SQLite-WASM are dropped
+  //     (~600 KB gz). Worker ships only the IPC bridge driver.
+  //   - VITE_TARGET unset: @hipo/sqlite/client-tauri-bridge +
+  //     binary-format-tauri are dropped from the Pages/browser
+  //     bundle.
+  // The `shape` check is the runtime defence-in-depth — it catches
+  // mismatched configurations (Tauri build opened in a browser, or
+  // hosted build inside a Tauri webview) with a clear error rather
+  // than silent breakage.
+  if (import.meta.env.VITE_TARGET === "tauri") {
+    if (shape !== "tauri") {
+      throw new Error(
+        "VITE_TARGET=tauri build but no __TAURI_INTERNALS__ detected — " +
+          "open via the Tauri shell, not a regular browser.",
+      );
+    }
     const [{ openDb }, { binaryFormat }] = await Promise.all([
       import("@hipo/sqlite/client-tauri-bridge"),
       import("@hipo/sqlite/binary-format-tauri"),
@@ -48,8 +62,13 @@ async function openForShape(shape: Shape): Promise<{
     const opened = await openDb({ migrations });
     return { db: opened.db, backupFormat: gzipped(binaryFormat()) };
   }
-  // Browser / Pages shape — sqlocal + OPFS, with the binary backup
-  // format wired against the live SQLocal handle.
+
+  if (shape === "tauri") {
+    throw new Error(
+      "Running inside Tauri but this build targets the hosted shape — " +
+        "use VITE_TARGET=tauri (or `npm run dev:desktop` / a Tauri build).",
+    );
+  }
   const [{ openDb }, { binaryFormat }] = await Promise.all([
     import("@hipo/sqlite/client-browser"),
     import("@hipo/sqlite/binary-format-browser"),

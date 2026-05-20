@@ -11,6 +11,8 @@ const host = process.env.TAURI_DEV_HOST;
 const backendPort = process.env.HIPO_BACKEND_PORT || "8787";
 // @ts-expect-error process is a nodejs global
 const INPAGE_BACKEND = process.env.VITE_INPAGE_BACKEND === "1";
+// @ts-expect-error process is a nodejs global
+const TARGET_TAURI = process.env.VITE_TARGET === "tauri";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -40,11 +42,58 @@ const swapPasswordsToBrowser = {
 export default defineConfig(async () => ({
   plugins: [
     react(),
-    // sqlocal's Vite plugin sets COOP/COEP in dev so SQLite-WASM's OPFS
-    // sync-access-handle mode works. Active only when running in-page;
-    // dev with the Deno backend doesn't need it.
-    ...(INPAGE_BACKEND ? [sqlocal() as never, swapPasswordsToBrowser] : []),
+    // sqlocal's Vite plugin sets COOP/COEP in dev (for OPFS sync-
+    // access-handle mode) and configures pre-bundling for SQLite-WASM.
+    // The Tauri shape doesn't load sqlocal at all (Phase 12 routes
+    // through rusqlite via IPC), so excluding the plugin lets Rollup
+    // tree-shake sqlocal's pre-bundled worker chunks out of the build.
+    // Dev (browser) and prod (browser/Pages) keep it.
+    ...(INPAGE_BACKEND && !TARGET_TAURI
+      ? [sqlocal() as never, swapPasswordsToBrowser]
+      : []),
+    // The passwords-browser shim is still needed even in Tauri builds
+    // because the in-page-worker pulls @hipo/auth via @hipo/backend.
+    ...(INPAGE_BACKEND && TARGET_TAURI ? [swapPasswordsToBrowser] : []),
   ],
+
+  // The in-page Worker is bundled by Vite as a separate Rollup pass —
+  // top-level `plugins` don't reach it during `vite build`. Re-register
+  // the passwords-browser shim here so the Worker chunk also swaps
+  // `passwords.ts` → `passwords.browser.ts`. Without this the Worker
+  // bundle resolves `@node-rs/argon2` (the Deno-only native binding)
+  // and the build fails.
+  worker: INPAGE_BACKEND
+    ? {
+        format: "es" as const,
+        plugins: () => [swapPasswordsToBrowser],
+      }
+    : undefined,
+
+  // Tauri target: alias sqlocal and its transitive WASM runtime to a
+  // throwing stub. The browser-shape bootstrap UI and `client-browser`
+  // remain in the source tree but should never execute on Tauri (the
+  // VITE_TARGET conditionals in main.tsx + in-page-worker.ts gate them
+  // out at runtime). Aliasing means Vite's worker / WASM emitter never
+  // walks sqlocal's internals, dropping the ~600 KB gz of sqlite-wasm
+  // assets from the Tauri build output.
+  resolve: TARGET_TAURI
+    ? {
+        alias: [
+          {
+            find: /^sqlocal$/,
+            replacement: resolve(here, "src/_empty-sqlocal-stub.ts"),
+          },
+          {
+            find: /^sqlocal\/drizzle$/,
+            replacement: resolve(here, "src/_empty-sqlocal-stub.ts"),
+          },
+          {
+            find: /^@sqlite\.org\/sqlite-wasm$/,
+            replacement: resolve(here, "src/_empty-sqlocal-stub.ts"),
+          },
+        ],
+      }
+    : undefined,
 
   // Keep @hipo/* workspace packages out of Vite's dep optimizer so our
   // resolveId shim sees their imports unfiltered. Only when in-page.
