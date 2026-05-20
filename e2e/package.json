@@ -1,0 +1,4 @@
+{
+  "comment": "Scoped module-mode flip for the e2e suite. @srsholmes/tauri-playwright is ESM-only; the parent @hipo/desktop package stays CJS so the Tauri CLI behaves normally.",
+  "type": "module"
+}

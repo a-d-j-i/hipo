@@ -3,5 +3,12 @@
   "identifier": "default",
   "description": "Permissions for the main window and the auto-updater.",
   "windows": ["main"],
-  "permissions": ["core:default", "updater:default"]
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "updater:default",
+    "playwright:default"
+  ]
 }

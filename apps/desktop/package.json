@@ -5,6 +5,7 @@
   "comment": "Thin npm-workspace wrapper around the Tauri CLI. All real config lives in tauri.conf.json and Cargo.toml.",
   "scripts": {
     "dev": "tauri dev",
+    "dev:e2e": "tauri dev --no-watch -- --features e2e-testing",
     "build": "tauri build",
     "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
     "build:windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",

@@ -27,6 +27,7 @@
     "dev:fast": "npm run dev:fast -w @hipo/frontend",
     "dev:backend": "npm run dev -w hipo",
     "dev:desktop": "npm run dev -w @hipo/desktop",
+    "dev:desktop:e2e": "npm run dev:e2e -w @hipo/desktop",
     "build:frontend": "npm run build -w @hipo/frontend",
     "build:frontend:inpage": "npm run build:inpage -w @hipo/frontend",
     "build:backend:linux": "npm run compile:linux -w hipo",
@@ -39,11 +40,14 @@
     "format:check": "prettier --check .",
     "test:frontend": "npm run test -w @hipo/frontend",
     "test:backend": "npm run test -w hipo",
+    "test:e2e:tauri": "playwright test --config e2e/playwright.config.ts --project=tauri",
     "check:frontend": "npm run check -w @hipo/frontend",
     "check:backend": "npm run check -w hipo"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.52.0",
+    "@srsholmes/tauri-playwright": "^0.2.2",
     "eslint": "^10.3.0",
     "prettier": "^3.8.3",
     "typescript-eslint": "^8.59.3"

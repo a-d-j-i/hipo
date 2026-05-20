@@ -11,7 +11,19 @@
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri_shell::build_app(tauri_shell::ShellConfig::new("hipo"))
+    #[allow(unused_mut)]
+    let mut builder = tauri_shell::build_app(tauri_shell::ShellConfig::new("hipo"));
+
+    // Phase 12 smoke (and future Tauri smokes) drive the real
+    // WebKitGTK/WebView2 webview through `tauri-plugin-playwright`'s
+    // Unix-socket bridge. Off by default; enabled with the
+    // `e2e-testing` Cargo feature.
+    #[cfg(feature = "e2e-testing")]
+    {
+        builder = builder.plugin(tauri_plugin_playwright::init());
+    }
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

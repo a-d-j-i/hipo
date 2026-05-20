@@ -20,6 +20,16 @@ tauri-build = { version = "2", features = [] }
 [dev-dependencies]
 tauri = { version = "2", features = ["test"] }
 
+[features]
+# Marker feature: gates the `.plugin(tauri_plugin_playwright::init())`
+# call in `lib.rs`. The crate itself is always linked (Tauri's build
+# script needs it present to resolve the `playwright:default`
+# capability entry in `capabilities/default.json`), so this flag only
+# controls whether the test socket bridge is actually started at
+# runtime. Enable with `cargo tauri dev -- --features e2e-testing`
+# for Playwright smoke runs.
+e2e-testing = []
+
 [dependencies]
 # Framework shell: window bring-up, single-instance focus, updater.
 tauri-shell = { path = "../../packages/tauri-shell" }
@@ -31,6 +41,11 @@ tauri = { version = "2", features = [] }
 # build time.
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
+# Always linked so the `playwright:default` capability resolves at
+# build time. The plugin is only initialized when the `e2e-testing`
+# feature is on — otherwise its socket bridge never starts, so a
+# normal user-facing build doesn't expose test surface.
+tauri-plugin-playwright = "0.2"
 serde = { version = "1", features = ["derive"] }
 # tauri::generate_context! needs serde_json visible at the call site
 serde_json = "1"
