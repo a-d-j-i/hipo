@@ -22,4 +22,13 @@ export function majorToCents(major: number): number {
   return Math.round(major * 100);
 }
 
-export const COMMON_CURRENCIES = ["ARS", "USD", "EUR", "BRL", "UYU", "CLP", "MXN", "GBP"];
+export const COMMON_CURRENCIES = [
+  "ARS",
+  "USD",
+  "EUR",
+  "BRL",
+  "UYU",
+  "CLP",
+  "MXN",
+  "GBP",
+];

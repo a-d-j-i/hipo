@@ -81,10 +81,7 @@ async function main() {
     username: "admin",
     password: "admin12345",
   });
-  log(
-    `admin created in ${(performance.now() - t0).toFixed(0)} ms`,
-    "ok",
-  );
+  log(`admin created in ${(performance.now() - t0).toFixed(0)} ms`, "ok");
 
   // Step 2: list users (Ctx with the admin).
   const adminCtx: Ctx = { db, user: admin };

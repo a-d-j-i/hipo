@@ -20,10 +20,7 @@ const swapPasswordsToBrowser = {
       source === "./passwords.ts" &&
       importer?.includes("/packages/auth/src/")
     ) {
-      return resolve(
-        here,
-        "../../packages/auth/src/passwords.browser.ts",
-      );
+      return resolve(here, "../../packages/auth/src/passwords.browser.ts");
     }
     return null;
   },

@@ -50,9 +50,7 @@ export function binaryFormat(opts: BinaryFormatBrowserOptions): BackupFormat {
       // overwriteDatabaseFile accepts Uint8Array directly. The sqlocal
       // worker drains the lock, replaces the file, and reinitialises.
       // Caller is expected to reload to re-run migrations.
-      await opts.local.overwriteDatabaseFile(
-        bytes as Uint8Array<ArrayBuffer>,
-      );
+      await opts.local.overwriteDatabaseFile(bytes as Uint8Array<ArrayBuffer>);
     },
   };
 }

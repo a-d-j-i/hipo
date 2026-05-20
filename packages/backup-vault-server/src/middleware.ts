@@ -56,8 +56,7 @@ export function vaultPatMiddleware(): Middleware<any> {
     c.state.user = publicUser(rows[0].user);
 
     // Touch last_used_at lazily; no need to await.
-    db
-      .update(vaultPats)
+    db.update(vaultPats)
       .set({ lastUsedAt: nowSecs() })
       .where(eq(vaultPats.tokenHash, tokenHash))
       .then(() => {})

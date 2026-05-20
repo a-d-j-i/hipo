@@ -30,11 +30,7 @@ vi.mock("../api/backup", () => {
   };
 });
 
-import {
-  deriveKey,
-  freshSalt,
-  type BackupTarget,
-} from "@hipo/backup";
+import { deriveKey, freshSalt, type BackupTarget } from "@hipo/backup";
 import { runBackup } from "./orchestrate";
 import * as backupApi from "../api/backup";
 

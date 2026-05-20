@@ -70,7 +70,12 @@ export function clearSession(): void {
 // Typed API helpers
 
 export type AuthStatus = { needs_setup: boolean; current_user: User | null };
-export type User = { id: number; username: string; role: string; created_at: number };
+export type User = {
+  id: number;
+  username: string;
+  role: string;
+  created_at: number;
+};
 
 export const api = {
   getAuthStatus: () => httpRequest<AuthStatus>("GET", "/api/auth/status"),
@@ -82,7 +87,8 @@ export const api = {
   logout: () => httpRequest("POST", "/api/auth/logout"),
 
   // Returns gzipped binary snapshot as base64.
-  snapshotRaw: () => httpRequest<{ bytes_b64: string }>("GET", "/api/backup/snapshot"),
+  snapshotRaw: () =>
+    httpRequest<{ bytes_b64: string }>("GET", "/api/backup/snapshot"),
   restoreRaw: (bytes_b64: string) =>
     httpRequest("POST", "/api/backup/restore", { bytes_b64 }),
 };

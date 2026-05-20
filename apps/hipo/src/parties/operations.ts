@@ -1,11 +1,6 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { writeAudit } from "@hipo/audit";
-import {
-  type Ctx,
-  nowSecs,
-  requireAdmin,
-  requireAuth,
-} from "@hipo/auth";
+import { type Ctx, nowSecs, requireAdmin, requireAuth } from "@hipo/auth";
 import { parties } from "../db/schema.ts";
 import { notFound } from "@hipo/server";
 import { type PartyInput, publicParty, type Party } from "./types.ts";

@@ -26,7 +26,8 @@ const RECENT_BACKUP_WINDOW_SECS = 7 * 86400;
 // response always reports "browser" and the frontend hook upgrades
 // it as needed.
 function detectShape(): SystemStatusShape {
-  const hasDeno = typeof (globalThis as { Deno?: unknown }).Deno !== "undefined";
+  const hasDeno =
+    typeof (globalThis as { Deno?: unknown }).Deno !== "undefined";
   return hasDeno ? "server" : "browser";
 }
 
@@ -41,9 +42,11 @@ async function readStorageEstimate(): Promise<{
   quota?: number;
 }> {
   try {
-    const navAny = (globalThis as {
-      navigator?: { storage?: { estimate?: () => Promise<StorageEstimate> } };
-    }).navigator;
+    const navAny = (
+      globalThis as {
+        navigator?: { storage?: { estimate?: () => Promise<StorageEstimate> } };
+      }
+    ).navigator;
     const est = await navAny?.storage?.estimate?.();
     if (!est) return {};
     return { usage: est.usage, quota: est.quota };
@@ -70,8 +73,7 @@ export async function do_getSystemStatus(ctx: Ctx): Promise<SystemStatus> {
     configured: true,
     last_backup_at: r.lastBackupAt ?? undefined,
     last_verify_at: r.lastVerifyAt ?? undefined,
-    last_verify_ok:
-      r.lastVerifyOk === null ? undefined : r.lastVerifyOk === 1,
+    last_verify_ok: r.lastVerifyOk === null ? undefined : r.lastVerifyOk === 1,
   }));
 
   const nowSec = Math.floor(Date.now() / 1000);

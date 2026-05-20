@@ -114,42 +114,45 @@ Deno.test("validate_rejects_blank_name", async () => {
   );
 });
 
-Deno.test("delete_requires_admin; non-admin can list/create/update", async () => {
-  const { ctx, setUser, loginAsAdmin } = await freshCtx();
-  const admin = await loginAsAdmin();
-  const p = await doCreateParty(ctx, {
-    name: "X",
-    externalRef: null,
-    notes: null,
-  });
-  const alice = await doCreateUser(ctx, {
-    username: "alice",
-    password: "password123",
-    role: "user",
-  });
-  setUser(alice);
-  await assertRejects(
-    () => doDeleteParty(ctx, { id: p.id }),
-    AppError,
-    "forbidden",
-  );
-  // Non-admin can still list, create, update:
-  await doListParties(ctx);
-  const p2 = await doCreateParty(ctx, {
-    name: "Y",
-    externalRef: null,
-    notes: null,
-  });
-  await doUpdateParty(ctx, {
-    id: p2.id,
-    name: "Y2",
-    externalRef: null,
-    notes: null,
-  });
-  // Sanity: admin can delete.
-  setUser(admin);
-  await doDeleteParty(ctx, { id: p.id });
-});
+Deno.test(
+  "delete_requires_admin; non-admin can list/create/update",
+  async () => {
+    const { ctx, setUser, loginAsAdmin } = await freshCtx();
+    const admin = await loginAsAdmin();
+    const p = await doCreateParty(ctx, {
+      name: "X",
+      externalRef: null,
+      notes: null,
+    });
+    const alice = await doCreateUser(ctx, {
+      username: "alice",
+      password: "password123",
+      role: "user",
+    });
+    setUser(alice);
+    await assertRejects(
+      () => doDeleteParty(ctx, { id: p.id }),
+      AppError,
+      "forbidden",
+    );
+    // Non-admin can still list, create, update:
+    await doListParties(ctx);
+    const p2 = await doCreateParty(ctx, {
+      name: "Y",
+      externalRef: null,
+      notes: null,
+    });
+    await doUpdateParty(ctx, {
+      id: p2.id,
+      name: "Y2",
+      externalRef: null,
+      notes: null,
+    });
+    // Sanity: admin can delete.
+    setUser(admin);
+    await doDeleteParty(ctx, { id: p.id });
+  },
+);
 
 Deno.test("audit_log_records_party_mutations", async () => {
   const { ctx, loginAsAdmin } = await freshCtx();

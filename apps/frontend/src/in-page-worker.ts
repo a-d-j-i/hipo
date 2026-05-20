@@ -10,10 +10,7 @@
 
 import { gzipped, type BackupFormat } from "@hipo/backup";
 import { Router, serveOnPort } from "@hipo/server";
-import {
-  type AppState,
-  sessionMiddleware,
-} from "hipo/middleware-session";
+import { type AppState, sessionMiddleware } from "hipo/middleware-session";
 import { registerAllRoutes } from "hipo/routes";
 import { migrations } from "hipo/migrations";
 import type { Db } from "@hipo/sqlite";

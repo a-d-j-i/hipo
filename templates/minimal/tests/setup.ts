@@ -13,5 +13,7 @@ afterEach(() => {
 // Stub fetch so components that call /api/... in effects don't throw in jsdom.
 vi.stubGlobal(
   "fetch",
-  vi.fn().mockRejectedValue(new Error("fetch not available in test environment")),
+  vi
+    .fn()
+    .mockRejectedValue(new Error("fetch not available in test environment")),
 );

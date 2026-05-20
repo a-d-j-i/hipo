@@ -177,7 +177,11 @@ export default function Users() {
                     disabled={isSelf}
                     onConfirm={() => onDelete(user)}
                   >
-                    <Button danger icon={<DeleteOutlined />} disabled={isSelf} />
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      disabled={isSelf}
+                    />
                   </Popconfirm>
                 </Space>
               );

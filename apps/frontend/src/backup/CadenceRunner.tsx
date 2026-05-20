@@ -78,7 +78,8 @@ export function CadenceRunner() {
         const vaultKey = await pass.keyFor(getOrCreateVaultSalt());
         const targets = await getConfiguredTargets(vaultKey);
         const cadenceTarget = targets.find(
-          (entry) => entry.cadenceEligible && entry.target.id !== "local-download",
+          (entry) =>
+            entry.cadenceEligible && entry.target.id !== "local-download",
         );
         if (!cadenceTarget) return;
 

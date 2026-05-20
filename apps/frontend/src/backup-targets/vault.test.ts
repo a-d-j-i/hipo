@@ -15,11 +15,12 @@ afterEach(() => {
 describe("vaultTarget", () => {
   it("put() sends binary body with correct URL, headers, and method", async () => {
     const blob = new Uint8Array([1, 2, 3, 4]);
-    const fetchSpy = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
-      new Response(
-        JSON.stringify({ size_bytes: 4, updated_at: 1700000000 }),
-        { status: 200, headers: { "content-type": "application/json" } },
-      ),
+    const fetchSpy = vi.fn(
+      async (_url: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({ size_bytes: 4, updated_at: 1700000000 }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
     );
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -46,8 +47,9 @@ describe("vaultTarget", () => {
 
   it("put() falls back to local time if server response lacks updated_at", async () => {
     const before = Math.floor(Date.now() / 1000);
-    const fetchSpy = vi.fn(async () =>
-      new Response(JSON.stringify({ size_bytes: 2 }), { status: 200 }),
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ size_bytes: 2 }), { status: 200 }),
     );
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -62,11 +64,12 @@ describe("vaultTarget", () => {
 
   it("get() returns Uint8Array on 200", async () => {
     const original = new Uint8Array([10, 20, 30]);
-    const fetchSpy = vi.fn(async () =>
-      new Response(original, {
-        status: 200,
-        headers: { "content-type": "application/octet-stream" },
-      }),
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(original, {
+          status: 200,
+          headers: { "content-type": "application/octet-stream" },
+        }),
     );
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -77,7 +80,10 @@ describe("vaultTarget", () => {
     const result = await target.get!();
     expect(result).toEqual(original);
 
-    const [url, init] = fetchSpy.mock.calls[0] as unknown as [RequestInfo | URL, RequestInit | undefined];
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [
+      RequestInfo | URL,
+      RequestInit | undefined,
+    ];
     expect(String(url)).toBe(`${BASE_URL}/api/vault/blob/backup.bin`);
     expect((init?.headers as Record<string, string>)["Authorization"]).toBe(
       `Bearer ${TOKEN}`,
@@ -96,8 +102,8 @@ describe("vaultTarget", () => {
   });
 
   it("get() throws on non-200/non-404", async () => {
-    const fetchSpy = vi.fn(async () =>
-      new Response("Unauthorized", { status: 401 }),
+    const fetchSpy = vi.fn(
+      async () => new Response("Unauthorized", { status: 401 }),
     );
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -111,10 +117,13 @@ describe("vaultTarget", () => {
     const calls: string[] = [];
     const fetchSpy = vi.fn(async (url: RequestInfo | URL) => {
       calls.push(String(url));
-      return new Response(JSON.stringify({ ok: true, user_id: 1, username: "admin" }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ ok: true, user_id: 1, username: "admin" }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        },
+      );
     });
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -148,8 +157,9 @@ describe("vaultTarget", () => {
   });
 
   it("uses custom blobId in URL", async () => {
-    const fetchSpy = vi.fn(async () =>
-      new Response(JSON.stringify({ updated_at: 1 }), { status: 200 }),
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ updated_at: 1 }), { status: 200 }),
     );
     const target = vaultTarget({
       baseUrl: BASE_URL,
@@ -159,9 +169,7 @@ describe("vaultTarget", () => {
     });
     await target.put(new Uint8Array([1]));
     const [url] = fetchSpy.mock.calls[0] as unknown as [RequestInfo | URL];
-    expect(String(url)).toBe(
-      `${BASE_URL}/api/vault/blob/my-custom-backup.bin`,
-    );
+    expect(String(url)).toBe(`${BASE_URL}/api/vault/blob/my-custom-backup.bin`);
   });
 
   it("id is 'vault' and displayName includes baseUrl", () => {

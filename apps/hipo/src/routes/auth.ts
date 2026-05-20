@@ -31,10 +31,7 @@ function ctxOf(c: AppCtx): Ctx {
 function reqMeta(c: AppCtx) {
   return {
     ip:
-      c.req.headers
-        .get("x-forwarded-for")
-        ?.split(",")[0]
-        ?.trim() ?? undefined,
+      c.req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined,
     userAgent: c.req.headers.get("user-agent") ?? undefined,
   };
 }
@@ -48,13 +45,9 @@ function parseId(c: AppCtx): number {
 }
 
 export function registerAuthRoutes(app: Router<AppState>) {
-  app.get("/api/auth/status", async (c) =>
-    json(await doAuthStatus(ctxOf(c))),
-  );
+  app.get("/api/auth/status", async (c) => json(await doAuthStatus(ctxOf(c))));
 
-  app.get("/api/auth/me", async (c) =>
-    json(await doCurrentUser(ctxOf(c))),
-  );
+  app.get("/api/auth/me", async (c) => json(await doCurrentUser(ctxOf(c))));
 
   app.post("/api/auth/setup", async (c) => {
     const body = (await c.req.json()) as { username: string; password: string };
@@ -73,8 +66,7 @@ export function registerAuthRoutes(app: Router<AppState>) {
   });
 
   app.post("/api/auth/logout", async (c) => {
-    if (c.state.session)
-      await revokeSession(c.state.db, c.state.session.id);
+    if (c.state.session) await revokeSession(c.state.db, c.state.session.id);
     await doLogout(ctxOf(c));
     clearSessionCookie(c);
     return json(null);

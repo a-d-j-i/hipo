@@ -31,7 +31,9 @@ export default function Setup({ onSetup }: Props) {
     <div className="center-wrap">
       <div className="card">
         <h2>Create admin account</h2>
-        <p className="hint">This is the first-time setup. Create your admin user.</p>
+        <p className="hint">
+          This is the first-time setup. Create your admin user.
+        </p>
         <form onSubmit={handleSubmit}>
           <label>
             Username

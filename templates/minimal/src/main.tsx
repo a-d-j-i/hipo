@@ -8,9 +8,8 @@ async function boot() {
   // Step 1: Register the merged Service Worker and wait for COOP/COEP.
   // If a reload is needed for cross-origin isolation, registerInPageSW()
   // triggers it and the returned promise never resolves.
-  const { registerInPageSW, spawnInPageWorker } = await import(
-    "./in-page-backend.ts"
-  );
+  const { registerInPageSW, spawnInPageWorker } =
+    await import("./in-page-backend.ts");
   await registerInPageSW();
 
   // Step 2: Check whether OPFS has been bootstrapped on this device.

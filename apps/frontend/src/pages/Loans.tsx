@@ -91,8 +91,7 @@ function LendersEditor({
             // Only run shared cross-row checks on fully-filled rows;
             // incomplete rows are flagged by their own per-row rules.
             const complete = value.filter(
-              (r) =>
-                r?.lenderId != null && r?.amount != null && r.amount > 0,
+              (r) => r?.lenderId != null && r?.amount != null && r.amount > 0,
             );
             if (complete.length === 0) return;
             const err = checkLenders(
@@ -347,8 +346,7 @@ export default function Loans() {
 
   const createCurrency = Form.useWatch("currencyCode", createForm) ?? "ARS";
 
-  const refOf = (l: Loan | null) =>
-    l ? l.reference ?? `#${l.id}` : "";
+  const refOf = (l: Loan | null) => (l ? (l.reference ?? `#${l.id}`) : "");
 
   return (
     <>

@@ -41,7 +41,9 @@ function renderBanner(s: SystemStatus, mode: "dashboard" | "settings") {
 describe("RiskBanner", () => {
   it("renders the error banner when no_backup_configured", () => {
     renderBanner(status({ no_backup_configured: true }), "dashboard");
-    expect(screen.getByText(en.settings.storage.risk.noBackupConfigured)).toBeTruthy();
+    expect(
+      screen.getByText(en.settings.storage.risk.noBackupConfigured),
+    ).toBeTruthy();
   });
 
   it("renders the verify-failed banner over no_recent_backup (severity order)", () => {
@@ -52,8 +54,12 @@ describe("RiskBanner", () => {
       }),
       "dashboard",
     );
-    expect(screen.getByText(en.settings.storage.risk.lastVerifyFailed)).toBeTruthy();
-    expect(screen.queryByText(en.settings.storage.risk.noRecentBackup)).toBeNull();
+    expect(
+      screen.getByText(en.settings.storage.risk.lastVerifyFailed),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(en.settings.storage.risk.noRecentBackup),
+    ).toBeNull();
   });
 
   it("dashboard mode renders nothing when everything is fine", () => {
@@ -65,18 +71,12 @@ describe("RiskBanner", () => {
   });
 
   it("settings mode renders the green banner when survives_device_loss_via_backup", () => {
-    renderBanner(
-      status({ survives_device_loss_via_backup: true }),
-      "settings",
-    );
+    renderBanner(status({ survives_device_loss_via_backup: true }), "settings");
     expect(screen.getByText(en.settings.storage.risk.ok)).toBeTruthy();
   });
 
   it("settings mode renders the info banner for cleared_by_browser_data_clear when nothing's wrong", () => {
-    renderBanner(
-      status({ cleared_by_browser_data_clear: true }),
-      "settings",
-    );
+    renderBanner(status({ cleared_by_browser_data_clear: true }), "settings");
     expect(
       screen.getByText(en.settings.storage.risk.clearedByBrowserDataClear),
     ).toBeTruthy();

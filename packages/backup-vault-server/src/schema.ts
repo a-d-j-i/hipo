@@ -1,13 +1,21 @@
 // Vault tables: vault_pats (PAT credentials) + vault_blobs (stored blobs).
 // Owned by @hipo/backup-vault-server; referenced by vault operations + routes.
 
-import { integer, sqliteTable, text, customType } from "drizzle-orm/sqlite-core";
+import {
+  integer,
+  sqliteTable,
+  text,
+  customType,
+} from "drizzle-orm/sqlite-core";
 import { users } from "@hipo/auth/schema";
 
 // Custom blob type that works in both Deno and browser runtimes.
 // Stored as BLOB in SQLite; read back as Uint8Array by normalising
 // whatever the driver returns (Buffer / ArrayBuffer / Uint8Array).
-const blobAsUint8Array = customType<{ data: Uint8Array; driverData: Uint8Array }>({
+const blobAsUint8Array = customType<{
+  data: Uint8Array;
+  driverData: Uint8Array;
+}>({
   dataType() {
     return "BLOB";
   },

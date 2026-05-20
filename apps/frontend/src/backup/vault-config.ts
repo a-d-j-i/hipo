@@ -14,7 +14,10 @@ export function loadVaultConfig(): VaultConfig | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as VaultConfig;
-    if (typeof parsed.baseUrl !== "string" || typeof parsed.blobId !== "string") {
+    if (
+      typeof parsed.baseUrl !== "string" ||
+      typeof parsed.blobId !== "string"
+    ) {
       return null;
     }
     return parsed;

@@ -110,7 +110,10 @@ Deno.test("create_payment_splits_correctly", async () => {
   const byName = new Map(p.splits.map((s) => [s.lender_name, s.amount_cents]));
   assertEquals(byName.get("Alice"), 3000);
   assertEquals(byName.get("Bob"), 2000);
-  assertEquals(p.splits.reduce((s, x) => s + x.amount_cents, 0), 5000);
+  assertEquals(
+    p.splits.reduce((s, x) => s + x.amount_cents, 0),
+    5000,
+  );
 });
 
 Deno.test("create_payment_rejects_zero_amount", async () => {

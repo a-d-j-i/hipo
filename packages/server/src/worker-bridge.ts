@@ -55,7 +55,10 @@ function entriesToHeaders(entries: Array<[string, string]>): Headers {
   return h;
 }
 
-async function serializeRequest(req: Request, id: string): Promise<WireRequest> {
+async function serializeRequest(
+  req: Request,
+  id: string,
+): Promise<WireRequest> {
   const body =
     req.method === "GET" || req.method === "HEAD"
       ? null
@@ -69,7 +72,10 @@ async function serializeRequest(req: Request, id: string): Promise<WireRequest> 
   };
 }
 
-async function serializeResponse(res: Response, id: string): Promise<WireResponse> {
+async function serializeResponse(
+  res: Response,
+  id: string,
+): Promise<WireResponse> {
   return {
     id,
     status: res.status,
@@ -101,10 +107,7 @@ function deserializeResponse(wire: WireResponse): Response {
  * become 500 responses (the router itself already converts
  * `AppError` to JSON; this catch is for unexpected throws).
  */
-export function serveOnPort(
-  port: MessagePort,
-  app: Router<object>,
-): void {
+export function serveOnPort(port: MessagePort, app: Router<object>): void {
   port.addEventListener("message", async (ev: MessageEvent<WireRequest>) => {
     const wire = ev.data;
     let response: Response;
@@ -112,7 +115,9 @@ export function serveOnPort(
       const req = deserializeRequest(wire);
       // `app.fetch` is `(req: Request) => Promise<Response>` — the type
       // parameter on Router is structural; we don't constrain it here.
-      response = await (app as unknown as { fetch: (r: Request) => Promise<Response> }).fetch(req);
+      response = await (
+        app as unknown as { fetch: (r: Request) => Promise<Response> }
+      ).fetch(req);
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error("[worker-bridge] dispatch error:", e);

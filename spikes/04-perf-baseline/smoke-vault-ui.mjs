@@ -33,7 +33,8 @@ function startProc(label, cmd, args, opts) {
   const pipe = (stream, prefix) => {
     stream.on("data", (d) => {
       const s = String(d).trimEnd();
-      if (s) for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
+      if (s)
+        for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
     });
   };
   pipe(proc.stdout, `${label}/out`);
@@ -167,10 +168,7 @@ async function main() {
     // antd Modal OK button is the primary one in the footer; the label
     // is `okText={t("settings.storage.backupNow.button")}` ("Back up now
     // (download)") but the class is enough to disambiguate.
-    await page
-      .locator(".ant-modal-footer .ant-btn-primary")
-      .first()
-      .click();
+    await page.locator(".ant-modal-footer .ant-btn-primary").first().click();
     const dl = await downloadPromise;
     if (dl) {
       await dl.saveAs(`${SHOTS_DIR}/discarded-backup.bin`);
@@ -192,7 +190,7 @@ async function main() {
 
     log("→ fill base URL");
     // Inputs in order inside the card: baseUrl, blobId, PAT.
-    await vaultCard.locator('input').nth(0).fill(URL.replace(/\/$/, ""));
+    await vaultCard.locator("input").nth(0).fill(URL.replace(/\/$/, ""));
 
     log("→ click Mint new PAT");
     await vaultCard

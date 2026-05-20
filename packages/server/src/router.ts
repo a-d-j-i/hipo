@@ -77,10 +77,10 @@ export class Router<TState extends object = Record<string, unknown>> {
   private globalMiddleware: Middleware<TState>[] = [];
   /** Final fallback when no route matches. */
   private notFoundHandler: Handler<TState> = () =>
-    new Response(
-      JSON.stringify({ error: "not found" }),
-      { status: 404, headers: { "content-type": "application/json" } },
-    );
+    new Response(JSON.stringify({ error: "not found" }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
 
   /** Add a middleware that runs on every request, in registration order. */
   use(mw: Middleware<TState>): this {
@@ -161,7 +161,10 @@ export class Router<TState extends object = Record<string, unknown>> {
     mw2: Middleware<TState>,
     handler: Handler<TState>,
   ): this;
-  patch(path: string, ...chain: (Middleware<TState> | Handler<TState>)[]): this {
+  patch(
+    path: string,
+    ...chain: (Middleware<TState> | Handler<TState>)[]
+  ): this {
     return this.add("PATCH", path, chain);
   }
 
@@ -173,7 +176,10 @@ export class Router<TState extends object = Record<string, unknown>> {
     mw2: Middleware<TState>,
     handler: Handler<TState>,
   ): this;
-  delete(path: string, ...chain: (Middleware<TState> | Handler<TState>)[]): this {
+  delete(
+    path: string,
+    ...chain: (Middleware<TState> | Handler<TState>)[]
+  ): this {
     return this.add("DELETE", path, chain);
   }
 
@@ -209,13 +215,10 @@ export class Router<TState extends object = Record<string, unknown>> {
         return await handlerChain[i](c, () => dispatch(i + 1));
       } catch (e) {
         if (e instanceof AppError) {
-          return new Response(
-            JSON.stringify({ error: e.message }),
-            {
-              status: e.status,
-              headers: { "content-type": "application/json" },
-            },
-          );
+          return new Response(JSON.stringify({ error: e.message }), {
+            status: e.status,
+            headers: { "content-type": "application/json" },
+          });
         }
         // Unexpected errors get logged and become 500. App can override
         // by catching in its own middleware (run earlier in the chain).
@@ -242,7 +245,10 @@ export const json = (body: unknown, init?: ResponseInit) =>
 export const text = (body: string, init?: ResponseInit) =>
   new Response(body, {
     ...init,
-    headers: { "content-type": "text/plain; charset=utf-8", ...(init?.headers ?? {}) },
+    headers: {
+      "content-type": "text/plain; charset=utf-8",
+      ...(init?.headers ?? {}),
+    },
   });
 
 export const empty = (status = 204) => new Response(null, { status });

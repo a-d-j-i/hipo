@@ -5,6 +5,8 @@ export function useIsMobile(): boolean {
   return !screens.md;
 }
 
-export function useResponsiveDrawerWidth(desktopWidth: number): number | string {
+export function useResponsiveDrawerWidth(
+  desktopWidth: number,
+): number | string {
   return useIsMobile() ? "100%" : desktopWidth;
 }

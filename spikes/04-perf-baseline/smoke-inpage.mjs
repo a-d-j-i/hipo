@@ -21,7 +21,8 @@ function startProc(label, cmd, args, opts) {
   const pipe = (stream, prefix) => {
     stream.on("data", (d) => {
       const s = String(d).trimEnd();
-      if (s) for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
+      if (s)
+        for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
     });
   };
   pipe(proc.stdout, `${label}/out`);
@@ -129,7 +130,9 @@ async function main() {
         name: "Smoke Bank In-Page",
       }),
     );
-    log(`POST /api/parties → ${createParty.status} ${JSON.stringify(createParty.body)}`);
+    log(
+      `POST /api/parties → ${createParty.status} ${JSON.stringify(createParty.body)}`,
+    );
 
     const listParties = await page.evaluate(() =>
       window.__HIPO_API("GET", "/api/parties"),
@@ -141,9 +144,7 @@ async function main() {
     const audit = await page.evaluate(() =>
       window.__HIPO_API("GET", "/api/audit?limit=10"),
     );
-    log(
-      `GET /api/audit → ${audit.status} count=${(audit.body || []).length}`,
-    );
+    log(`GET /api/audit → ${audit.status} count=${(audit.body || []).length}`);
 
     log("reloading to confirm session + data persist…");
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -203,7 +204,9 @@ async function main() {
       process.exit(1);
     }
   } finally {
-    try { await browser?.close(); } catch {}
+    try {
+      await browser?.close();
+    } catch {}
     frontend.kill("SIGTERM");
     await new Promise((r) => setTimeout(r, 500));
   }

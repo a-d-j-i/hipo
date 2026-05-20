@@ -170,7 +170,8 @@ export default function AuditLog() {
             title: t("audit.column.when"),
             dataIndex: "at",
             width: 160,
-            render: (ts: number) => dayjs.unix(ts).format("YYYY-MM-DD HH:mm:ss"),
+            render: (ts: number) =>
+              dayjs.unix(ts).format("YYYY-MM-DD HH:mm:ss"),
           },
           {
             title: t("audit.column.user"),
@@ -207,7 +208,9 @@ export default function AuditLog() {
         ]}
       />
 
-      <Space style={{ marginTop: 16, justifyContent: "flex-end", width: "100%" }}>
+      <Space
+        style={{ marginTop: 16, justifyContent: "flex-end", width: "100%" }}
+      >
         <Button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
           {t("common.previous")}
         </Button>

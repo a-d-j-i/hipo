@@ -1,7 +1,16 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { Button, Drawer, Grid, Layout, Menu, Space, Tag, Typography } from "antd";
+import {
+  Button,
+  Drawer,
+  Grid,
+  Layout,
+  Menu,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import {
   BankOutlined,
   ContactsOutlined,
@@ -42,8 +51,7 @@ export default function AppLayout() {
   ];
 
   const selectedKey = "/" + (location.pathname.split("/")[1] ?? "");
-  const pageLabel =
-    menuItems.find((i) => i.key === selectedKey)?.label ?? "";
+  const pageLabel = menuItems.find((i) => i.key === selectedKey)?.label ?? "";
 
   const handleNavigate = (key: string) => {
     navigate(key);

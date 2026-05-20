@@ -32,20 +32,16 @@ export function registerVaultRoutes(app: Router<any>): void {
 
   // Whoami — PAT-authed. Lets the client verify a PAT is valid.
   // Called by vaultTarget.checkAccess() in @hipo/backup-vault.
-  app.get(
-    "/api/vault/whoami",
-    vaultPatMiddleware(),
-    (c) => {
-      const user = c.state.user;
-      if (!user) {
-        return new Response(JSON.stringify({ error: "unauthenticated" }), {
-          status: 401,
-          headers: { "content-type": "application/json" },
-        });
-      }
-      return json({ user_id: user.id, username: user.username });
-    },
-  );
+  app.get("/api/vault/whoami", vaultPatMiddleware(), (c) => {
+    const user = c.state.user;
+    if (!user) {
+      return new Response(JSON.stringify({ error: "unauthenticated" }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return json({ user_id: user.id, username: user.username });
+  });
 
   // PAT management — session auth only (the user needs to be logged in
   // to mint/list/revoke their own PATs).
@@ -70,35 +66,27 @@ export function registerVaultRoutes(app: Router<any>): void {
   // ctx.user from the cookie/X-Hipo-Token.
   const patMw = vaultPatMiddleware();
 
-  app.put(
-    "/api/vault/blob/:id",
-    patMw,
-    async (c) => {
-      const bytes = new Uint8Array(await c.req.arrayBuffer());
-      const result = await do_putVaultBlob(c.state, {
-        blob_id: c.params.id,
-        bytes,
-      });
-      return json(result);
-    },
-  );
+  app.put("/api/vault/blob/:id", patMw, async (c) => {
+    const bytes = new Uint8Array(await c.req.arrayBuffer());
+    const result = await do_putVaultBlob(c.state, {
+      blob_id: c.params.id,
+      bytes,
+    });
+    return json(result);
+  });
 
-  app.get(
-    "/api/vault/blob/:id",
-    patMw,
-    async (c) => {
-      const result = await do_getVaultBlob(c.state, { blob_id: c.params.id });
-      if (!result) {
-        return new Response(null, { status: 404 });
-      }
-      return new Response(result.bytes.buffer as ArrayBuffer, {
-        status: 200,
-        headers: {
-          "content-type": "application/octet-stream",
-          "content-length": String(result.size_bytes),
-          "x-vault-updated-at": String(result.updated_at),
-        },
-      });
-    },
-  );
+  app.get("/api/vault/blob/:id", patMw, async (c) => {
+    const result = await do_getVaultBlob(c.state, { blob_id: c.params.id });
+    if (!result) {
+      return new Response(null, { status: 404 });
+    }
+    return new Response(result.bytes.buffer as ArrayBuffer, {
+      status: 200,
+      headers: {
+        "content-type": "application/octet-stream",
+        "content-length": String(result.size_bytes),
+        "x-vault-updated-at": String(result.updated_at),
+      },
+    });
+  });
 }

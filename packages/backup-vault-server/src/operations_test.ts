@@ -2,7 +2,11 @@
 // The minimal schema below creates only the tables the vault operations
 // actually touch: users (FK target), audit_log, vault_pats, vault_blobs.
 
-import { assertEquals, assertExists, assertRejects } from "jsr:@std/assert@^1.0";
+import {
+  assertEquals,
+  assertExists,
+  assertRejects,
+} from "jsr:@std/assert@^1.0";
 import { createClient } from "@libsql/client/node";
 import { drizzle } from "drizzle-orm/libsql";
 import { splitStatements } from "@hipo/sqlite";
@@ -206,7 +210,10 @@ Deno.test("vault: put → get round-trip", async () => {
     const admin = await s.createUser("admin5");
     s.loginAs(admin);
     const data = new Uint8Array([1, 2, 3, 4, 5]);
-    const put = await do_putVaultBlob(s.ctx, { blob_id: "backup.bin", bytes: data });
+    const put = await do_putVaultBlob(s.ctx, {
+      blob_id: "backup.bin",
+      bytes: data,
+    });
     assertEquals(put.size_bytes, 5);
     assertEquals(typeof put.updated_at, "number");
 

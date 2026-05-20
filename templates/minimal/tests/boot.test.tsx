@@ -25,6 +25,8 @@ describe("BootstrapApp", () => {
   it("mounts and renders the passphrase form without throwing", () => {
     render(<BootstrapApp />);
     // The Bootstrap page renders a passphrase input and a Continue button.
-    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /continue/i }),
+    ).toBeInTheDocument();
   });
 });

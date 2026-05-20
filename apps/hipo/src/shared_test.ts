@@ -26,14 +26,23 @@ import {
 Deno.test("checkUsername: empty / whitespace / too long / valid", () => {
   assertEquals(checkUsername(""), "username is required");
   assertEquals(checkUsername("   "), "username is required");
-  assertEquals(checkUsername("a".repeat(USERNAME_MAX_LENGTH + 1)), "username is too long");
+  assertEquals(
+    checkUsername("a".repeat(USERNAME_MAX_LENGTH + 1)),
+    "username is too long",
+  );
   assertEquals(checkUsername("alice"), null);
   assertEquals(checkUsername("a".repeat(USERNAME_MAX_LENGTH)), null);
 });
 
 Deno.test("checkPassword: too short / valid", () => {
-  assertEquals(checkPassword(""), `password must be at least ${PASSWORD_MIN_LENGTH} characters`);
-  assertEquals(checkPassword("1234567"), `password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+  assertEquals(
+    checkPassword(""),
+    `password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+  );
+  assertEquals(
+    checkPassword("1234567"),
+    `password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+  );
   assertEquals(checkPassword("12345678"), null);
   assertEquals(checkPassword("password123"), null);
 });
@@ -41,50 +50,59 @@ Deno.test("checkPassword: too short / valid", () => {
 Deno.test("checkPartyName: empty / whitespace / too long / valid", () => {
   assertEquals(checkPartyName(""), "name is required");
   assertEquals(checkPartyName("   "), "name is required");
-  assertEquals(checkPartyName("a".repeat(PARTY_NAME_MAX_LENGTH + 1)), "name is too long");
+  assertEquals(
+    checkPartyName("a".repeat(PARTY_NAME_MAX_LENGTH + 1)),
+    "name is too long",
+  );
   assertEquals(checkPartyName("Banco Galicia"), null);
 });
 
-Deno.test("checkCurrencyCode: wrong length / lowercase / non-letters / valid", () => {
-  const fmt = "currency_code must be 3 uppercase letters (ISO 4217)";
-  assertEquals(checkCurrencyCode("US"), fmt);
-  assertEquals(checkCurrencyCode("USDD"), fmt);
-  assertEquals(checkCurrencyCode("usd"), fmt);
-  assertEquals(checkCurrencyCode("US1"), fmt);
-  assertEquals(checkCurrencyCode("USD"), null);
-  assertEquals(checkCurrencyCode("ARS"), null);
-});
+Deno.test(
+  "checkCurrencyCode: wrong length / lowercase / non-letters / valid",
+  () => {
+    const fmt = "currency_code must be 3 uppercase letters (ISO 4217)";
+    assertEquals(checkCurrencyCode("US"), fmt);
+    assertEquals(checkCurrencyCode("USDD"), fmt);
+    assertEquals(checkCurrencyCode("usd"), fmt);
+    assertEquals(checkCurrencyCode("US1"), fmt);
+    assertEquals(checkCurrencyCode("USD"), null);
+    assertEquals(checkCurrencyCode("ARS"), null);
+  },
+);
 
 Deno.test("CURRENCY_CODE_PATTERN matches expected shape", () => {
   assertEquals(CURRENCY_CODE_PATTERN.test("USD"), true);
   assertEquals(CURRENCY_CODE_PATTERN.test("us"), false);
 });
 
-Deno.test("checkLenders: empty / non-positive amount / duplicates / valid", () => {
-  assertEquals(checkLenders([]), "loan needs at least one lender");
-  assertEquals(
-    checkLenders([{ lenderId: 1, amountLentCents: 0 }]),
-    "each lender amount must be > 0",
-  );
-  assertEquals(
-    checkLenders([{ lenderId: 1, amountLentCents: -10 }]),
-    "each lender amount must be > 0",
-  );
-  assertEquals(
-    checkLenders([
-      { lenderId: 1, amountLentCents: 5000 },
-      { lenderId: 1, amountLentCents: 5000 },
-    ]),
-    "lender 1 appears more than once",
-  );
-  assertEquals(
-    checkLenders([
-      { lenderId: 1, amountLentCents: 6000 },
-      { lenderId: 2, amountLentCents: 4000 },
-    ]),
-    null,
-  );
-});
+Deno.test(
+  "checkLenders: empty / non-positive amount / duplicates / valid",
+  () => {
+    assertEquals(checkLenders([]), "loan needs at least one lender");
+    assertEquals(
+      checkLenders([{ lenderId: 1, amountLentCents: 0 }]),
+      "each lender amount must be > 0",
+    );
+    assertEquals(
+      checkLenders([{ lenderId: 1, amountLentCents: -10 }]),
+      "each lender amount must be > 0",
+    );
+    assertEquals(
+      checkLenders([
+        { lenderId: 1, amountLentCents: 5000 },
+        { lenderId: 1, amountLentCents: 5000 },
+      ]),
+      "lender 1 appears more than once",
+    );
+    assertEquals(
+      checkLenders([
+        { lenderId: 1, amountLentCents: 6000 },
+        { lenderId: 2, amountLentCents: 4000 },
+      ]),
+      null,
+    );
+  },
+);
 
 Deno.test("sumLenderAmounts: reconciles", () => {
   assertEquals(
@@ -97,14 +115,17 @@ Deno.test("sumLenderAmounts: reconciles", () => {
   assertEquals(sumLenderAmounts([]), 0);
 });
 
-Deno.test("normalizeOptional: null/undefined/blank → null, otherwise trimmed", () => {
-  assertEquals(normalizeOptional(null), null);
-  assertEquals(normalizeOptional(undefined), null);
-  assertEquals(normalizeOptional(""), null);
-  assertEquals(normalizeOptional("   "), null);
-  assertEquals(normalizeOptional("  hello  "), "hello");
-  assertEquals(normalizeOptional("plain"), "plain");
-});
+Deno.test(
+  "normalizeOptional: null/undefined/blank → null, otherwise trimmed",
+  () => {
+    assertEquals(normalizeOptional(null), null);
+    assertEquals(normalizeOptional(undefined), null);
+    assertEquals(normalizeOptional(""), null);
+    assertEquals(normalizeOptional("   "), null);
+    assertEquals(normalizeOptional("  hello  "), "hello");
+    assertEquals(normalizeOptional("plain"), "plain");
+  },
+);
 
 // ---------- Format helpers ----------
 

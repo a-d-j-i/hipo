@@ -1,12 +1,17 @@
 /* Plain CSS — no antd, no SCSS, no utility library. */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   background: #f5f5f5;
   color: #222;
   line-height: 1.5;

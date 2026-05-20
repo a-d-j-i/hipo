@@ -25,7 +25,8 @@ function startProc(label, cmd, args, opts) {
   const pipe = (stream, prefix) => {
     stream.on("data", (d) => {
       const s = String(d).trimEnd();
-      if (s) for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
+      if (s)
+        for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
     });
   };
   pipe(proc.stdout, `${label}/out`);
@@ -55,31 +56,21 @@ async function main() {
 
   // Start backend
   log("starting backend…");
-  const backend = startProc(
-    "backend",
-    "deno",
-    ["task", "start"],
-    {
-      cwd: `${REPO_ROOT}/apps/backend`,
-      env: {
-        ...process.env,
-        HIPO_DATA_DIR: DATA_DIR,
-        HIPO_PORT: String(BACKEND_PORT),
-      },
+  const backend = startProc("backend", "deno", ["task", "start"], {
+    cwd: `${REPO_ROOT}/apps/backend`,
+    env: {
+      ...process.env,
+      HIPO_DATA_DIR: DATA_DIR,
+      HIPO_PORT: String(BACKEND_PORT),
     },
-  );
+  });
 
   // Start frontend dev (with proxy pointed at our backend)
   log("starting frontend…");
-  const frontend = startProc(
-    "frontend",
-    "npm",
-    ["run", "dev"],
-    {
-      cwd: `${REPO_ROOT}/apps/frontend`,
-      env: { ...process.env, HIPO_BACKEND_PORT: String(BACKEND_PORT) },
-    },
-  );
+  const frontend = startProc("frontend", "npm", ["run", "dev"], {
+    cwd: `${REPO_ROOT}/apps/frontend`,
+    env: { ...process.env, HIPO_BACKEND_PORT: String(BACKEND_PORT) },
+  });
 
   let browser;
   try {
@@ -108,9 +99,11 @@ async function main() {
     log("looking for setup form…");
     await page.waitForSelector("input", { timeout: 15_000 });
     // Find the visible username and password inputs (antd renders them).
-    const usernameInput = page.locator(
-      'input[placeholder*="user" i], input[name*="user" i], input[type="text"]',
-    ).first();
+    const usernameInput = page
+      .locator(
+        'input[placeholder*="user" i], input[name*="user" i], input[type="text"]',
+      )
+      .first();
     const passwordInput = page.locator('input[type="password"]').first();
     await usernameInput.fill("admin");
     await passwordInput.fill("admin12345");
@@ -123,10 +116,16 @@ async function main() {
     }
 
     log("submitting setup form…");
-    await page.locator("button").filter({ hasText: /setup|create|sign|crear|configurar/i }).first().click();
+    await page
+      .locator("button")
+      .filter({ hasText: /setup|create|sign|crear|configurar/i })
+      .first()
+      .click();
     // Wait for nav away from the setup page.
     await page.waitForFunction(
-      () => !document.body.textContent?.toLowerCase().includes("setup") || document.body.textContent?.length > 200,
+      () =>
+        !document.body.textContent?.toLowerCase().includes("setup") ||
+        document.body.textContent?.length > 200,
       { timeout: 15_000 },
     );
     log("setup submitted — heuristic dashboard wait");
@@ -162,18 +161,26 @@ async function main() {
         method: "POST",
         credentials: "include",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: "Smoke Bank", externalRef: null, notes: null }),
+        body: JSON.stringify({
+          name: "Smoke Bank",
+          externalRef: null,
+          notes: null,
+        }),
       });
       return { status: r.status, body: await r.json() };
     });
-    log(`POST /api/parties → ${createParty.status} ${JSON.stringify(createParty.body)}`);
+    log(
+      `POST /api/parties → ${createParty.status} ${JSON.stringify(createParty.body)}`,
+    );
 
     log("probing /api/parties (listing)…");
     const listParties = await page.evaluate(async () => {
       const r = await fetch("/api/parties", { credentials: "include" });
       return { status: r.status, body: await r.json() };
     });
-    log(`GET /api/parties → ${listParties.status} count=${(listParties.body || []).length}`);
+    log(
+      `GET /api/parties → ${listParties.status} count=${(listParties.body || []).length}`,
+    );
 
     log("probing /api/audit (admin-only)…");
     const audit = await page.evaluate(async () => {
@@ -194,15 +201,21 @@ async function main() {
         parties: { status: parties.status, body: await parties.json() },
       };
     });
-    log(`after reload: me=${afterReload.me.status} ${JSON.stringify(afterReload.me.body?.username)}, parties count=${(afterReload.parties.body || []).length}`);
+    log(
+      `after reload: me=${afterReload.me.status} ${JSON.stringify(afterReload.me.body?.username)}, parties count=${(afterReload.parties.body || []).length}`,
+    );
 
     log("smoke ok ✓");
   } finally {
-    try { await browser?.close(); } catch {}
+    try {
+      await browser?.close();
+    } catch {}
     backend.kill("SIGTERM");
     frontend.kill("SIGTERM");
     await new Promise((r) => setTimeout(r, 300));
-    try { rmSync(DATA_DIR, { recursive: true }); } catch {}
+    try {
+      rmSync(DATA_DIR, { recursive: true });
+    } catch {}
   }
 }
 

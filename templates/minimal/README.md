@@ -1,26 +1,26 @@
 # templates/minimal — framework build-gate template
 
 This is the framework's **build-gate template**. It is the simplest possible
-consumer of the local-first framework packages: it boots, lets you log in,
-shows "hello {user}", and lets you take an encrypted backup. Nothing more.
+consumer of the local-first framework packages: it boots, lets you log in, shows
+"hello {user}", and lets you take an encrypted backup. Nothing more.
 
-**Any change to a `packages/*` API that breaks this template's build or smoke
-is wrong by construction.** If `templates/minimal` fails after a package
-change, the package change is the bug — fix the package, not the template.
+**Any change to a `packages/*` API that breaks this template's build or smoke is
+wrong by construction.** If `templates/minimal` fails after a package change,
+the package change is the bug — fix the package, not the template.
 
 ## What it composes
 
-| Package | What it provides |
-|---|---|
-| `@hipo/sqlite` | OPFS-backed SQLite via sqlocal; migrations runner |
-| `@hipo/server` | Hand-rolled 50-LOC router; `serveOnPort` worker bridge |
-| `@hipo/auth` | Users + sessions; `doSetupFirstAdmin`, `doLogin`, `doLogout` |
-| `@hipo/audit` | `writeAudit` (used implicitly by auth operations) |
-| `@hipo/backup` | AES-GCM encrypt/decrypt; `packEnvelope`/`unpackEnvelope`; `gzipped` |
-| `@hipo/backup-local` | `downloadTarget` + `readBackupFromFile` |
+| Package              | What it provides                                                    |
+| -------------------- | ------------------------------------------------------------------- |
+| `@hipo/sqlite`       | OPFS-backed SQLite via sqlocal; migrations runner                   |
+| `@hipo/server`       | Hand-rolled 50-LOC router; `serveOnPort` worker bridge              |
+| `@hipo/auth`         | Users + sessions; `doSetupFirstAdmin`, `doLogin`, `doLogout`        |
+| `@hipo/audit`        | `writeAudit` (used implicitly by auth operations)                   |
+| `@hipo/backup`       | AES-GCM encrypt/decrypt; `packEnvelope`/`unpackEnvelope`; `gzipped` |
+| `@hipo/backup-local` | `downloadTarget` + `readBackupFromFile`                             |
 
-**Adds:** users + sessions tables + auth routes + one backup endpoint.
-**Nothing else.** No parties, loans, payouts, or hipo domain.
+**Adds:** users + sessions tables + auth routes + one backup endpoint. **Nothing
+else.** No parties, loans, payouts, or hipo domain.
 
 ## How to run
 

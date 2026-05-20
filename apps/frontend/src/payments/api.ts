@@ -2,10 +2,7 @@ import { httpRequest } from "../api/http";
 import type { DebtorPayment } from "@hipo/shared";
 
 export const listLoanPayments = (args: { loanId: number }) =>
-  httpRequest<DebtorPayment[]>(
-    "GET",
-    `/api/payments?loan_id=${args.loanId}`,
-  );
+  httpRequest<DebtorPayment[]>("GET", `/api/payments?loan_id=${args.loanId}`);
 
 export const createDebtorPayment = (args: {
   loanId: number;

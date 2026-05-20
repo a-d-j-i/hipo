@@ -19,7 +19,10 @@ import {
 import { _resetForTests as resetRateLimit } from "./rate_limit.ts";
 import type { Ctx, User } from "@hipo/auth";
 
-async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: User | null) => void }> {
+async function freshCtx(): Promise<{
+  ctx: Ctx;
+  setUser: (u: User | null) => void;
+}> {
   // Rate-limit state is process-wide; reset between tests so failed
   // attempts in earlier tests don't lock out later ones.
   resetRateLimit();
@@ -54,21 +57,24 @@ async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: User | null) => void
   };
 }
 
-Deno.test("setup_then_login: setup creates the admin, login succeeds", async () => {
-  const { ctx } = await freshCtx();
-  const admin = await doSetupFirstAdmin(ctx, {
-    username: "root",
-    password: "password123",
-  });
-  assertEquals(admin.role, "admin");
-  assertEquals(admin.username, "root");
+Deno.test(
+  "setup_then_login: setup creates the admin, login succeeds",
+  async () => {
+    const { ctx } = await freshCtx();
+    const admin = await doSetupFirstAdmin(ctx, {
+      username: "root",
+      password: "password123",
+    });
+    assertEquals(admin.role, "admin");
+    assertEquals(admin.username, "root");
 
-  const again = await doLogin(ctx, {
-    username: "root",
-    password: "password123",
-  });
-  assertEquals(again.id, admin.id);
-});
+    const again = await doLogin(ctx, {
+      username: "root",
+      password: "password123",
+    });
+    assertEquals(again.id, admin.id);
+  },
+);
 
 Deno.test("setup_twice_blocked", async () => {
   const { ctx } = await freshCtx();
@@ -116,7 +122,7 @@ Deno.test("login_rate_limit_resets_on_success", async () => {
   // Burn 4 failures (still under the threshold of 5).
   for (let i = 0; i < 4; i++) {
     await assertRejects(() =>
-      doLogin(ctx, { username: "root", password: "wrong" })
+      doLogin(ctx, { username: "root", password: "wrong" }),
     );
   }
   // A success clears the counter.
@@ -124,7 +130,7 @@ Deno.test("login_rate_limit_resets_on_success", async () => {
   // Now we can fail 4 more times without getting locked.
   for (let i = 0; i < 4; i++) {
     await assertRejects(() =>
-      doLogin(ctx, { username: "root", password: "wrong" })
+      doLogin(ctx, { username: "root", password: "wrong" }),
     );
   }
 });
@@ -142,7 +148,7 @@ Deno.test("change_password_flow", async () => {
   });
   setUser(null);
   await assertRejects(() =>
-    doLogin(ctx, { username: "root", password: "password123" })
+    doLogin(ctx, { username: "root", password: "password123" }),
   );
   const back = await doLogin(ctx, {
     username: "root",

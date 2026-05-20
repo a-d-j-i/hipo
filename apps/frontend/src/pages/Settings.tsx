@@ -22,11 +22,7 @@ import { downloadTarget } from "@hipo/backup-local/download";
 import { fsAccessTarget } from "@hipo/backup-local/fs-access";
 import { githubTarget } from "@hipo/backup-github";
 import { unpackEnvelope } from "@hipo/backup";
-import {
-  LOCALE_STORAGE_KEY,
-  SUPPORTED_LOCALES,
-  type Locale,
-} from "../i18n";
+import { LOCALE_STORAGE_KEY, SUPPORTED_LOCALES, type Locale } from "../i18n";
 import { getSystemStatus, type SystemStatus } from "../api/system";
 import {
   applyRestore,
@@ -224,7 +220,11 @@ function ShapeDescription({ status }: { status: SystemStatus }) {
       <Descriptions.Item label={t("settings.storage.backend.label")}>
         {t(`settings.storage.backend.${status.storage.backend}`)}
       </Descriptions.Item>
-      <Descriptions.Item label={t("settings.storage.usage", { used: "", quota: "" }).split(" ")[0]}>
+      <Descriptions.Item
+        label={
+          t("settings.storage.usage", { used: "", quota: "" }).split(" ")[0]
+        }
+      >
         {usage}
       </Descriptions.Item>
       <Descriptions.Item
@@ -292,9 +292,9 @@ function BackupNowAction({
   const { t } = useTranslation();
   const passphrase = usePassphrase();
   const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState<"preparing" | "uploading" | "verifying" | null>(
-    null,
-  );
+  const [stage, setStage] = useState<
+    "preparing" | "uploading" | "verifying" | null
+  >(null);
   const [askPass, setAskPass] = useState(false);
   const [passInput, setPassInput] = useState("");
 
@@ -414,8 +414,9 @@ function FsAccessSection({
     ({
       target_id: "fs-access",
       configured_at: 0,
-      last_backup_at: status.backups.targets.find((tg) => tg.id === "fs-access")
-        ?.last_backup_at ?? null,
+      last_backup_at:
+        status.backups.targets.find((tg) => tg.id === "fs-access")
+          ?.last_backup_at ?? null,
       last_backup_size_bytes: null,
       last_verify_at:
         status.backups.targets.find((tg) => tg.id === "fs-access")
@@ -537,7 +538,9 @@ function FsAccessSection({
             {stateRow?.last_backup_at
               ? " · " +
                 t("settings.storage.target.lastBackup", {
-                  when: new Date(stateRow.last_backup_at * 1000).toLocaleString(),
+                  when: new Date(
+                    stateRow.last_backup_at * 1000,
+                  ).toLocaleString(),
                 })
               : ""}
           </Typography.Text>
@@ -885,7 +888,11 @@ function VaultSection({
             : ""}
         </Typography.Text>
       )}
-      <Space direction="vertical" size={8} style={{ width: "100%", marginTop: 12 }}>
+      <Space
+        direction="vertical"
+        size={8}
+        style={{ width: "100%", marginTop: 12 }}
+      >
         <Input
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
@@ -957,11 +964,7 @@ function VaultSection({
         <Typography.Paragraph type="warning">
           {t("settings.storage.vault.mintedBody")}
         </Typography.Paragraph>
-        <Input.Password
-          value={mintedToken ?? ""}
-          readOnly
-          autoFocus
-        />
+        <Input.Password value={mintedToken ?? ""} readOnly autoFocus />
       </Modal>
     </Card>
   );
@@ -1019,9 +1022,7 @@ function GithubSection({
       message.success(t("settings.storage.github.testOk"));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      message.error(
-        t("settings.storage.github.testFailed", { message: msg }),
-      );
+      message.error(t("settings.storage.github.testFailed", { message: msg }));
     } finally {
       setBusy(false);
     }
@@ -1110,8 +1111,8 @@ function GithubSection({
       </Typography.Paragraph>
       {config && (
         <Typography.Text>
-          {t("settings.storage.github.currentLabel")}: {config.owner}/{config.repo}/
-          {config.path}
+          {t("settings.storage.github.currentLabel")}: {config.owner}/
+          {config.repo}/{config.path}
           {stateRow?.last_backup_at
             ? " · " +
               t("settings.storage.target.lastBackup", {
@@ -1120,7 +1121,11 @@ function GithubSection({
             : ""}
         </Typography.Text>
       )}
-      <Space direction="vertical" size={8} style={{ width: "100%", marginTop: 12 }}>
+      <Space
+        direction="vertical"
+        size={8}
+        style={{ width: "100%", marginTop: 12 }}
+      >
         <Input
           value={owner}
           onChange={(e) => setOwner(e.target.value)}

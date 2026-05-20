@@ -8,5 +8,8 @@ declare module "@node-rs/argon2" {
     password: string | Buffer | Uint8Array,
     options?: Record<string, unknown>,
   ): Promise<string>;
-  export function verify(hash: string, password: string | Buffer | Uint8Array): Promise<boolean>;
+  export function verify(
+    hash: string,
+    password: string | Buffer | Uint8Array,
+  ): Promise<boolean>;
 }

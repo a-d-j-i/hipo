@@ -39,16 +39,16 @@ function mark(name: string) {
 }
 
 function renderColdstart() {
-  const nav = performance.getEntriesByType(
-    "navigation",
-  )[0] as PerformanceNavigationTiming | undefined;
+  const nav = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
   const navType = nav?.type ?? "(unknown)";
-  const domContentLoaded = nav
-    ? Math.round(nav.domContentLoadedEventEnd)
-    : NaN;
+  const domContentLoaded = nav ? Math.round(nav.domContentLoadedEventEnd) : NaN;
   const lines: string[] = [];
   lines.push(`<table><tr><th>Event</th><th>Time</th></tr>`);
-  lines.push(`<tr><td>navigation type</td><td class="num">${navType}</td></tr>`);
+  lines.push(
+    `<tr><td>navigation type</td><td class="num">${navType}</td></tr>`,
+  );
   lines.push(
     `<tr><td>DOMContentLoaded</td><td class="num">${fmtMs(domContentLoaded)}</td></tr>`,
   );
@@ -83,14 +83,20 @@ async function ensureSWAndIsolation(): Promise<boolean> {
   if (!navigator.serviceWorker.controller) {
     await new Promise<void>((resolve) => {
       const onChange = () => {
-        navigator.serviceWorker.removeEventListener("controllerchange", onChange);
+        navigator.serviceWorker.removeEventListener(
+          "controllerchange",
+          onChange,
+        );
         resolve();
       };
       navigator.serviceWorker.addEventListener("controllerchange", onChange);
       const poll = setInterval(() => {
         if (navigator.serviceWorker.controller) {
           clearInterval(poll);
-          navigator.serviceWorker.removeEventListener("controllerchange", onChange);
+          navigator.serviceWorker.removeEventListener(
+            "controllerchange",
+            onChange,
+          );
           resolve();
         }
       }, 100);
@@ -183,7 +189,9 @@ benchBtn.addEventListener("click", async () => {
   try {
     const r = await runBackupPipeline(passInput.value || "hunter2");
     const rows: string[] = [];
-    rows.push("<table><tr><th>Stage</th><th>Time</th><th>Output size</th></tr>");
+    rows.push(
+      "<table><tr><th>Stage</th><th>Time</th><th>Output size</th></tr>",
+    );
     for (const t of r.timings) {
       rows.push(
         `<tr><td>${t.stage}</td><td class="num">${fmtMs(t.ms)}</td><td class="num">${

@@ -1,18 +1,8 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { writeAudit, type Tx } from "@hipo/audit";
-import {
-  type Ctx,
-  nowSecs,
-  requireAdmin,
-  requireAuth,
-} from "@hipo/auth";
+import { type Ctx, nowSecs, requireAdmin, requireAuth } from "@hipo/auth";
 import type { Db } from "@hipo/sqlite";
-import {
-  debtorPayments,
-  loanLenders,
-  loans,
-  parties,
-} from "../db/schema.ts";
+import { debtorPayments, loanLenders, loans, parties } from "../db/schema.ts";
 import { badRequest, notFound } from "@hipo/server";
 import type {
   CreateLoanInput,
@@ -38,7 +28,8 @@ async function partyExists(
     .from(parties)
     .where(and(eq(parties.id, id), isNull(parties.deletedAt)))
     .limit(1);
-  if (rows.length === 0) throw notFound(`${role === "debtor" ? "party" : "lender"} ${id} not found`);
+  if (rows.length === 0)
+    throw notFound(`${role === "debtor" ? "party" : "lender"} ${id} not found`);
 }
 
 async function loanHasPayments(db: Db | Tx, loanId: number): Promise<boolean> {
@@ -163,10 +154,7 @@ export async function doListLoans(ctx: Ctx): Promise<Loan[]> {
   return heads.map((h) => ({ ...h, lenders: byLoan.get(h.id) ?? [] }));
 }
 
-export async function doGetLoan(
-  ctx: Ctx,
-  args: { id: number },
-): Promise<Loan> {
+export async function doGetLoan(ctx: Ctx, args: { id: number }): Promise<Loan> {
   requireAuth(ctx);
   return await fetchLoan(ctx.db, args.id);
 }

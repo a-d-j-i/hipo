@@ -15,8 +15,12 @@ export type CorsOptions = {
  *  `Access-Control-Allow-Origin` (browser blocks). Preflights
  *  short-circuit with 204. */
 export function cors(opts: CorsOptions): Middleware {
-  const methods = (opts.methods ?? ["GET", "POST", "PUT", "PATCH", "DELETE"]).join(", ");
-  const allowedHeaders = (opts.allowedHeaders ?? ["content-type", "x-hipo-token"]).join(", ");
+  const methods = (
+    opts.methods ?? ["GET", "POST", "PUT", "PATCH", "DELETE"]
+  ).join(", ");
+  const allowedHeaders = (
+    opts.allowedHeaders ?? ["content-type", "x-hipo-token"]
+  ).join(", ");
 
   return async (c, next) => {
     const origin = c.req.headers.get("origin");
@@ -34,7 +38,8 @@ export function cors(opts: CorsOptions): Middleware {
       const headers = new Headers();
       if (allow) {
         headers.set("Access-Control-Allow-Origin", origin);
-        if (opts.credentials) headers.set("Access-Control-Allow-Credentials", "true");
+        if (opts.credentials)
+          headers.set("Access-Control-Allow-Credentials", "true");
         headers.set("Access-Control-Allow-Methods", methods);
         headers.set("Access-Control-Allow-Headers", allowedHeaders);
         headers.set("Access-Control-Max-Age", "86400");

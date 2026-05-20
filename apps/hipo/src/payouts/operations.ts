@@ -1,11 +1,6 @@
 import { and, asc, desc, eq, isNull, sql, sum } from "drizzle-orm";
 import { writeAudit } from "@hipo/audit";
-import {
-  type Ctx,
-  nowSecs,
-  requireAdmin,
-  requireAuth,
-} from "@hipo/auth";
+import { type Ctx, nowSecs, requireAdmin, requireAuth } from "@hipo/auth";
 import type { Db } from "@hipo/sqlite";
 import {
   debtorPayments,
@@ -15,10 +10,7 @@ import {
   parties,
 } from "../db/schema.ts";
 import type { Tx } from "@hipo/audit";
-import {
-  normalizeOpt,
-  validateCurrencyCode,
-} from "../loans/validators.ts";
+import { normalizeOpt, validateCurrencyCode } from "../loans/validators.ts";
 import { badRequest, notFound } from "@hipo/server";
 import type {
   CreateLenderPayoutInput,
@@ -26,10 +18,7 @@ import type {
   LenderPayout,
 } from "./types.ts";
 
-async function fetchPayout(
-  db: Db | Tx,
-  id: number,
-): Promise<LenderPayout> {
+async function fetchPayout(db: Db | Tx, id: number): Promise<LenderPayout> {
   const rows = await db
     .select({
       id: lenderPayouts.id,
@@ -80,9 +69,7 @@ export async function doListPayouts(ctx: Ctx): Promise<LenderPayout[]> {
  * Done as two grouped queries merged in TS — easier to read and type-check
  * than the Rust UNION ALL subquery; same shape.
  */
-export async function doLenderBalances(
-  ctx: Ctx,
-): Promise<LenderBalance[]> {
+export async function doLenderBalances(ctx: Ctx): Promise<LenderBalance[]> {
   requireAuth(ctx);
 
   const received = await ctx.db
@@ -97,9 +84,7 @@ export async function doLenderBalances(
       eq(debtorPayments.id, debtorPaymentSplits.paymentId),
     )
     .innerJoin(loans, eq(loans.id, debtorPayments.loanId))
-    .where(
-      and(isNull(debtorPayments.deletedAt), isNull(loans.deletedAt)),
-    )
+    .where(and(isNull(debtorPayments.deletedAt), isNull(loans.deletedAt)))
     .groupBy(debtorPaymentSplits.lenderId, loans.currencyCode);
 
   const paidOut = await ctx.db

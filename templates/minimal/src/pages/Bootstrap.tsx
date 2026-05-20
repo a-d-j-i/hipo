@@ -22,7 +22,9 @@ export default function Bootstrap() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passphrase.length < MIN_PASSPHRASE_LENGTH) {
-      setError(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`);
+      setError(
+        `Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`,
+      );
       return;
     }
     setBusy(true);

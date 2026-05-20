@@ -63,8 +63,7 @@ function rowToView(r: {
     last_backup_at: r.lastBackupAt,
     last_backup_size_bytes: r.lastBackupSizeBytes,
     last_verify_at: r.lastVerifyAt,
-    last_verify_ok:
-      r.lastVerifyOk === null ? null : r.lastVerifyOk === 1,
+    last_verify_ok: r.lastVerifyOk === null ? null : r.lastVerifyOk === 1,
   };
 }
 

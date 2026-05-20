@@ -5,7 +5,9 @@ const healthBtn = document.getElementById("health-btn") as HTMLButtonElement;
 const listBtn = document.getElementById("list-btn") as HTMLButtonElement;
 const createBtn = document.getElementById("create-btn") as HTMLButtonElement;
 const clearBtn = document.getElementById("clear-btn") as HTMLButtonElement;
-const notFoundBtn = document.getElementById("not-found-btn") as HTMLButtonElement;
+const notFoundBtn = document.getElementById(
+  "not-found-btn",
+) as HTMLButtonElement;
 const textInput = document.getElementById("text-input") as HTMLInputElement;
 
 function log(msg: string, cls?: "ok" | "err") {

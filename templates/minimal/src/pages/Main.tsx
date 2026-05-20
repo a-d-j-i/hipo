@@ -17,7 +17,10 @@ import {
   packEnvelope,
   unpackEnvelope,
 } from "@hipo/backup";
-import { downloadTarget, readBackupFromFile } from "@hipo/backup-local/download";
+import {
+  downloadTarget,
+  readBackupFromFile,
+} from "@hipo/backup-local/download";
 
 const MIN_PASSPHRASE_LENGTH = 12;
 
@@ -150,7 +153,10 @@ export default function Main({ user, onLogout }: Props) {
         {status && <p className="status">{status}</p>}
 
         {passphrasePrompt && (
-          <form onSubmit={handlePassphrasePromptSubmit} style={{ marginBottom: "1rem" }}>
+          <form
+            onSubmit={handlePassphrasePromptSubmit}
+            style={{ marginBottom: "1rem" }}
+          >
             <label>
               Re-enter backup passphrase
               <input
@@ -163,7 +169,11 @@ export default function Main({ user, onLogout }: Props) {
                 required
               />
             </label>
-            <button type="submit" disabled={busy} style={{ marginTop: "0.5rem" }}>
+            <button
+              type="submit"
+              disabled={busy}
+              style={{ marginTop: "0.5rem" }}
+            >
               Unlock backup
             </button>
           </form>

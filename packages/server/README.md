@@ -1,7 +1,7 @@
 # @hipo/server
 
-Framework substrate: HTTP plumbing shared by all app shapes (in-page
-Worker, deployed server, Tauri).
+Framework substrate: HTTP plumbing shared by all app shapes (in-page Worker,
+deployed server, Tauri).
 
 ## Public surface (current — Phase 1B)
 

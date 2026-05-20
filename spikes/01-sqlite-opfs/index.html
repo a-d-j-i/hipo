@@ -13,9 +13,20 @@
         line-height: 1.5;
         color: #1f2937;
       }
-      h1 { font-size: 1.5rem; }
-      h2 { font-size: 1rem; margin-top: 2rem; color: #374151; }
-      .row { display: flex; gap: 0.5rem; margin: 0.5rem 0; align-items: center; }
+      h1 {
+        font-size: 1.5rem;
+      }
+      h2 {
+        font-size: 1rem;
+        margin-top: 2rem;
+        color: #374151;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+        align-items: center;
+      }
       button {
         padding: 0.4rem 0.8rem;
         font: inherit;
@@ -25,8 +36,13 @@
         border-radius: 4px;
         cursor: pointer;
       }
-      button:hover { background: #1d4ed8; }
-      button:disabled { background: #9ca3af; cursor: not-allowed; }
+      button:hover {
+        background: #1d4ed8;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
       input {
         padding: 0.4rem;
         font: inherit;
@@ -42,17 +58,23 @@
         white-space: pre-wrap;
         word-break: break-all;
       }
-      .ok { color: #059669; }
-      .err { color: #dc2626; }
-      .hint { color: #6b7280; font-size: 0.9rem; }
+      .ok {
+        color: #059669;
+      }
+      .err {
+        color: #dc2626;
+      }
+      .hint {
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
     </style>
   </head>
   <body>
     <h1>Spike 01: SQLite-WASM + Drizzle + OPFS</h1>
     <p class="hint">
       Validates that SQLite-WASM runs in a dedicated Web Worker, persists to
-      OPFS, and is reachable via Drizzle. Reload the page to verify
-      persistence.
+      OPFS, and is reachable via Drizzle. Reload the page to verify persistence.
     </p>
 
     <h2>Environment</h2>

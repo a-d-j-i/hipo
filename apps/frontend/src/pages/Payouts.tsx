@@ -132,7 +132,9 @@ export default function Payouts() {
         pagination={false}
         size="small"
         scroll={{ x: "max-content" }}
-        locale={{ emptyText: <Empty description={t("payouts.emptyBalances")} /> }}
+        locale={{
+          emptyText: <Empty description={t("payouts.emptyBalances")} />,
+        }}
         style={{ marginBottom: 32 }}
         columns={[
           { title: t("payouts.column.lender"), dataIndex: "lender_name" },
@@ -189,9 +191,7 @@ export default function Payouts() {
         ]}
       />
 
-      <Typography.Title level={4}>
-        {t("payouts.historyTitle")}
-      </Typography.Title>
+      <Typography.Title level={4}>{t("payouts.historyTitle")}</Typography.Title>
       <Table<LenderPayout>
         rowKey="id"
         loading={loading}
@@ -294,7 +294,12 @@ export default function Payouts() {
           <Form.Item name="notes" label={t("payouts.form.notes")}>
             <Input.TextArea rows={2} />
           </Form.Item>
-          <Button type="primary" htmlType="submit" icon={<PlusOutlined />} block>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<PlusOutlined />}
+            block
+          >
             {t("payouts.record")}
           </Button>
         </Form>

@@ -19,7 +19,16 @@
 import { openDb } from "@hipo/sqlite/client-browser";
 import { binaryFormat } from "@hipo/sqlite/binary-format-browser";
 import { gzipped } from "@hipo/backup";
-import { Router, serveOnPort, json, empty, parseCookies, serializeCookie, type Middleware, type RouteContext } from "@hipo/server";
+import {
+  Router,
+  serveOnPort,
+  json,
+  empty,
+  parseCookies,
+  serializeCookie,
+  type Middleware,
+  type RouteContext,
+} from "@hipo/server";
 import {
   doAuthStatus,
   doCurrentUser,
@@ -126,8 +135,7 @@ function sessionMiddleware(db: Db): Middleware<AppState> {
         c.state.sessionId = sessionId;
         c.state.user = publicUser(rows[0].user);
         // Lazy touch last_seen_at — fire and forget.
-        db
-          .update(sessions)
+        db.update(sessions)
           .set({ lastSeenAt: now })
           .where(eq(sessions.id, sessionId))
           .then(() => {})

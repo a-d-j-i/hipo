@@ -60,14 +60,17 @@ export function vaultTarget(opts: VaultTargetOptions): VaultTarget {
     },
 
     async put(blob: Uint8Array): Promise<{ at: number }> {
-      const res = await doFetch(url(`/api/vault/blob/${encodeURIComponent(blobId)}`), {
-        method: "PUT",
-        headers: {
-          ...authHeader(),
-          "Content-Type": "application/octet-stream",
+      const res = await doFetch(
+        url(`/api/vault/blob/${encodeURIComponent(blobId)}`),
+        {
+          method: "PUT",
+          headers: {
+            ...authHeader(),
+            "Content-Type": "application/octet-stream",
+          },
+          body: blob,
         },
-        body: blob,
-      });
+      );
       if (!res.ok) {
         throw new Error(
           `vault PUT blob: ${res.status} ${res.statusText}: ${await res.text()}`,
@@ -82,9 +85,12 @@ export function vaultTarget(opts: VaultTargetOptions): VaultTarget {
     },
 
     async get(): Promise<Uint8Array | null> {
-      const res = await doFetch(url(`/api/vault/blob/${encodeURIComponent(blobId)}`), {
-        headers: authHeader(),
-      });
+      const res = await doFetch(
+        url(`/api/vault/blob/${encodeURIComponent(blobId)}`),
+        {
+          headers: authHeader(),
+        },
+      );
       if (res.status === 404) return null;
       if (!res.ok) {
         throw new Error(

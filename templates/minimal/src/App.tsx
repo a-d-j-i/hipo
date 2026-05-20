@@ -42,7 +42,9 @@ export default function App() {
   const [auth, setAuth] = useState<AuthState>({ phase: "loading" });
 
   const refresh = () => {
-    loadAuthState().then(setAuth).catch(() => {});
+    loadAuthState()
+      .then(setAuth)
+      .catch(() => {});
   };
 
   useEffect(() => {

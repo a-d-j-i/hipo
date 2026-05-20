@@ -24,14 +24,20 @@ export async function registerInPageSW(): Promise<void> {
   if (!navigator.serviceWorker.controller) {
     await new Promise<void>((resolve) => {
       const onChange = () => {
-        navigator.serviceWorker.removeEventListener("controllerchange", onChange);
+        navigator.serviceWorker.removeEventListener(
+          "controllerchange",
+          onChange,
+        );
         resolve();
       };
       navigator.serviceWorker.addEventListener("controllerchange", onChange);
       const poll = setInterval(() => {
         if (navigator.serviceWorker.controller) {
           clearInterval(poll);
-          navigator.serviceWorker.removeEventListener("controllerchange", onChange);
+          navigator.serviceWorker.removeEventListener(
+            "controllerchange",
+            onChange,
+          );
           resolve();
         }
       }, 100);

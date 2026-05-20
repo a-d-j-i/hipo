@@ -106,33 +106,39 @@ Deno.test("backup state: configure → list returns one row", async () => {
   }
 });
 
-Deno.test("backup state: configure is idempotent (no duplicate row)", async () => {
-  const s = await freshDb();
-  try {
-    await s.loginAsAdmin();
-    await do_configureTarget(s.ctx, { target_id: "github" });
-    await do_configureTarget(s.ctx, { target_id: "github" });
-    const rows = await do_listBackupTargets(s.ctx);
-    assertEquals(rows.length, 1);
-  } finally {
-    await cleanup(s);
-  }
-});
+Deno.test(
+  "backup state: configure is idempotent (no duplicate row)",
+  async () => {
+    const s = await freshDb();
+    try {
+      await s.loginAsAdmin();
+      await do_configureTarget(s.ctx, { target_id: "github" });
+      await do_configureTarget(s.ctx, { target_id: "github" });
+      const rows = await do_listBackupTargets(s.ctx);
+      assertEquals(rows.length, 1);
+    } finally {
+      await cleanup(s);
+    }
+  },
+);
 
-Deno.test("backup state: record-backup stamps last_backup_at + size", async () => {
-  const s = await freshDb();
-  try {
-    await s.loginAsAdmin();
-    const row = await do_recordBackup(s.ctx, {
-      target_id: "local-download",
-      size_bytes: 4096,
-    });
-    assertEquals(row.last_backup_size_bytes, 4096);
-    assertEquals(typeof row.last_backup_at, "number");
-  } finally {
-    await cleanup(s);
-  }
-});
+Deno.test(
+  "backup state: record-backup stamps last_backup_at + size",
+  async () => {
+    const s = await freshDb();
+    try {
+      await s.loginAsAdmin();
+      const row = await do_recordBackup(s.ctx, {
+        target_id: "local-download",
+        size_bytes: 4096,
+      });
+      assertEquals(row.last_backup_size_bytes, 4096);
+      assertEquals(typeof row.last_backup_at, "number");
+    } finally {
+      await cleanup(s);
+    }
+  },
+);
 
 Deno.test("backup state: record-verify flips last_verify_ok", async () => {
   const s = await freshDb();
@@ -168,24 +174,25 @@ Deno.test("backup state: record-verify on unknown target rejects", async () => {
   }
 });
 
-Deno.test("backup state: list requires auth; mutating requires admin", async () => {
-  const s = await freshDb();
-  try {
-    // No user → list fails (requireAuth)
-    await assertRejects(() => do_listBackupTargets(s.ctx));
-    // Plain user → list works, mutate fails
-    await s.loginAsUser();
-    await do_listBackupTargets(s.ctx);
-    await assertRejects(() =>
-      do_recordBackup(s.ctx, { target_id: "x", size_bytes: 0 }),
-    );
-    await assertRejects(() =>
-      do_configureTarget(s.ctx, { target_id: "x" }),
-    );
-  } finally {
-    await cleanup(s);
-  }
-});
+Deno.test(
+  "backup state: list requires auth; mutating requires admin",
+  async () => {
+    const s = await freshDb();
+    try {
+      // No user → list fails (requireAuth)
+      await assertRejects(() => do_listBackupTargets(s.ctx));
+      // Plain user → list works, mutate fails
+      await s.loginAsUser();
+      await do_listBackupTargets(s.ctx);
+      await assertRejects(() =>
+        do_recordBackup(s.ctx, { target_id: "x", size_bytes: 0 }),
+      );
+      await assertRejects(() => do_configureTarget(s.ctx, { target_id: "x" }));
+    } finally {
+      await cleanup(s);
+    }
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Snapshot / restore round-trip

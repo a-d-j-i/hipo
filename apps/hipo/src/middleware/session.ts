@@ -129,8 +129,7 @@ export function sessionMiddleware(db: Db): Middleware<AppState> {
         c.state.session = rows[0].session;
         c.state.user = publicUser(rows[0].user);
         // Touch last_seen_at lazily; no need to await for the response.
-        db
-          .update(sessions)
+        db.update(sessions)
           .set({ lastSeenAt: now })
           .where(eq(sessions.id, sessionId))
           .then(() => {})
@@ -159,4 +158,3 @@ export const requireAdmin: Middleware<AppState> = async (c, next) => {
   if (c.state.user.role !== "admin") throw forbidden();
   return await next();
 };
-

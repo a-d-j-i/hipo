@@ -13,9 +13,21 @@
         line-height: 1.5;
         color: #1f2937;
       }
-      h1 { font-size: 1.5rem; }
-      h2 { font-size: 1rem; margin-top: 2rem; color: #374151; }
-      .row { display: flex; gap: 0.5rem; margin: 0.5rem 0; align-items: center; flex-wrap: wrap; }
+      h1 {
+        font-size: 1.5rem;
+      }
+      h2 {
+        font-size: 1rem;
+        margin-top: 2rem;
+        color: #374151;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        margin: 0.5rem 0;
+        align-items: center;
+        flex-wrap: wrap;
+      }
       button {
         padding: 0.4rem 0.8rem;
         font: inherit;
@@ -25,33 +37,67 @@
         border-radius: 4px;
         cursor: pointer;
       }
-      button:hover { background: #c2410c; }
-      button:disabled { background: #9ca3af; cursor: not-allowed; }
-      input { padding: 0.4rem; font: inherit; border: 1px solid #d1d5db; border-radius: 4px; }
-      pre { background: #f3f4f6; padding: 1rem; border-radius: 4px; font-size: 0.85rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
-      .ok { color: #059669; }
-      .err { color: #dc2626; }
-      .hint { color: #6b7280; font-size: 0.9rem; }
+      button:hover {
+        background: #c2410c;
+      }
+      button:disabled {
+        background: #9ca3af;
+        cursor: not-allowed;
+      }
+      input {
+        padding: 0.4rem;
+        font: inherit;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+      }
+      pre {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .ok {
+        color: #059669;
+      }
+      .err {
+        color: #dc2626;
+      }
+      .hint {
+        color: #6b7280;
+        font-size: 0.9rem;
+      }
       .banner {
         padding: 0.6rem 0.8rem;
         margin: 0.5rem 0;
         border-radius: 4px;
         font-weight: bold;
       }
-      .banner.ok { background: #d1fae5; color: #065f46; }
-      .banner.warn { background: #fef3c7; color: #92400e; }
-      .banner.err { background: #fee2e2; color: #991b1b; }
+      .banner.ok {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .banner.warn {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .banner.err {
+        background: #fee2e2;
+        color: #991b1b;
+      }
     </style>
   </head>
   <body>
     <h1>Spike 03: GitHub Pages + merged Service Worker</h1>
     <p class="hint">
       Same architecture as spike 02, but with one change: the
-      <strong>service worker injects COOP/COEP headers</strong> so the
-      page achieves <code>crossOriginIsolated</code> status on hosts
-      that don't set those headers (GitHub Pages). On first visit the
-      page reloads once after the SW activates — that's the expected
-      handshake. After that, fully offline-capable.
+      <strong>service worker injects COOP/COEP headers</strong> so the page
+      achieves <code>crossOriginIsolated</code> status on hosts that don't set
+      those headers (GitHub Pages). On first visit the page reloads once after
+      the SW activates — that's the expected handshake. After that, fully
+      offline-capable.
     </p>
 
     <div id="isolation-banner" class="banner warn">checking isolation…</div>
@@ -73,8 +119,8 @@
 
     <h2>OPFS contents</h2>
     <p class="hint">
-      Firefox / Safari / WebKitGTK don't expose OPFS in DevTools. This
-      panel reads OPFS via <code>navigator.storage.getDirectory()</code>
+      Firefox / Safari / WebKitGTK don't expose OPFS in DevTools. This panel
+      reads OPFS via <code>navigator.storage.getDirectory()</code>
       so you can see what's actually on disk.
     </p>
     <div class="row">

@@ -26,11 +26,9 @@ async function startDev() {
   // are unaffected (the work is in WASM); cold-start numbers are
   // slightly worse than prod (un-minified bundles) but still
   // representative.
-  const proc = spawn(
-    "npx",
-    ["vite", "--port", String(PORT), "--strictPort"],
-    { stdio: ["ignore", "pipe", "pipe"] },
-  );
+  const proc = spawn("npx", ["vite", "--port", String(PORT), "--strictPort"], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   let ready = false;
   proc.stdout.on("data", (d) => {
     const s = String(d);
@@ -100,7 +98,9 @@ async function runOne(label, browser, opts = {}) {
   });
   const page = await context.newPage();
   const consoleLines = [];
-  page.on("console", (msg) => consoleLines.push(`[${msg.type()}] ${msg.text()}`));
+  page.on("console", (msg) =>
+    consoleLines.push(`[${msg.type()}] ${msg.text()}`),
+  );
   page.on("pageerror", (err) => consoleLines.push(`[pageerror] ${err}`));
 
   console.log(`\n=== Cold load (${label}) ===`);
@@ -132,31 +132,25 @@ async function runOne(label, browser, opts = {}) {
   console.log(table(cold, ["event", "time"]));
 
   // Seed.
-  console.log(`\n--- Seeding ${SEED_ROWS} rows × ${SEED_BYTES_PER_ROW} bytes ---`);
+  console.log(
+    `\n--- Seeding ${SEED_ROWS} rows × ${SEED_BYTES_PER_ROW} bytes ---`,
+  );
   await page.fill("#rows", String(SEED_ROWS));
   await page.fill("#bpr", String(SEED_BYTES_PER_ROW));
   await page.click("#seed-btn");
   await page.waitForFunction(
     () =>
-      document
-        .getElementById("seed-out")
-        ?.textContent?.includes("inserted"),
+      document.getElementById("seed-out")?.textContent?.includes("inserted"),
     { timeout: 120_000 },
   );
-  const seedText = await page.$eval(
-    "#seed-out",
-    (e) => e.textContent ?? "",
-  );
+  const seedText = await page.$eval("#seed-out", (e) => e.textContent ?? "");
   console.log(seedText.trim());
 
   // Backup benchmark.
   console.log("\n--- Backup pipeline benchmark ---");
   await page.click("#bench-btn");
   await page.waitForFunction(
-    () =>
-      document
-        .getElementById("bench-out")
-        ?.textContent?.includes("Total"),
+    () => document.getElementById("bench-out")?.textContent?.includes("Total"),
     { timeout: 120_000 },
   );
   const bench = await readBenchTable(page);

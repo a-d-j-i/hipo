@@ -27,10 +27,7 @@ await serve<AppState>({
   cors: {
     // Cross-origin only matters when a browser at the Vite dev port
     // bypasses the proxy and hits the backend directly.
-    allowedOrigins: new Set([
-      "http://localhost:1420",
-      "http://127.0.0.1:1420",
-    ]),
+    allowedOrigins: new Set(["http://localhost:1420", "http://127.0.0.1:1420"]),
     credentials: true,
   },
   localToken: config.authToken,

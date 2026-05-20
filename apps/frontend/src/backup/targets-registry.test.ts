@@ -82,8 +82,6 @@ describe("getConfiguredTargets", () => {
   it("clearGithubConfig removes the entry", () => {
     saveGithubConfig({ owner: "o", repo: "r", path: "p.bin" });
     clearGithubConfig();
-    expect(
-      localStorage.getItem("hipo.backup.github.config"),
-    ).toBeNull();
+    expect(localStorage.getItem("hipo.backup.github.config")).toBeNull();
   });
 });

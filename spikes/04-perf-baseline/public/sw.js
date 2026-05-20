@@ -49,10 +49,10 @@ self.addEventListener("fetch", (event) => {
 async function handleApi(request) {
   await portReadyPromise;
   if (!apiPort) {
-    return new Response(
-      JSON.stringify({ error: "api port not yet wired" }),
-      { status: 503, headers: { "content-type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "api port not yet wired" }), {
+      status: 503,
+      headers: { "content-type": "application/json" },
+    });
   }
 
   const id = crypto.randomUUID();

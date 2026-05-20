@@ -20,9 +20,7 @@ async function ensureMigrated() {
 }
 
 export const app = new Router()
-  .get("/api/health", () =>
-    json({ ok: true, ts: Date.now(), worker: true }),
-  )
+  .get("/api/health", () => json({ ok: true, ts: Date.now(), worker: true }))
   .get("/api/items", async () => {
     await ensureMigrated();
     const rows = await db.select().from(items).orderBy(desc(items.id));

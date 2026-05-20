@@ -113,8 +113,16 @@ const loans: DbLoan[] = [
     status: "active",
     notes: "Primera hipoteca residencial",
     lenders: [
-      { lender_id: 1, lender_name: "Banco Galicia", amount_lent_cents: 6_000_000 },
-      { lender_id: 2, lender_name: "María González", amount_lent_cents: 4_000_000 },
+      {
+        lender_id: 1,
+        lender_name: "Banco Galicia",
+        amount_lent_cents: 6_000_000,
+      },
+      {
+        lender_id: 2,
+        lender_name: "María González",
+        amount_lent_cents: 4_000_000,
+      },
     ],
     created_at: 1700000000,
     created_by: 1,
@@ -225,7 +233,11 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
     handler: () => ({
       ok: true,
       user: currentUser
-        ? { id: currentUser.id, username: currentUser.username, role: currentUser.role }
+        ? {
+            id: currentUser.id,
+            username: currentUser.username,
+            role: currentUser.role,
+          }
         : null,
     }),
   },
@@ -471,7 +483,8 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         throw badRequest("loan needs at least one lender");
       const seen = new Set<number>();
       for (const r of raw) {
-        if (r.amountLentCents <= 0) throw badRequest("each lender amount must be > 0");
+        if (r.amountLentCents <= 0)
+          throw badRequest("each lender amount must be > 0");
         if (seen.has(r.lenderId))
           throw badRequest(`lender ${r.lenderId} appears more than once`);
         seen.add(r.lenderId);
@@ -542,7 +555,8 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         throw badRequest("loan needs at least one lender");
       const seen = new Set<number>();
       for (const r of raw) {
-        if (r.amountLentCents <= 0) throw badRequest("each lender amount must be > 0");
+        if (r.amountLentCents <= 0)
+          throw badRequest("each lender amount must be > 0");
         if (seen.has(r.lenderId))
           throw badRequest(`lender ${r.lenderId} appears more than once`);
         seen.add(r.lenderId);
@@ -703,7 +717,9 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       if (!lender) throw notFound(`party ${body?.lenderId} not found`);
       const ccy = String(body?.currencyCode ?? "").toUpperCase();
       if (ccy.length !== 3 || !/^[A-Z]{3}$/.test(ccy))
-        throw badRequest("currency_code must be 3 uppercase letters (ISO 4217)");
+        throw badRequest(
+          "currency_code must be 3 uppercase letters (ISO 4217)",
+        );
       const amount = body?.amountCents as number;
       if (amount <= 0) throw badRequest("amount must be > 0");
       const payout: DbPayout = {
@@ -751,7 +767,8 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         filtered = filtered.filter((e) => e.entity_type === entityType);
       if (userIdRaw) {
         const uid = Number.parseInt(userIdRaw, 10);
-        if (Number.isFinite(uid)) filtered = filtered.filter((e) => e.user_id === uid);
+        if (Number.isFinite(uid))
+          filtered = filtered.filter((e) => e.user_id === uid);
       }
       const limit = Math.min(
         Math.max(Number.parseInt(query.get("limit") ?? "50", 10) || 50, 1),
@@ -788,7 +805,10 @@ function dispatch(
       return { status: 500, body: { error: msg } };
     }
   }
-  return { status: 404, body: { error: `unhandled ${method} ${url.pathname}` } };
+  return {
+    status: 404,
+    body: { error: `unhandled ${method} ${url.pathname}` },
+  };
 }
 
 const originalFetch = window.fetch.bind(window);

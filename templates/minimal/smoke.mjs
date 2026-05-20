@@ -31,7 +31,8 @@ function startProc(label, cmd, args, opts) {
   const pipe = (stream, prefix) => {
     stream.on("data", (d) => {
       const s = String(d).trimEnd();
-      if (s) for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
+      if (s)
+        for (const line of s.split("\n")) console.log(`[${prefix}] ${line}`);
     });
   };
   pipe(proc.stdout, `${label}/out`);
@@ -83,7 +84,10 @@ async function main() {
       if (t === "error" || t === "warning" || t === "log") {
         // Filter out noisy HMR/Vite messages
         const txt = m.text();
-        if (!txt.includes("optimized dependencies") && !txt.includes("reloading")) {
+        if (
+          !txt.includes("optimized dependencies") &&
+          !txt.includes("reloading")
+        ) {
           log(`[browser ${t}] ${txt}`);
         }
       }
@@ -96,17 +100,19 @@ async function main() {
     // Wait for the page to settle after the potential SW-activation reload.
     // The SW triggers location.reload() when crossOriginIsolated is false;
     // after reload the page should be stable.
-    await page.waitForFunction(
-      () => document.readyState === "complete",
-      { timeout: 30_000 },
-    );
+    await page.waitForFunction(() => document.readyState === "complete", {
+      timeout: 30_000,
+    });
     await page.screenshot({ path: `${SHOTS_DIR}/01-initial.png` });
 
     // ── 2. Bootstrap: enter passphrase ───────────────────────────────────
     log("waiting for passphrase input…");
-    const passphraseInput = await page.waitForSelector("input[type='password']", {
-      timeout: 30_000,
-    });
+    const passphraseInput = await page.waitForSelector(
+      "input[type='password']",
+      {
+        timeout: 30_000,
+      },
+    );
     log("found passphrase input; filling…");
     await passphraseInput.fill("my-secret-test-passphrase-2026");
 
@@ -117,11 +123,12 @@ async function main() {
     log("clicked Continue; waiting for reload…");
 
     // Bootstrap writes the OPFS marker then calls location.reload().
-    await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 }).catch(() => {});
-    await page.waitForFunction(
-      () => document.readyState === "complete",
-      { timeout: 30_000 },
-    );
+    await page
+      .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30_000 })
+      .catch(() => {});
+    await page.waitForFunction(() => document.readyState === "complete", {
+      timeout: 30_000,
+    });
     await page.screenshot({ path: `${SHOTS_DIR}/03-after-bootstrap.png` });
 
     // ── 3. Setup: create admin account ───────────────────────────────────
@@ -139,7 +146,9 @@ async function main() {
     await page.waitForFunction(
       () => {
         const h2 = document.querySelector("h2");
-        return h2 && h2.textContent && h2.textContent.toLowerCase().includes("hello");
+        return (
+          h2 && h2.textContent && h2.textContent.toLowerCase().includes("hello")
+        );
       },
       { timeout: 60_000 },
     );
@@ -147,10 +156,9 @@ async function main() {
 
     // ── 4. Verify /api/auth/me ────────────────────────────────────────────
     // Wait a bit for any Vite HMR reload to complete before checking.
-    await page.waitForFunction(
-      () => document.readyState === "complete",
-      { timeout: 30_000 },
-    );
+    await page.waitForFunction(() => document.readyState === "complete", {
+      timeout: 30_000,
+    });
     // Give the in-page Worker time to boot after any HMR reload.
     await page.waitForTimeout(2000);
 
@@ -165,7 +173,10 @@ async function main() {
       const sid = sessionStorage.getItem("minimal.session");
       const headers = { "content-type": "application/json" };
       if (sid) headers["X-Hipo-Token"] = sid;
-      const r = await fetch("/api/auth/me", { credentials: "include", headers });
+      const r = await fetch("/api/auth/me", {
+        credentials: "include",
+        headers,
+      });
       if (!r.ok) return { error: r.status };
       return r.json();
     });
@@ -185,9 +196,11 @@ async function main() {
 
     // After the page reload, the passphrase is gone from context.
     // If the inline passphrase prompt appears, fill it in.
-    const promptInput = await page.waitForSelector("input[autocomplete='current-password']", {
-      timeout: 1000,
-    }).catch(() => null);
+    const promptInput = await page
+      .waitForSelector("input[autocomplete='current-password']", {
+        timeout: 1000,
+      })
+      .catch(() => null);
     if (promptInput) {
       log("passphrase prompt appeared; re-entering passphrase…");
       await promptInput.fill("my-secret-test-passphrase-2026");
@@ -222,7 +235,9 @@ async function main() {
 
     log("smoke ok ✓");
   } finally {
-    try { await browser?.close(); } catch {}
+    try {
+      await browser?.close();
+    } catch {}
     frontend.kill("SIGTERM");
     await new Promise((r) => setTimeout(r, 500));
   }

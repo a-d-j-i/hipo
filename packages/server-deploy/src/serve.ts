@@ -14,7 +14,10 @@ import { requireLocalToken } from "./local-token.ts";
 import { staticSpa } from "./static-spa.ts";
 
 declare const Deno: {
-  serve(opts: ServeOptions, handler: (req: Request) => Promise<Response>): {
+  serve(
+    opts: ServeOptions,
+    handler: (req: Request) => Promise<Response>,
+  ): {
     finished: Promise<void>;
   };
 };

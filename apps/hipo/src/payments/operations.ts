@@ -1,11 +1,6 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { writeAudit } from "@hipo/audit";
-import {
-  type Ctx,
-  nowSecs,
-  requireAdmin,
-  requireAuth,
-} from "@hipo/auth";
+import { type Ctx, nowSecs, requireAdmin, requireAuth } from "@hipo/auth";
 import type { Db } from "@hipo/sqlite";
 import {
   debtorPayments,
@@ -40,10 +35,7 @@ async function fetchSplits(
     .orderBy(asc(parties.name));
 }
 
-async function fetchPayment(
-  db: Db | Tx,
-  id: number,
-): Promise<DebtorPayment> {
+async function fetchPayment(db: Db | Tx, id: number): Promise<DebtorPayment> {
   const rows = await db
     .select({
       id: debtorPayments.id,
@@ -55,9 +47,7 @@ async function fetchPayment(
       created_by: debtorPayments.createdBy,
     })
     .from(debtorPayments)
-    .where(
-      and(eq(debtorPayments.id, id), isNull(debtorPayments.deletedAt)),
-    )
+    .where(and(eq(debtorPayments.id, id), isNull(debtorPayments.deletedAt)))
     .limit(1);
   if (rows.length === 0) throw notFound("payment not found");
   return { ...rows[0], splits: await fetchSplits(db, id) };

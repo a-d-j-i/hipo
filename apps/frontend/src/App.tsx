@@ -49,54 +49,54 @@ export default function App() {
           <PassphraseProvider>
             <CadenceRunner />
             <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route
-                path="/setup"
-                element={
-                  <RequireSetup>
-                    <Setup />
-                  </RequireSetup>
-                }
-              />
-              <Route
-                path="/login"
-                element={
-                  <RequireLogin>
-                    <Login />
-                  </RequireLogin>
-                }
-              />
-              <Route
-                element={
-                  <RequireAuth>
-                    <AppLayout />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<Dashboard />} />
-                <Route path="parties" element={<Parties />} />
-                <Route path="loans" element={<Loans />} />
-                <Route path="payouts" element={<Payouts />} />
+              <Routes>
                 <Route
-                  path="users"
+                  path="/setup"
                   element={
-                    <RequireAdmin>
-                      <Users />
-                    </RequireAdmin>
+                    <RequireSetup>
+                      <Setup />
+                    </RequireSetup>
                   }
                 />
                 <Route
-                  path="audit"
+                  path="/login"
                   element={
-                    <RequireAdmin>
-                      <AuditLog />
-                    </RequireAdmin>
+                    <RequireLogin>
+                      <Login />
+                    </RequireLogin>
                   }
                 />
-                <Route path="settings" element={<Settings />} />
-              </Route>
-            </Routes>
-          </Suspense>
+                <Route
+                  element={
+                    <RequireAuth>
+                      <AppLayout />
+                    </RequireAuth>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="parties" element={<Parties />} />
+                  <Route path="loans" element={<Loans />} />
+                  <Route path="payouts" element={<Payouts />} />
+                  <Route
+                    path="users"
+                    element={
+                      <RequireAdmin>
+                        <Users />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route
+                    path="audit"
+                    element={
+                      <RequireAdmin>
+                        <AuditLog />
+                      </RequireAdmin>
+                    }
+                  />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
+              </Routes>
+            </Suspense>
           </PassphraseProvider>
         </AuthProvider>
       </BrowserRouter>

@@ -35,9 +35,8 @@ async function bootstrap() {
   //     guards route the user. Restore-from-backup on Tauri happens
   //     in Settings, not as a bootstrap-only path.
   if (import.meta.env.VITE_INPAGE_BACKEND) {
-    const { registerInPageSW, spawnInPageWorker, detectShape } = await import(
-      "./in-page-backend"
-    );
+    const { registerInPageSW, spawnInPageWorker, detectShape } =
+      await import("./in-page-backend");
     await registerInPageSW();
 
     if (detectShape() === "browser") {

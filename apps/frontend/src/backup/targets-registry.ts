@@ -16,10 +16,7 @@ import type { BackupTarget } from "@hipo/backup";
 import { fsAccessTarget } from "@hipo/backup-local/fs-access";
 import { githubTarget } from "@hipo/backup-github";
 import { vaultTarget } from "@hipo/backup-vault";
-import {
-  loadGithubConfig,
-  type GithubConfig,
-} from "./github-config";
+import { loadGithubConfig, type GithubConfig } from "./github-config";
 import { loadVaultConfig } from "./vault-config";
 import { getSecret } from "./secrets-vault";
 

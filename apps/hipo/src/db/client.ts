@@ -3,11 +3,7 @@
 // in. All substrate logic lives in @hipo/sqlite.
 
 import { sql } from "drizzle-orm";
-import {
-  splitStatements,
-  type Db,
-  type Migration,
-} from "@hipo/sqlite";
+import { splitStatements, type Db, type Migration } from "@hipo/sqlite";
 import { openDb as openDbBase } from "@hipo/sqlite/client-deno";
 import type { Client } from "@libsql/client";
 import { config } from "../config.ts";

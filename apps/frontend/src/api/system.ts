@@ -38,8 +38,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
     shape,
     risk_flags: {
       ...raw.risk_flags,
-      cleared_by_browser_data_clear:
-        shape === "browser" || shape === "pwa",
+      cleared_by_browser_data_clear: shape === "browser" || shape === "pwa",
     },
   };
 }

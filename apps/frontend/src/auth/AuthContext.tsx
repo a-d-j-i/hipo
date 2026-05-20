@@ -101,9 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   };
 
-  return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthValue {
@@ -130,7 +128,8 @@ function FullPageSpin() {
 export function RequireSetup({ children }: { children: ReactNode }) {
   const { ready, needsSetup, currentUser } = useAuth();
   if (!ready) return <FullPageSpin />;
-  if (!needsSetup) return <Navigate to={currentUser ? "/" : "/login"} replace />;
+  if (!needsSetup)
+    return <Navigate to={currentUser ? "/" : "/login"} replace />;
   return <>{children}</>;
 }
 

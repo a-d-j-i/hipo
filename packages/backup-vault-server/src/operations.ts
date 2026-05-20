@@ -92,10 +92,7 @@ export async function do_revokeVaultPat(
       .select()
       .from(vaultPats)
       .where(
-        and(
-          eq(vaultPats.tokenHash, token_hash),
-          eq(vaultPats.userId, user.id),
-        ),
+        and(eq(vaultPats.tokenHash, token_hash), eq(vaultPats.userId, user.id)),
       )
       .limit(1);
     if (rows.length === 0) throw notFound("PAT not found");
@@ -103,10 +100,7 @@ export async function do_revokeVaultPat(
     await tx
       .delete(vaultPats)
       .where(
-        and(
-          eq(vaultPats.tokenHash, token_hash),
-          eq(vaultPats.userId, user.id),
-        ),
+        and(eq(vaultPats.tokenHash, token_hash), eq(vaultPats.userId, user.id)),
       );
     await writeAudit(tx, user.id, "vault.pat.revoke", "vault_pat", null, {
       token_hash,
@@ -160,7 +154,11 @@ export async function do_putVaultBlob(
 export async function do_getVaultBlob(
   ctx: Ctx,
   args: { blob_id: string },
-): Promise<{ bytes: Uint8Array; size_bytes: number; updated_at: number } | null> {
+): Promise<{
+  bytes: Uint8Array;
+  size_bytes: number;
+  updated_at: number;
+} | null> {
   const user = requireAuth(ctx);
   const { blob_id } = args;
   if (!blob_id) throw badRequest("blob_id is required");
@@ -168,12 +166,7 @@ export async function do_getVaultBlob(
   const rows = await ctx.db
     .select()
     .from(vaultBlobs)
-    .where(
-      and(
-        eq(vaultBlobs.userId, user.id),
-        eq(vaultBlobs.blobId, blob_id),
-      ),
-    )
+    .where(and(eq(vaultBlobs.userId, user.id), eq(vaultBlobs.blobId, blob_id)))
     .limit(1);
 
   if (rows.length === 0) return null;
