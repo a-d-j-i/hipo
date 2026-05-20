@@ -40,20 +40,7 @@ async function bootstrap() {
     );
     await registerInPageSW();
 
-    // Bootstrap UI is browser-shape only — it uses sqlocal directly
-    // (helpers.ts → client-browser → SQLite-WASM). Gating on the
-    // build-time `VITE_TARGET` literal (not runtime `detectShape()`)
-    // lets Rollup prove the whole bootstrap branch is dead in the
-    // Tauri bundle, so `BootstrapApp` / `helpers.ts` / sqlocal / the
-    // ~600 KB SQLite-WASM blobs all tree-shake out. `detectShape()`
-    // still runs as a runtime defence-in-depth check.
-    if (import.meta.env.VITE_TARGET !== "tauri") {
-      if (detectShape() !== "browser") {
-        throw new Error(
-          "Running inside Tauri but built for the hosted shape — " +
-            "use VITE_TARGET=tauri.",
-        );
-      }
+    if (detectShape() === "browser") {
       const { isOpfsBootstrapped } = await import("./bootstrap/opfs-state");
       const bootstrapped = await isOpfsBootstrapped();
 
@@ -68,11 +55,6 @@ async function bootstrap() {
         );
         return;
       }
-    } else if (detectShape() !== "tauri") {
-      throw new Error(
-        "VITE_TARGET=tauri build but no __TAURI_INTERNALS__ detected — " +
-          "open via the Tauri shell.",
-      );
     }
 
     await spawnInPageWorker();

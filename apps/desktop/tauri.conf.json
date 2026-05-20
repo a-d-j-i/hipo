@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "ar.com.adjimann.hipo",
   "build": {
-    "beforeDevCommand": "npm --prefix ../frontend run dev:inpage:tauri",
+    "beforeDevCommand": "npm --prefix ../frontend run dev:inpage",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm --prefix ../frontend run build:inpage:tauri",
+    "beforeBuildCommand": "npm --prefix ../frontend run build:inpage",
     "frontendDist": "../frontend/dist"
   },
   "app": {
