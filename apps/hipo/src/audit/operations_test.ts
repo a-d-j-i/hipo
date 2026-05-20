@@ -7,7 +7,7 @@ import { AppError } from "@hipo/server";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
 import type { Ctx, User } from "@hipo/auth";
 import { doCreateParty, doDeleteParty } from "../parties/operations.ts";
-import { doListAuditLog } from "./operations.ts";
+import { doListAuditLog } from "@hipo/audit";
 
 async function freshCtx(): Promise<{
   ctx: Ctx;

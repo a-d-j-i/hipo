@@ -16,7 +16,7 @@ import {
   doResetUserPassword,
   doSetupFirstAdmin,
 } from "./operations.ts";
-import { _resetForTests as resetRateLimit } from "./rate_limit.ts";
+import { _resetForTests as resetRateLimit } from "@hipo/auth";
 import type { Ctx, User } from "@hipo/auth";
 
 async function freshCtx(): Promise<{
