@@ -98,7 +98,7 @@ export function CadenceRunner() {
         // Silent failure for cadence — the user explicitly didn't
         // ask for this backup, and the next tick retries. The error
         // is still surfaced to the console for debugging.
-        // eslint-disable-next-line no-console
+
         console.warn("[hipo] cadence tick failed:", e);
       } finally {
         inFlight.current = false;

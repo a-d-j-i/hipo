@@ -15,7 +15,7 @@ Three deployment shapes from one codebase:
   sqlocal's OPFS pool VFS needs. Linux users go to the Pages build (Chromium /
   Firefox have it).
 - **Local Deno backend (Shape 2)** — same router and `do_*` ops, but served over
-  real HTTP by `apps/backend`. Path forward when "one DB per device" needs to
+  real HTTP by `apps/hipo`. Path forward when "one DB per device" needs to
   become "one DB shared by a team."
 
 Full audit trail of every mutation; Spanish-default UI with English toggle;
@@ -49,7 +49,7 @@ hipo/
 ```
 
 Workspaces are npm + Deno simultaneously: npm-workspaces resolve `@hipo/*` via
-symlinks for the frontend, and `apps/backend/deno.json`'s `imports` map resolves
+symlinks for the frontend, and `apps/hipo/deno.json`'s `imports` map resolves
 them for Deno. Source-only TypeScript — no build step for any framework package
 while it lives in this monorepo (publishing to npm is Phase 10, deferred).
 
@@ -85,7 +85,7 @@ header configuration on the host.
 
 ```
 ┌──────────────────────────────┐
-│  apps/backend (Deno)          │   Hono → hand-rolled router
+│  apps/hipo (Deno)          │   Hono → hand-rolled router
 │  • libsql via @libsql/client  │   cookie sessions or X-Hipo-Token
 │  • hipo domain routes         │
 │  • @hipo/backup-vault-server  │   PAT-authed vault endpoints
@@ -130,7 +130,7 @@ sidecar before).
 
 ```bash
 npm install        # installs JS deps via npm workspaces
-                   # (apps/backend deps come from Deno on first `deno task` run)
+                   # (apps/hipo deps come from Deno on first `deno task` run)
 ```
 
 ---
@@ -214,7 +214,7 @@ Seed users: `admin/admin123` (admin), `alice/alice123` (user). Mocks live in
 | `npm run format`                           | Prettier across the repo                                        |
 
 Inside individual workspaces use the native tools directly:
-`cd apps/backend && deno task test`, `cd apps/desktop && cargo check`,
+`cd apps/hipo && deno task test`, `cd apps/desktop && cargo check`,
 `cd apps/frontend && npm run test:watch`, etc.
 
 ---
@@ -429,7 +429,7 @@ re-litigate them.
 
 ## Cloud deployment caveats (when wired)
 
-The same Deno binary that runs `apps/backend` locally also runs as a hosted
+The same Deno binary that runs `apps/hipo` locally also runs as a hosted
 server, but several things flip from "deferred" to "required" the moment it
 does:
 

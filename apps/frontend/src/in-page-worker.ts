@@ -91,7 +91,7 @@ async function main(): Promise<void> {
     if (e.data?.kind === "api-port" && e.ports[0]) {
       serveOnPort(e.ports[0], app as unknown as Router<object>);
       (self as unknown as Worker).postMessage({ kind: "ready" });
-      // eslint-disable-next-line no-console
+
       console.log("[in-page worker] api port wired");
     }
   });
@@ -105,6 +105,5 @@ async function main(): Promise<void> {
 (self as unknown as Worker).postMessage({ kind: "loaded" });
 
 main().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error("[in-page worker] fatal:", e);
 });

@@ -239,7 +239,7 @@ function BootstrapRestorePanel() {
       passphraseCtx.clear();
       // AES-GCM auth failures are the common case; surface a friendly
       // message but log the raw error for debugging.
-      // eslint-disable-next-line no-console
+
       console.warn("[hipo] restore failed:", e);
       message.error(t("bootstrap.restore.decryptFailed"));
       setSubmitting(false);

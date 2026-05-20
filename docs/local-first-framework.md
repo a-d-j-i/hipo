@@ -220,19 +220,23 @@ Add npm workspace entries; add Deno import-map entries.
 
 Moves:
 
-- `apps/backend/src/db/{schema,migrations}.ts` → `packages/sqlite/src/`
-- `apps/backend/src/db/client.ts` (libsql factory) →
+(Source paths use today's names — `apps/hipo` was called `apps/backend` until
+the Phase-9 rename. Phase 1 actually saw paths like `apps/backend/src/db/...`;
+the destinations still hold.)
+
+- `apps/hipo/src/db/{schema,migrations}.ts` → `packages/sqlite/src/`
+- `apps/hipo/src/db/client.ts` (libsql factory) →
   `packages/sqlite/src/client.deno.ts` (placeholder `client.browser.ts` added
   for Phase 2)
-- `apps/backend/src/server.ts` setup + middleware chain + `error_handler.ts` +
+- `apps/hipo/src/server.ts` setup + middleware chain + `error_handler.ts` +
   `errors.ts` → `packages/server/src/`. During this move, replace Hono with
   `packages/server/src/router.ts` (the 53-LOC hand-rolled router from Spike #2).
   Route handlers keep the same `(ctx) => Response` shape; `app.fetch(req)`
   isomorphism is preserved without the Hono dependency.
-- `apps/backend/src/auth/{operations,passwords,middleware,types}.ts`
+- `apps/hipo/src/auth/{operations,passwords,middleware,types}.ts`
   - their `_test.ts` → `packages/auth/src/`
-- `apps/backend/src/audit/{operations,write}.ts` + tests → `packages/audit/src/`
-- `apps/backend/src/{parties,loans,payments,payouts}/` →
+- `apps/hipo/src/audit/{operations,write}.ts` + tests → `packages/audit/src/`
+- `apps/hipo/src/{parties,loans,payments,payouts}/` →
   `apps/hipo/src/domain/<area>/` (these are app code, not framework)
 - `apps/desktop/` → `packages/tauri-shell/` (the generic shell) +
   `apps/hipo/tauri/` (name/icon/identifier overrides)
@@ -575,7 +579,7 @@ scripts and `ubuntu-22.04` from the CI matrix in
 `.github/workflows/release.yml`. **Skip if Phase 12 ships first** — the CI
 matrix and root script are exactly what Phase 12 needs to keep alive.
 
-## Phase 9 — Decide what `apps/backend` becomes
+## Phase 9 — Decide what `apps/hipo` (née `apps/backend`) becomes
 
 Three coherent endings:
 
@@ -956,7 +960,7 @@ the promotion path explicitly so consumers know it's a supported transition.
 
 1. Provision a host (Fly.io / Deno Deploy / Render). $5/mo VM is fine for ≤100
    users.
-2. Build `apps/backend` (kept alive via Phase 9 option 1) from the same source.
+2. Build `apps/hipo` (kept alive via Phase 9 option 1) from the same source.
    Same router routes, same `do_*` ops, same migrations.
 3. Set `VITE_BACKEND_URL` to the deployed URL.
 4. Turn off the in-page Worker + SW routing (`VITE_INPAGE_BACKEND=0`).

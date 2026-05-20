@@ -15,10 +15,10 @@ expect.extend(matchers);
 // Real browsers + Deno already implement this natively.
 if (typeof Blob !== "undefined" && !Blob.prototype.stream) {
   Blob.prototype.stream = function (this: Blob) {
-    const self = this;
+    const bytes = this.arrayBuffer();
     return new ReadableStream<Uint8Array>({
       async start(controller) {
-        const buf = await self.arrayBuffer();
+        const buf = await bytes;
         controller.enqueue(new Uint8Array(buf));
         controller.close();
       },

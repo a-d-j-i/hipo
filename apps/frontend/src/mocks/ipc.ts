@@ -847,7 +847,6 @@ window.fetch = async (input, init) => {
   });
 };
 
-// eslint-disable-next-line no-console
 console.info(
   "[hipo] mock backend active — fetch is stubbed. Seed users:",
   users.map((u) => ({

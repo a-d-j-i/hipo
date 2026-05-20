@@ -317,7 +317,6 @@ function BackupNowAction({
       message.success(t("settings.storage.backupNow.success"));
       await refresh();
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("[hipo] backup failed:", e);
       message.error(t("settings.storage.backupNow.failed"));
     } finally {
@@ -467,7 +466,6 @@ function FsAccessSection({
       await refresh();
       message.success(t("settings.storage.fsAccess.configured"));
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("[hipo] fs-access pickDirectory:", e);
       message.error(t("settings.storage.fsAccess.pickFailed"));
     } finally {
@@ -493,7 +491,6 @@ function FsAccessSection({
       message.success(t("settings.storage.backupNow.success"));
       await refresh();
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("[hipo] fs-access backup:", e);
       message.error(t("settings.storage.backupNow.failed"));
     } finally {
@@ -658,7 +655,6 @@ function RestoreSection() {
     } catch (e) {
       hide();
       passphrase.clear();
-      // eslint-disable-next-line no-console
       console.warn("[hipo] restore failed:", e);
       const msg = e instanceof Error ? e.message : String(e);
       // AES-GCM auth-tag failures throw OperationError or similar —
@@ -860,7 +856,6 @@ function VaultSection({
       message.success(t("settings.storage.backupNow.success"));
       await refresh();
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("[hipo] vault backup:", e);
       message.error(t("settings.storage.backupNow.failed"));
     } finally {
@@ -1093,7 +1088,6 @@ function GithubSection({
       message.success(t("settings.storage.backupNow.success"));
       await refresh();
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.warn("[hipo] github backup:", e);
       message.error(t("settings.storage.backupNow.failed"));
     } finally {

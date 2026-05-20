@@ -60,11 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (status.needs_setup) {
         try {
           await api.setupFirstAdmin({ username, password });
-          // eslint-disable-next-line no-console
+
           console.info(`[hipo] auto-setup created admin "${username}"`);
           await refresh();
         } catch (e) {
-          // eslint-disable-next-line no-console
           console.warn("[hipo] auto-setup failed:", e);
         }
       } else {
@@ -72,7 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await api.login({ username, password });
           await refresh();
         } catch (e) {
-          // eslint-disable-next-line no-console
           console.warn(
             `[hipo] auto-login failed for "${username}" — wrong credentials? Override with VITE_AUTO_LOGIN=user:pass`,
             e,

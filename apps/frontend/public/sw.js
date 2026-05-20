@@ -52,7 +52,7 @@ self.addEventListener("message", (event) => {
     });
     apiPort.start();
     portReady();
-    // eslint-disable-next-line no-console
+
     console.log("[sw] api port wired");
   }
 });

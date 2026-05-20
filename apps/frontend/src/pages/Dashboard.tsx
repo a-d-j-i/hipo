@@ -15,7 +15,7 @@ export default function Dashboard() {
       } catch (e) {
         // Status is non-fatal for the dashboard — just don't render
         // the banner. The Settings panel surfaces the same error.
-        // eslint-disable-next-line no-console
+
         console.warn("[hipo] dashboard: getSystemStatus failed:", e);
       }
     })();

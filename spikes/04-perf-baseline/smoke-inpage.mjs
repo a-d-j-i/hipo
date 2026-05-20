@@ -17,6 +17,9 @@ function startProc(label, cmd, args, opts) {
   const proc = spawn(cmd, args, {
     ...opts,
     stdio: ["ignore", "pipe", "pipe"],
+    // Own process group so killTree() reaches `vite` that npm exec'd —
+    // SIGTERM to npm alone doesn't propagate through the exec call.
+    detached: true,
   });
   const pipe = (stream, prefix) => {
     stream.on("data", (d) => {
@@ -28,6 +31,15 @@ function startProc(label, cmd, args, opts) {
   pipe(proc.stdout, `${label}/out`);
   pipe(proc.stderr, `${label}/err`);
   return proc;
+}
+
+function killTree(proc) {
+  if (!proc?.pid) return;
+  try {
+    process.kill(-proc.pid, "SIGTERM");
+  } catch {
+    // group may already be gone
+  }
 }
 
 async function waitForUrl(url, timeoutMs = 30_000) {
@@ -207,7 +219,7 @@ async function main() {
     try {
       await browser?.close();
     } catch {}
-    frontend.kill("SIGTERM");
+    killTree(frontend);
     await new Promise((r) => setTimeout(r, 500));
   }
 }
