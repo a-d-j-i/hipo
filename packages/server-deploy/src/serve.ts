@@ -80,7 +80,7 @@ export async function serve<TState extends object>(
       onListen: ({ hostname, port }) => {
         // Single, parseable line so a wrapping shell can read the
         // actual port even when port=0 (ephemeral binding).
-        // eslint-disable-next-line no-console
+         
         console.log(`${readyPrefix} hostname=${hostname} port=${port}`);
       },
     },

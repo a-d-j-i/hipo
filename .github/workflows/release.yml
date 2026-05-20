@@ -15,10 +15,8 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-22.04
-            deno-task: compile:linux
             tauri-target: x86_64-unknown-linux-gnu
           - platform: windows-latest
-            deno-task: compile:windows
             tauri-target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
@@ -34,10 +32,6 @@ jobs:
         with:
           targets: ${{ matrix.tauri-target }}
 
-      - uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
       - name: Install Linux build deps
         if: matrix.platform == 'ubuntu-22.04'
         run: |
@@ -51,10 +45,11 @@ jobs:
       - name: Install workspace deps
         run: npm ci
 
-      - name: Compile Deno sidecar
-        working-directory: apps/backend
-        shell: bash
-        run: deno task ${{ matrix.deno-task }}
+      # The Tauri shell no longer spawns a Deno sidecar (Phase 8A trimmed
+      # it out — see packages/tauri-shell/src/lib.rs and
+      # apps/desktop/tauri.conf.json's lack of `externalBin`). tauri-action's
+      # `beforeBuildCommand` (configured in tauri.conf.json) builds the
+      # in-page frontend bundle, which IS the backend now.
 
       - uses: tauri-apps/tauri-action@v0
         env:

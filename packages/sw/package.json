@@ -1,0 +1,13 @@
+{
+  "name": "@hipo/sw",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vite": "./src/vite-plugin.ts",
+    "./sw.js": "./src/sw.js"
+  }
+}

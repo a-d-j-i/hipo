@@ -2,7 +2,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { users } from "./schema.ts";
 import { badRequest, conflict, notFound, tooManyRequests } from "@hipo/server";
 import { writeAudit } from "@hipo/audit";
-import { hashPassword, verifyPassword } from "./passwords.ts";
+import { hashPassword, verifyPassword } from "@hipo/auth/passwords";
 import {
   clearLoginFailures,
   isLoginLocked,

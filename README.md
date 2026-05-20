@@ -4,6 +4,11 @@ Desktop + browser app for tracking **mortgage loans with multiple lenders**.
 Built on top of a small **local-first TypeScript framework** that lives in
 `packages/` — hipo is the framework's first consumer.
 
+**Live demos:** `https://<owner>.github.io/<repo>/` (release index) →
+`/hipo/` (full product) · `/minimal/` (framework template). The Pages
+deploy is the rolling "latest main" build; tagged installer releases live
+on GitHub Releases.
+
 Three deployment shapes from one codebase:
 
 - **GitHub Pages (in-page)** — primary demo target. React + sqlocal +
@@ -29,11 +34,12 @@ integer-cents money math everywhere.
 hipo/
 ├── apps/
 │   ├── frontend/     React + Vite + antd (the SPA)
-│   ├── backend/      Deno HTTP server — hipo routes + vault-server
+│   ├── hipo/         Deno HTTP server — hipo routes + vault-server
 │   └── desktop/      Tauri shell (Windows)
 ├── packages/         The local-first framework
 │   ├── sqlite/         data layer: libsql (Deno) + sqlocal (browser)
 │   ├── server/         hand-rolled router (~50 LOC), Ctx, AppError
+│   ├── sw/             merged Service Worker (COI + /api/* routing) + Vite plugin
 │   ├── auth/           users + sessions + Argon2id (PHC-encoded both sides)
 │   ├── audit/          audit_log table + writeAudit() helper
 │   ├── backup/         AES-GCM + Argon2id + gzip primitives + target interface

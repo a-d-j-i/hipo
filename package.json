@@ -9,6 +9,7 @@
     "packages/shared",
     "packages/sqlite",
     "packages/server",
+    "packages/sw",
     "packages/auth",
     "packages/audit",
     "packages/backup",
@@ -32,7 +33,8 @@
     "build:backend:windows": "npm run compile:windows -w hipo",
     "build:desktop:linux": "npm run build:frontend:inpage && npm run build:linux -w @hipo/desktop",
     "build:desktop:windows": "npm run build:frontend:inpage && npm run build:windows -w @hipo/desktop",
-    "lint": "npm run lint -w @hipo/frontend",
+    "lint": "npm run lint -w @hipo/frontend && npm run lint:packages",
+    "lint:packages": "eslint packages",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:frontend": "npm run test -w @hipo/frontend",
@@ -41,6 +43,9 @@
     "check:backend": "npm run check -w hipo"
   },
   "devDependencies": {
-    "prettier": "^3.8.3"
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.3.0",
+    "prettier": "^3.8.3",
+    "typescript-eslint": "^8.59.3"
   }
 }

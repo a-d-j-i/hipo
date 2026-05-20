@@ -119,7 +119,7 @@ export function serveOnPort(port: MessagePort, app: Router<object>): void {
         app as unknown as { fetch: (r: Request) => Promise<Response> }
       ).fetch(req);
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.error("[worker-bridge] dispatch error:", e);
       response = new Response(
         JSON.stringify({ error: "internal worker error" }),

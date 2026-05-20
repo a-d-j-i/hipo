@@ -13,7 +13,7 @@ export {
   type User,
 } from "./types.ts";
 
-export { hashPassword, verifyPassword } from "./passwords.ts";
+export { hashPassword, verifyPassword } from "@hipo/auth/passwords";
 export { validatePassword, validateUsername } from "./validators.ts";
 export {
   _resetForTests,

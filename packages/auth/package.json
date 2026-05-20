@@ -8,7 +8,10 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
-    "./passwords-browser": "./src/passwords.browser.ts",
+    "./passwords": {
+      "browser": "./src/passwords.browser.ts",
+      "default": "./src/passwords.ts"
+    },
     "./middleware-session": "./src/middleware-session.ts"
   },
   "dependencies": {

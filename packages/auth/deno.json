@@ -4,6 +4,7 @@
     "@hipo/sqlite": "../sqlite/src/index.ts",
     "@hipo/server": "../server/src/index.ts",
     "@hipo/audit": "../audit/src/index.ts",
+    "@hipo/auth/passwords": "./src/passwords.ts",
     "drizzle-orm": "npm:drizzle-orm@^0.36.0",
     "drizzle-orm/sqlite-core": "npm:drizzle-orm@^0.36.0/sqlite-core",
     "@node-rs/argon2": "npm:@node-rs/argon2@^2.0.0"

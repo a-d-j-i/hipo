@@ -623,10 +623,15 @@ The packages most likely to want publishing first: `packages/sw`,
 
 ## Phase 11 — Hosting, headers, docs
 
+**Status: landed 2026-05-19.** Deliverables 1–6 shipped; deliverable 7
+(Phase 8B cleanup) skipped per the conditional (Phase 12 slices 1–4 are in
+and rely on the existing `build:desktop:linux` script). See `memory/
+project-status.md` for the commit hash + verification details.
+
 The framework's primary demo deploy. Required by
 [[feedback-github-pages-mandatory]] and load-bearing for Linux users
 post-Phase-8A — the documented Linux path is "open the Pages build in Chromium /
-Firefox" and that URL doesn't exist yet.
+Firefox" and that URL didn't exist before this phase.
 
 ### Deliverables
 

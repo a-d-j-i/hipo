@@ -2,8 +2,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import sqlocal from "sqlocal/vite";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { hipoSw } from "@hipo/sw/vite";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
@@ -11,40 +10,24 @@ const host = process.env.TAURI_DEV_HOST;
 const backendPort = process.env.HIPO_BACKEND_PORT || "8787";
 // @ts-expect-error process is a nodejs global
 const INPAGE_BACKEND = process.env.VITE_INPAGE_BACKEND === "1";
-
-const here = dirname(fileURLToPath(import.meta.url));
-
-// @hipo/auth/operations.ts imports "./passwords.ts" (the @node-rs/argon2
-// Node impl). The in-page Worker needs the hash-wasm browser impl.
-// Same shim spike-05 uses; framework-level conditional-exports fix is
-// pending. Active for all builds because the in-page-worker module
-// is always reachable when the in-page-backend flag is on.
-const swapPasswordsToBrowser = {
-  name: "hipo:passwords-browser-shim",
-  enforce: "pre" as const,
-  resolveId(source: string, importer?: string) {
-    if (
-      source === "./passwords.ts" &&
-      importer?.includes("/packages/auth/src/")
-    ) {
-      return resolve(here, "../../packages/auth/src/passwords.browser.ts");
-    }
-    return null;
-  },
-};
+// @ts-expect-error process is a nodejs global
+const BASE_PATH = process.env.VITE_BASE_PATH || "/";
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
+  base: BASE_PATH,
+
   plugins: [
     react(),
     // sqlocal's Vite plugin sets COOP/COEP in dev so SQLite-WASM's OPFS
     // sync-access-handle mode works. Active only when running in-page;
     // dev with the Deno backend doesn't need it.
-    ...(INPAGE_BACKEND ? [sqlocal() as never, swapPasswordsToBrowser] : []),
+    ...(INPAGE_BACKEND ? [sqlocal() as never, hipoSw()] : []),
   ],
 
-  // Keep @hipo/* workspace packages out of Vite's dep optimizer so our
-  // resolveId shim sees their imports unfiltered. Only when in-page.
+  // Keep @hipo/* workspace packages out of Vite's dep optimizer so their
+  // exports conditions (notably @hipo/auth/passwords#browser) resolve on
+  // the source files directly without a pre-bundled copy intercepting.
   optimizeDeps: INPAGE_BACKEND
     ? {
         exclude: [

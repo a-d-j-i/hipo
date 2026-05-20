@@ -42,8 +42,20 @@ CSP). This crate only owns the runtime behaviour.
 - Route `/api/*` from the page through the SW to the Worker via
   `MessageChannel`.
 
-`@hipo/frontend` is the reference consumer; `packages/sw` will be extracted once
-a second consumer materialises.
+`@hipo/frontend` is the reference consumer; `packages/sw` ships the Service
+Worker source and a Vite plugin (`hipoSw()`) that wires it into dev + build.
+
+## Platform support
+
+- **Windows.** The supported Tauri target. `npm run build:desktop:windows`
+  cross-compiles from Linux via `cargo-xwin` (CI uses a native Windows runner).
+- **Linux.** Tauri is deferred. webkit2gtk 2.50 lacks
+  `FileSystemSyncAccessHandle`, which sqlocal's OPFS pool VFS needs to host
+  SQLite-WASM. Linux users go to the **GitHub Pages build** (Chromium / Firefox
+  have the API). Phase 12 of the framework plan revives Linux Tauri by routing
+  Drizzle through a native-SQLite Tauri-IPC proxy — see
+  `docs/local-first-framework.md`.
+- **macOS.** Not on the roadmap.
 
 ## History
 

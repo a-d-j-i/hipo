@@ -3088,7 +3088,10 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
-        "npm:prettier@^3.8.3"
+        "npm:@eslint/js@^10.0.1",
+        "npm:eslint@^10.3.0",
+        "npm:prettier@^3.8.3",
+        "npm:typescript-eslint@^8.59.3"
       ]
     },
     "members": {
@@ -3113,6 +3116,7 @@
             "npm:@hipo/server@*",
             "npm:@hipo/shared@*",
             "npm:@hipo/sqlite@*",
+            "npm:@hipo/sw@*",
             "npm:@tauri-apps/api@2",
             "npm:@tauri-apps/plugin-process@2",
             "npm:@tauri-apps/plugin-updater@2",
@@ -3219,6 +3223,7 @@
             "npm:@hipo/backup@*",
             "npm:@hipo/server@*",
             "npm:@hipo/sqlite@*",
+            "npm:@hipo/sw@*",
             "npm:@testing-library/jest-dom@^6.9.1",
             "npm:@testing-library/react@^16.3.2",
             "npm:@types/react-dom@^19.1.6",

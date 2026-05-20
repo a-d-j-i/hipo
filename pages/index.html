@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>hipo — release index</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fg: #1a1a1a;
+        --muted: #666;
+        --bg: #fafafa;
+        --card: #fff;
+        --border: #e5e5e5;
+        --accent: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fg: #f5f5f5;
+          --muted: #999;
+          --bg: #1a1a1a;
+          --card: #242424;
+          --border: #333;
+          --accent: #60a5fa;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        line-height: 1.5;
+        color: var(--fg);
+        background: var(--bg);
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.75rem;
+        margin: 0 0 0.25rem;
+      }
+      .tagline {
+        color: var(--muted);
+        margin: 0 0 2rem;
+      }
+      section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+      }
+      section h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.1rem;
+      }
+      section p {
+        margin: 0.25rem 0;
+        color: var(--muted);
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      ul.demos {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      ul.demos li {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border);
+      }
+      ul.demos li:last-child {
+        border-bottom: none;
+      }
+      ul.demos a {
+        font-weight: 600;
+      }
+      code {
+        font-family: ui-monospace, "Menlo", monospace;
+        font-size: 0.85em;
+        background: var(--bg);
+        padding: 0.1em 0.35em;
+        border-radius: 3px;
+      }
+      .meta {
+        font-size: 0.85em;
+        color: var(--muted);
+        margin-top: 2rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>hipo</h1>
+      <p class="tagline">
+        Local-first mortgage loan tracker and the framework it's built on.
+      </p>
+
+      <section>
+        <h2>Live demos</h2>
+        <ul class="demos">
+          <li>
+            <a href="./hipo/">hipo</a> — the full product (parties, loans,
+            payments, payouts, audit log).
+            <p>
+              Runs entirely in your browser. SQLite-WASM + OPFS persists data
+              locally; back up to a folder, GitHub repo, or the vault server.
+            </p>
+          </li>
+          <li>
+            <a href="./minimal/">templates/minimal</a> — the framework's
+            smallest working consumer.
+            <p>
+              Bootstrap → setup → "hello, &lt;user&gt;" with backup &amp;
+              restore. The build gate: any
+              <code>packages/*</code> change that breaks this is wrong by
+              construction.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Desktop installers</h2>
+        <p>
+          Tagged versions ship via
+          <a
+            href="https://github.com/CHANGE_ME_OWNER/CHANGE_ME_REPO/releases"
+            >GitHub Releases</a
+          >. Auto-updater feed:
+          <code
+            >github.com/CHANGE_ME_OWNER/CHANGE_ME_REPO/releases/latest/download/latest.json</code
+          >.
+        </p>
+        <p>
+          Linux users: this Pages site is the documented Linux entry point
+          (webkit2gtk lacks the OPFS sync handle the Tauri shape needs;
+          Phase&nbsp;12's native-SQLite path will revive Linux Tauri).
+        </p>
+      </section>
+
+      <section>
+        <h2>Signing key</h2>
+        <p>
+          Updater bundles are signed with the Tauri ed25519 key. Fingerprint
+          published alongside the first release. Verify before installing.
+        </p>
+      </section>
+
+      <p class="meta">
+        Pages commit: <code id="commit">unknown</code> · deployed
+        <span id="deployed">unknown</span>
+      </p>
+    </main>
+  </body>
+</html>

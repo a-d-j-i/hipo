@@ -14,6 +14,7 @@
     "@hipo/server": "../../packages/server/src/index.ts",
     "@hipo/auth": "../../packages/auth/src/index.ts",
     "@hipo/auth/schema": "../../packages/auth/src/schema.ts",
+    "@hipo/auth/passwords": "../../packages/auth/src/passwords.ts",
     "@hipo/audit": "../../packages/audit/src/index.ts",
     "@hipo/audit/schema": "../../packages/audit/src/schema.ts",
     "@hipo/backup": "../../packages/backup/src/index.ts",
