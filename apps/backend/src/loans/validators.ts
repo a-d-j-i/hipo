@@ -5,7 +5,7 @@ import {
   normalizeOptional,
   sumLenderAmounts,
 } from "@hipo/shared";
-import { badRequest } from "../errors.ts";
+import { badRequest } from "@hipo/server";
 
 export function validateCurrencyCode(code: string): void {
   const err = checkCurrencyCode(code);

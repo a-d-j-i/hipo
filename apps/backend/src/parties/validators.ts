@@ -1,5 +1,5 @@
 import { checkPartyName, normalizeOptional } from "@hipo/shared";
-import { badRequest } from "../errors.ts";
+import { badRequest } from "@hipo/server";
 
 export function validateName(name: string): void {
   const err = checkPartyName(name);

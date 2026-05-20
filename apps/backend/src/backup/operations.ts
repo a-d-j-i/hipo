@@ -10,9 +10,9 @@
 
 import { asc, eq } from "drizzle-orm";
 import type { BackupFormat } from "@hipo/backup";
-import { type Ctx, nowSecs, requireAdmin, requireAuth } from "../auth/types.ts";
+import { type Ctx, nowSecs, requireAdmin, requireAuth } from "@hipo/auth";
 import { backupTargetState } from "../db/schema.ts";
-import { badRequest } from "../errors.ts";
+import { badRequest } from "@hipo/server";
 import type {
   BackupTargetStateView,
   ConfigureTargetInput,

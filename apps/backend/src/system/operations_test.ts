@@ -10,7 +10,7 @@ import { STATUS_SCHEMA_VERSION } from "@hipo/server";
 import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { backupTargetState } from "../db/schema.ts";
-import type { Ctx } from "../auth/types.ts";
+import type { Ctx } from "@hipo/auth";
 import { do_getSystemStatus } from "./operations.ts";
 
 async function freshCtx(): Promise<Ctx> {

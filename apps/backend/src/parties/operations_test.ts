@@ -5,9 +5,9 @@ import { asc, eq } from "drizzle-orm";
 import { auditLog } from "../db/schema.ts";
 import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
-import { AppError } from "../errors.ts";
+import { AppError } from "@hipo/server";
 import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, User } from "../auth/types.ts";
+import type { Ctx, User } from "@hipo/auth";
 import {
   doCreateParty,
   doDeleteParty,

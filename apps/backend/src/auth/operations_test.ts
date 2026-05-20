@@ -5,7 +5,7 @@ import { asc } from "drizzle-orm";
 import { auditLog } from "../db/schema.ts";
 import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
-import { AppError } from "../errors.ts";
+import { AppError } from "@hipo/server";
 import {
   doChangePassword,
   doChangeUserRole,
@@ -17,7 +17,7 @@ import {
   doSetupFirstAdmin,
 } from "./operations.ts";
 import { _resetForTests as resetRateLimit } from "./rate_limit.ts";
-import type { Ctx, User } from "./types.ts";
+import type { Ctx, User } from "@hipo/auth";
 
 async function freshCtx(): Promise<{ ctx: Ctx; setUser: (u: User | null) => void }> {
   // Rate-limit state is process-wide; reset between tests so failed

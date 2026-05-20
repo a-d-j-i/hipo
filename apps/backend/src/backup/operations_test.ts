@@ -12,7 +12,7 @@ import { binaryFormat } from "@hipo/sqlite/binary-format-deno";
 import { migrations } from "../db/migrations.ts";
 import { splitStatements } from "../db/client.ts";
 import { backupTargetState, parties } from "../db/schema.ts";
-import type { Ctx, User } from "../auth/types.ts";
+import type { Ctx, User } from "@hipo/auth";
 import { doSetupFirstAdmin, doCreateUser } from "../auth/operations.ts";
 import { doCreateParty } from "../parties/operations.ts";
 import {

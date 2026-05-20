@@ -11,7 +11,7 @@ import {
   type SystemStatusStorageBackend,
   type SystemStatusTarget,
 } from "@hipo/server";
-import type { Ctx } from "../auth/types.ts";
+import type { Ctx } from "@hipo/auth";
 import { backupTargetState } from "../db/schema.ts";
 
 const FRAMEWORK_VERSION = "0.0.0";
