@@ -41,3 +41,10 @@ export {
   type SystemStatusTarget,
   type SystemStatusRiskFlags,
 } from "./system-status.ts";
+
+export {
+  DEFAULT_DB_LOCK_NAME,
+  tryAcquireLock,
+  observeLockReleased,
+  type LockAcquireResult,
+} from "./tab-lock.ts";

@@ -36,6 +36,12 @@
     "logout": "Logout",
     "openMenu": "Open menu"
   },
+  "multiTab": {
+    "title": "Already open in another tab",
+    "body": "hipo only runs in one tab at a time. Close the other tab to continue here, or switch back to it.",
+    "waiting": "Waiting for the other tab to close…",
+    "resuming": "Resuming…"
+  },
   "bootstrap": {
     "title": "Set up backups",
     "intro": "Before you start, choose how this device handles encrypted backups. Backups are the only way to recover after browser data clears or to move to a new device.",

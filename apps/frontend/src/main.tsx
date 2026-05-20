@@ -39,6 +39,25 @@ async function bootstrap() {
       await import("./in-page-backend");
     await registerInPageSW();
 
+    // Acquire the single-tab Web Lock before touching OPFS. If another
+    // tab already holds it, render the MultiTabBlock page (polls for
+    // release, reloads automatically) and stop boot here. The lock
+    // released held for the page lifetime; the browser releases it on
+    // unload (we don't keep the returned `release` reference).
+    const { tryAcquireLock } = await import("@hipo/server");
+    const lock = await tryAcquireLock();
+    if (!lock.acquired) {
+      const { default: MultiTabBlock } = await import("./MultiTabBlock");
+      ReactDOM.createRoot(
+        document.getElementById("root") as HTMLElement,
+      ).render(
+        <React.StrictMode>
+          <MultiTabBlock />
+        </React.StrictMode>,
+      );
+      return;
+    }
+
     if (detectShape() === "browser") {
       const { isOpfsBootstrapped } = await import("./bootstrap/opfs-state");
       const bootstrapped = await isOpfsBootstrapped();

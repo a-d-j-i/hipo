@@ -623,10 +623,10 @@ The packages most likely to want publishing first: `packages/sw`,
 
 ## Phase 11 — Hosting, headers, docs
 
-**Status: landed 2026-05-19.** Deliverables 1–6 shipped; deliverable 7
-(Phase 8B cleanup) skipped per the conditional (Phase 12 slices 1–4 are in
-and rely on the existing `build:desktop:linux` script). See `memory/
-project-status.md` for the commit hash + verification details.
+**Status: landed 2026-05-19.** Deliverables 1–6 shipped; deliverable 7 (Phase 8B
+cleanup) skipped per the conditional (Phase 12 slices 1–4 are in and rely on the
+existing `build:desktop:linux` script). See `memory/ project-status.md` for the
+commit hash + verification details.
 
 The framework's primary demo deploy. Required by
 [[feedback-github-pages-mandatory]] and load-bearing for Linux users
@@ -807,128 +807,148 @@ but substantially less novel code and a smaller Tauri bundle. The polyfill
 approach remains viable if engine parity ever becomes a hard requirement and the
 LOC cost is acceptable.
 
-## Phase 13 — Multi-tab support for the hosted shape
+## Phase 13 — Single-tab guarantee for the hosted shape
 
 OPFS sync access handles are exclusive per origin. Without coordination, opening
 a second tab of the hosted app makes sqlocal's `opfs-sahpool` VFS fail to
 acquire the handle; the second tab silently falls back to in-memory and diverges
 from the first. The plan's Phase-3 "Risks" entry deferred a BroadcastChannel
-"only-one-writer" mitigation; user direction 2026-05-19 promotes this to a real
-phase with a cleaner design.
+"only-one-writer" mitigation; user direction 2026-05-19 promoted this to a real
+phase, initially designed around a SharedWorker for full multi-tab. A subsequent
+review (same session, post-Slice 0 questioning) collapsed it further to
+**modal-only** — second tab gets refused, no SharedWorker.
 
-### Topology change vs Phase 3
+### Design — modal-only (LANDED 2026-05-20)
 
+Every tab boots its own dedicated Worker (unchanged from Phase 3). Before
+spawning the Worker, the main thread probes a named Web Lock:
+
+```ts
+navigator.locks.request("hipo-db", { mode: "exclusive", ifAvailable: true }, ...)
 ```
-Phase 3 (current)                      Phase 13
-─────────────────                      ────────
-Per-tab dedicated Worker owns the      One SharedWorker per origin
-OPFS handle.                           owns the OPFS handle.
-Per-tab SW routes /api/* to the        Per-tab SW routes /api/* to the
-per-tab Worker.                        SharedWorker (one MessagePort
-                                       per tab).
-```
 
-The Service Worker per tab is unchanged (a single SW already serves every tab in
-scope). What changes is what the SW connects to: `new SharedWorker(...)` instead
-of `new Worker(...)`. Same request/response protocol on the wire.
+- **Lock acquired** → hold for the page lifetime (browser releases on unload);
+  proceed with the normal boot path.
+- **Lock unavailable** → another tab owns it. Render `MultiTabBlock` ("Already
+  open in another tab"); poll `navigator.locks.query()` every ~1 s; on release,
+  `location.reload()` so the bootstrap path runs cleanly from the top.
 
-The SharedWorker holds an exclusive Web Lock on `"hipo-db"` for the duration of
-its life. Two purposes: (1) lifecycle observability — reincarnations after a
-browser-initiated termination can detect clean handoff; (2) the fallback path's
-"is the DB already owned?" probe.
+No SharedWorker, no `onconnect`, no SW-side multi-port routing, no per-clientId
+mapping. The DB-owning Worker stays per-tab, exactly as today.
 
-### Fallback: refuse to open (per user direction 2026-05-19)
+### Why not SharedWorker
 
-When `typeof SharedWorker === "undefined"` or instantiation fails, the app boots
-a dedicated Worker per tab and tries to acquire the `"hipo-db"` Web Lock with
-`{ mode: "exclusive", ifAvailable: true }`:
+The earlier design (SharedWorker per origin + per-tab MessagePort routing
+through the SW) gives "full multi-tab" — both tabs hit the same DB through one
+shared engine. That capability isn't worth the code on a 1-10 person admin tool:
+users almost never have two tabs of the same admin app open simultaneously, and
+the Tauri shape is single-window anyway. The modal-only design collapses the
+cross-browser path to one (iOS Safari + WebKitGTK + everything-else all take the
+same route), drops ~130 LOC of SharedWorker plumbing and per-clientId SW
+routing, and removes a permanent class of "what happens when the SharedWorker
+dies under memory pressure" edge cases.
 
-- **Lock acquired** → only-tab; proceed normally.
-- **Lock unavailable** → another tab owns it. Render a modal: _"This app is
-  already open in another tab. Close the other tab to continue here, or switch
-  back to it."_ The Worker does not boot; no SQLite-WASM loaded; no
-  partial-functionality state to design, document, or test. Poll
-  `navigator.locks.query()` every ~1 s so the modal dismisses automatically when
-  the other tab closes.
+### Tradeoff (explicitly accepted)
 
-The deliberate choice: no read-only mode. Browsers that support SharedWorker get
-full multi-tab; browsers that don't get single-tab-or-modal. Cleaner code path,
-narrower test matrix.
+Users cannot have two tabs of the app open simultaneously. The second tab's
+modal is the entire interaction — no read-only mode, no "comparing data
+side-by-side". For the hipo use case this is fine; if a future consumer
+genuinely needs multi-tab, the SharedWorker variant remains documented below as
+a rejected alternative.
 
 ### Supported-browser matrix
 
-| Browser                           | Path                                                |
-| --------------------------------- | --------------------------------------------------- |
-| Chromium / Edge / Brave           | SharedWorker — full multi-tab                       |
-| Firefox                           | SharedWorker — full multi-tab                       |
-| Safari (desktop ≥ 15)             | SharedWorker — full multi-tab                       |
-| Safari iOS                        | SharedWorker disabled on iOS — modal fallback       |
-| WebKitGTK ≥ 2.42 (Pages on Linux) | SharedWorker supported — verify in pre-commit spike |
+| Browser                           | Path                                             |
+| --------------------------------- | ------------------------------------------------ |
+| Chromium / Edge / Brave           | Web Locks → modal in second tab                  |
+| Firefox                           | Web Locks → modal in second tab                  |
+| Safari (desktop ≥ 15)             | Web Locks → modal in second tab                  |
+| Safari iOS                        | Web Locks → modal in second tab                  |
+| WebKitGTK ≥ 2.42 (Pages on Linux) | Web Locks supported — verify in pre-commit spike |
 
-### Code surface
+### Code surface (actual, post-landing)
 
-| Piece                                                          | LOC  | Where                                  |
-| -------------------------------------------------------------- | ---- | -------------------------------------- |
-| SharedWorker entry + `onconnect` per-port routing              | ~40  | `packages/server/src/shared-worker.ts` |
-| SW → SharedWorker port wiring                                  | ~30  | `apps/frontend/public/sw.js`           |
-| Boot path: detect SharedWorker, fall back to lock-probe        | ~50  | `apps/frontend/src/in-page-backend.ts` |
-| "Already open elsewhere" modal                                 | ~60  | `apps/frontend/src/MultiTabBlock.tsx`  |
-| Web Lock helpers (acquire, release-on-unload, observe release) | ~40  | `packages/server/src/tab-lock.ts`      |
-| Tests (Playwright multi-context: 3 tabs, mutate, observe)      | ~120 | new                                    |
+| Piece                                                              | LOC  | Where                                                  |
+| ------------------------------------------------------------------ | ---- | ------------------------------------------------------ |
+| Web Lock helpers (`tryAcquireLock`, `observeLockReleased`)         | ~70  | `packages/server/src/tab-lock.ts`                      |
+| Boot-path probe + render gate                                      | ~15  | `apps/frontend/src/main.tsx`                           |
+| "Already open elsewhere" page (antd)                               | ~55  | `apps/frontend/src/MultiTabBlock.tsx`                  |
+| Same for minimal template (plain CSS)                              | ~30  | `templates/minimal/src/MultiTabBlock.tsx` + `main.tsx` |
+| Vitest cases (6 — acquire, ifAvailable false, release, observe x3) | ~120 | `apps/frontend/src/tab-lock.test.ts`                   |
+| Playwright multi-context spike                                     | ~140 | `spikes/06-multi-tab/multi-tab.mjs`                    |
 
-**~340 LOC total.**
+**~430 LOC including tests + spike.**
 
 ### Tauri shape
 
-Phase 12 puts SQLite in the Rust process. Multi-tab is moot on the Tauri shape:
-a Tauri app is one window by default; multi-window would need a Rust-side
-connection pool — different problem, different phase, off the v1 roadmap.
+Phase 12 puts SQLite in the Rust process. Multi-tab is moot on Tauri: a Tauri
+app is one window by default, and the lock probe always succeeds (the API exists
+in webkit2gtk; cost is one async call at boot). No conditional needed.
 
 ### Server shape
 
 Shape 2 / Shape 3 are inherently multi-tab: each tab is just a session against
-the shared DB. The Phase 13 work is hosted-shape- specific; nothing changes
+the shared DB. The Phase 13 work is hosted-shape-specific; nothing changes
 server-side.
 
 ### Pre-commit spike
 
-Open three Chromium tabs against a deployed Pages build (Phase 11 prerequisite).
-Verify:
+`spikes/06-multi-tab/multi-tab.mjs` runs in CI / locally against `dev:inpage`.
+Verifies:
 
-1. All three see the same DB state after a mutation from any one.
-2. Closing the SharedWorker's last surviving tab and reopening immediately does
-   not corrupt the DB.
-3. Force the fallback path (override `globalThis.SharedWorker = undefined`
-   before boot) and confirm the modal appears + clears when the holding tab
-   closes.
-4. WebKitGTK Pages path: confirm SharedWorker actually works (probe early — fall
-   back to modal-only on WebKitGTK if not).
+1. Tab A boots → acquires the lock → renders bootstrap UI.
+2. Tab B opens → sees lock held → renders `MultiTabBlock` with the i18n'd
+   "already open" copy.
+3. Tab A closes → Tab B's polling notices within ~1 s and auto-reloads.
+4. Tab B's reload acquires the lock cleanly and renders the bootstrap UI.
+
+**Deferred (requires Pages deploy):** WebKitGTK Pages path — confirm
+`navigator.locks` works as expected on the Pages-served bundle running inside
+the Linux Tauri build's webkit2gtk.
 
 ### Risks
 
-- **SharedWorker termination under memory pressure.** Same risk Phase 3 already
-  flagged for dedicated Workers. Reconnect logic in the SW + the request-replay
-  path extends naturally.
-- **iOS Safari.** PWA-installed on iOS hits the modal on every second-tab
-  attempt. Acceptable but worth documenting; the iPad story for hipo isn't a v1
-  target anyway.
-- **SharedWorker DevTools UX.** Browsers expose SharedWorker DevTools
-  separately; document the path in CONTRIBUTING.
-- **Lock-release polling.** No event API for "released" in some browsers;
-  polling `navigator.locks.query()` is cheap but inelegant.
+- **Lock-release polling.** No event API for "released" in standard Web Locks;
+  polling `navigator.locks.query()` is cheap but inelegant. 1-second cadence is
+  imperceptible for the "I closed the other tab" UX.
+- **Web Locks API absence.** If a future browser ships without Web Locks
+  support, `tryAcquireLock`'s try/catch falls through and the second tab boots
+  normally → silent OPFS divergence again. Browser-version probe at boot is a
+  future hardening; the current matrix (all evergreen modern browsers + iOS
+  Safari 16+) covers it.
+- **Race window during reload.** Between "Tab A unloads" and "Tab B's
+  `location.reload()` finishes acquiring the lock," there's a sub-second window
+  where a third tab opened in that gap could grab the lock first. Acceptable
+  edge.
 
 ### Triggers
 
-User stated 2026-05-19: required for the hosted shape. Sequence after Phase 11
-so the Playwright multi-context test runs against the real deployed URL.
+User stated 2026-05-19 (refined 2026-05-20): required for the hosted shape.
+Sequenced after Phase 11 so the Playwright multi-context test runs against the
+real deployed URL — but the modal-only design lets the spike run against
+`dev:inpage` locally, so it's not gated on Pages deploy.
 
 ### Supersedes
 
 The "Multi-tab with same OPFS" risk in the **Risks** section below (originally
 tagged "Add in Phase 3 once the Worker topology lands"; the topology did land
-but the mitigation didn't — Phase 13 closes that loop with a cleaner
-SharedWorker-based design than the originally-sketched BroadcastChannel
-approach).
+but the mitigation didn't — Phase 13 closes that loop with a Web-Lock + modal
+design lighter than the originally-sketched BroadcastChannel approach and the
+intermediate SharedWorker proposal).
+
+### Rejected alternative: SharedWorker for full multi-tab
+
+Considered and rejected 2026-05-20. One SharedWorker per origin owns the OPFS
+handle; per-tab MessagePort routes `/api/*` from each tab's SW through the
+SharedWorker. Pros: users can have N tabs open simultaneously, all sharing
+state. Cons: ~130 LOC more (`packages/server/src/shared-worker.ts` +
+`packages/sw/src/sw.js` multi-port routing + per-clientId SW map), three
+distinct browser paths to verify (Chromium-style SharedWorker + iOS-style modal
+fallback + WebKitGTK uncertainty), and SharedWorker-termination edge cases under
+memory pressure that require reconnect + request-replay logic. The tradeoff
+isn't worth the gain for the hipo use case. Preserved here so a future multi-tab
+requirement (e.g. a consumer where side-by-side editing matters) has a starting
+design instead of a from-scratch one.
 
 ## Promotion path: local-first → shared server
 
@@ -1274,7 +1294,7 @@ Test surface (per browser):
 | Bootstrap → new install → login → smoke mutation   | SW activation, Worker init, OPFS write, router dispatch           |
 | Mutation → auto-backup → verify → re-fetch state   | backup pipeline (export, compress, encrypt, target write, verify) |
 | Wipe OPFS → restore from saved backup → re-login   | restore flow, schema-version forward migration                    |
-| Multi-tab open → second tab read-only banner       | the BroadcastChannel "only one writer" lock                       |
+| Multi-tab open → second tab MultiTabBlock          | the `hipo-db` Web Lock + observeLockReleased polling              |
 | Cross-version restore (load v5 backup into v8 app) | migration forward path                                            |
 | Wrong passphrase / truncated ciphertext            | AES-GCM auth-tag failure handling                                 |
 | `/api/system/status` returns correct `shape`       | environment detection                                             |
@@ -1379,9 +1399,11 @@ on real network + production build before shipping.
   into a package. Catch with an ESLint rule from Phase 1, not from Phase 10.
 - **Multi-tab with same OPFS.** Two tabs of the same app open at once contend
   for the OPFS sync access handle. SQLite-WASM holds an exclusive lock; the
-  second tab will fail to open. **Addressed by Phase 13** — SharedWorker owns
-  the DB, all tabs route through it; fallback (no SharedWorker) is a
-  refuse-to-open modal per user direction 2026-05-19.
+  second tab would fail to open. **Addressed by Phase 13** (landed 2026-05-20) —
+  every tab probes a `"hipo-db"` Web Lock before spawning its Worker; the second
+  tab sees the lock held and renders `MultiTabBlock`, polling for release. No
+  SharedWorker (rejected — full multi-tab not worth the LOC for the hipo use
+  case).
 - **Worker / SW lifecycle traps.** Workers can be terminated by the browser
   under memory pressure; service workers can update mid- session and leave the
   Worker orphaned. Make the SW → Worker connection resilient: re-spawn the

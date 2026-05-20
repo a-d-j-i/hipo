@@ -36,6 +36,12 @@
     "logout": "Cerrar sesión",
     "openMenu": "Abrir menú"
   },
+  "multiTab": {
+    "title": "Ya está abierto en otra pestaña",
+    "body": "hipo solo se ejecuta en una pestaña a la vez. Cerrá la otra para continuar acá, o volvé a esa pestaña.",
+    "waiting": "Esperando que se cierre la otra pestaña…",
+    "resuming": "Reanudando…"
+  },
   "bootstrap": {
     "title": "Configurar respaldos",
     "intro": "Antes de empezar, elegí cómo este dispositivo maneja los respaldos cifrados. Los respaldos son la única forma de recuperar los datos si se borran los del navegador o si cambiás de dispositivo.",
