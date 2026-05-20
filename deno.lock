@@ -7,6 +7,8 @@
     "npm:@eslint/js@^10.0.1": "10.0.1_eslint@10.3.0",
     "npm:@libsql/client@0.14": "0.14.0",
     "npm:@node-rs/argon2@2": "2.0.2",
+    "npm:@playwright/test@^1.52.0": "1.60.0",
+    "npm:@srsholmes/tauri-playwright@~0.2.2": "0.2.2_@playwright+test@1.60.0",
     "npm:@tauri-apps/api@2": "2.11.0",
     "npm:@tauri-apps/cli@2": "2.11.1",
     "npm:@tauri-apps/plugin-process@2": "2.3.1",
@@ -887,6 +889,13 @@
         "@node-rs/argon2-win32-x64-msvc"
       ]
     },
+    "@playwright/test@1.60.0": {
+      "integrity": "sha512-O71yZIbAh/PxDMNGns37GHBIfrVkEVyn+AXyIa5dOTfb4/xNvRWV+Vv/NMbNCtODB/pO7vLlF2OTmMVLhmr7Ag==",
+      "dependencies": [
+        "playwright"
+      ],
+      "bin": true
+    },
     "@rc-component/async-validator@5.1.0": {
       "integrity": "sha512-n4HcR5siNUXRX23nDizbZBQPO0ZM/5oTtmKZ6/eqL0L2bo747cklFdZGRN2f+c9qWGICwDzrhW0H7tE9PptdcA==",
       "dependencies": [
@@ -1451,6 +1460,12 @@
     },
     "@sqlite.org/sqlite-wasm@3.51.2-build9": {
       "integrity": "sha512-tj2Sa6X4gVZqS9SiT2xlEeChSUklSGq8Hz6zKNbHW6NRiGyrSXiFcspnrWru1wPBT76RX/VxweESKxawCxfDxg=="
+    },
+    "@srsholmes/tauri-playwright@0.2.2_@playwright+test@1.60.0": {
+      "integrity": "sha512-Q/6BrSInxePOsrxFR1wB0ALshZH92PjyF3JEcAqZumUuzwTchm4iffqa4y90XZKpVqIrLtVFMIGDdl9WmRuliQ==",
+      "dependencies": [
+        "@playwright/test"
+      ]
     },
     "@tauri-apps/api@2.11.0": {
       "integrity": "sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA=="
@@ -3089,6 +3104,8 @@
     "packageJson": {
       "dependencies": [
         "npm:@eslint/js@^10.0.1",
+        "npm:@playwright/test@^1.52.0",
+        "npm:@srsholmes/tauri-playwright@~0.2.2",
         "npm:eslint@^10.3.0",
         "npm:prettier@^3.8.3",
         "npm:typescript-eslint@^8.59.3"

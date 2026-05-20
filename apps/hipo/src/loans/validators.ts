@@ -1,7 +1,10 @@
 import {
   checkCurrencyCode,
   checkLenders,
+  checkLoanComposition,
+  checkPromoters,
   type LoanLenderInput,
+  type LoanPromoterInput,
   normalizeOptional,
   sumLenderAmounts,
 } from "@hipo/shared";
@@ -17,6 +20,21 @@ export function validateLenders(lenders: LoanLenderInput[]): number {
   const err = checkLenders(lenders);
   if (err) throw badRequest(err);
   return sumLenderAmounts(lenders);
+}
+
+/** Validates the promoter list (may be empty). */
+export function validatePromoters(promoters: LoanPromoterInput[]): void {
+  const err = checkPromoters(promoters);
+  if (err) throw badRequest(err);
+}
+
+/** No party may be both lender and promoter on the same loan. */
+export function validateLoanComposition(
+  lenders: LoanLenderInput[],
+  promoters: LoanPromoterInput[],
+): void {
+  const err = checkLoanComposition(lenders, promoters);
+  if (err) throw badRequest(err);
 }
 
 // Re-export so existing consumers (loans/operations.ts, payments/operations.ts,

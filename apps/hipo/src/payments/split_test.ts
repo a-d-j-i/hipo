@@ -1,5 +1,5 @@
-import { assertEquals } from "jsr:@std/assert@^1.0";
-import { splitPayment } from "@hipo/shared";
+import { assertEquals, assertThrows } from "jsr:@std/assert@^1.0";
+import { splitDebtorPayment, splitPayment } from "@hipo/shared";
 
 function sum(v: Array<[number, number]>): number {
   return v.reduce((s, [, c]) => s + c, 0);
@@ -134,4 +134,120 @@ Deno.test("split_handles_large_principals_without_float_loss", () => {
   assertEquals(sum(r), 1_000_000_000);
   assertEquals(r[0][1], 500_000_000);
   assertEquals(r[1][1], 500_000_000);
+});
+
+// -- splitDebtorPayment ----------------------------------------------------
+
+Deno.test("debtor_split: no promoters falls back to lender-only", () => {
+  const r = splitDebtorPayment(
+    6000,
+    4000,
+    [
+      [1, 60],
+      [2, 40],
+    ],
+    [],
+  );
+  assertEquals(r.promoterSplits, []);
+  // lender_pool = 6000 + 4000 = 10000 → 60/40 split
+  assertEquals(r.lenderSplits, [
+    [1, 6000],
+    [2, 4000],
+  ]);
+});
+
+Deno.test("debtor_split: promoter takes off the top of interest only", () => {
+  // 10000 principal + 1000 interest, promoter takes 10% (1000 bps) of interest.
+  // promoter cut: 100 cents from 1000 interest → lender residual = 900.
+  // lender_pool = 10000 + 900 = 10900, split 60/40 → 6540/4360.
+  const r = splitDebtorPayment(
+    10_000,
+    1_000,
+    [
+      [1, 60],
+      [2, 40],
+    ],
+    [[3, 1000]],
+  );
+  assertEquals(r.promoterSplits, [[3, 100]]);
+  assertEquals(sum(r.promoterSplits) + sum(r.lenderSplits), 11_000);
+  assertEquals(r.lenderSplits, [
+    [1, 6540],
+    [2, 4360],
+  ]);
+});
+
+Deno.test(
+  "debtor_split: residual cents flow deterministically to lender pool",
+  () => {
+    // interest = 7, one promoter at 50% (5000 bps).
+    // promoter: 7 * 5000/10000 = 3 (floor), remainder pulled by sentinel slot
+    //   (largest-remainder picks the bigger remainder). Sentinel weight is 5000
+    //   so it gets the +1 bump → lender_residual = 4.
+    // Sum check: promoter 3 + lender_residual 4 = 7. ✓
+    const r = splitDebtorPayment(0, 7, [[1, 1]], [[2, 5000]]);
+    assertEquals(sum(r.promoterSplits) + sum(r.lenderSplits), 7);
+    assertEquals(r.promoterSplits, [[2, 3]]);
+    assertEquals(r.lenderSplits, [[1, 4]]);
+  },
+);
+
+Deno.test(
+  "debtor_split: promoter sum == 100% leaves lenders with principal only",
+  () => {
+    const r = splitDebtorPayment(
+      5000,
+      1000,
+      [[1, 100]],
+      [
+        [2, 5000],
+        [3, 5000],
+      ],
+    );
+    assertEquals(r.promoterSplits, [
+      [2, 500],
+      [3, 500],
+    ]);
+    assertEquals(r.lenderSplits, [[1, 5000]]);
+  },
+);
+
+Deno.test("debtor_split: zero-interest payment routes 100% to lenders", () => {
+  const r = splitDebtorPayment(
+    1000,
+    0,
+    [
+      [1, 50],
+      [2, 50],
+    ],
+    [[3, 2000]],
+  );
+  assertEquals(r.promoterSplits, [[3, 0]]);
+  assertEquals(r.lenderSplits, [
+    [1, 500],
+    [2, 500],
+  ]);
+});
+
+Deno.test("debtor_split: rejects negative inputs", () => {
+  assertThrows(() => splitDebtorPayment(-1, 0, [[1, 1]], []));
+  assertThrows(() => splitDebtorPayment(0, -1, [[1, 1]], []));
+});
+
+Deno.test("debtor_split: requires at least one lender", () => {
+  assertThrows(() => splitDebtorPayment(100, 0, [], []));
+});
+
+Deno.test("debtor_split: rejects promoter sum > 100%", () => {
+  assertThrows(() =>
+    splitDebtorPayment(
+      100,
+      100,
+      [[1, 1]],
+      [
+        [2, 6000],
+        [3, 5000],
+      ],
+    ),
+  );
 });

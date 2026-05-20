@@ -54,6 +54,24 @@ export type LoanLenderInput = {
   amountLentCents: number;
 };
 
+/**
+ * A party that contributes no principal but takes a fixed cut of the
+ * loan's interest, off the top. Share is expressed in basis points
+ * (1 bps = 0.01 %). The sum of `share_bps` across all promoters on
+ * a loan must satisfy `0 < total <= 10000`; if equal to 10000 the
+ * lenders get only the principal.
+ */
+export type LoanPromoter = {
+  party_id: number;
+  party_name: string;
+  share_bps: number;
+};
+
+export type LoanPromoterInput = {
+  partyId: number;
+  shareBps: number;
+};
+
 export type Loan = {
   id: number;
   reference: string | null;
@@ -66,6 +84,7 @@ export type Loan = {
   status: LoanStatus;
   notes: string | null;
   lenders: LoanLender[];
+  promoters: LoanPromoter[];
   created_at: number;
   created_by: number | null;
 };
@@ -78,6 +97,8 @@ export type CreateLoanInput = {
   issuedAt: number;
   notes: string | null;
   lenders: LoanLenderInput[];
+  /** Optional list of fixed-share-of-interest parties. Empty / omitted = none. */
+  promoters?: LoanPromoterInput[];
 };
 
 export type UpdateLoanInput = {
@@ -91,16 +112,21 @@ export type UpdateLoanInput = {
 
 // ---------- Payments ----------
 
+export type DebtorPaymentSplitKind = "lender" | "promoter";
+
 export type DebtorPaymentSplit = {
   lender_id: number;
   lender_name: string;
   amount_cents: number;
+  kind: DebtorPaymentSplitKind;
 };
 
 export type DebtorPayment = {
   id: number;
   loan_id: number;
   amount_cents: number;
+  principal_cents: number;
+  interest_cents: number;
   paid_at: number;
   notes: string | null;
   splits: DebtorPaymentSplit[];
@@ -110,7 +136,8 @@ export type DebtorPayment = {
 
 export type CreateDebtorPaymentInput = {
   loanId: number;
-  amountCents: number;
+  principalCents: number;
+  interestCents: number;
   paidAt: number;
   notes: string | null;
 };

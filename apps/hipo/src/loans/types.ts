@@ -3,6 +3,8 @@ export type {
   Loan,
   LoanLender,
   LoanLenderInput,
+  LoanPromoter,
+  LoanPromoterInput,
   LoanStatus,
   UpdateLoanInput,
 } from "@hipo/shared";

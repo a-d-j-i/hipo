@@ -6,13 +6,14 @@ import {
   debtorPayments,
   debtorPaymentSplits,
   loanLenders,
+  loanPromoters,
   loans,
   parties,
 } from "../db/schema.ts";
 import type { Tx } from "@hipo/audit";
 import { normalizeOpt } from "../loans/validators.ts";
 import { badRequest, notFound } from "@hipo/server";
-import { splitPayment } from "@hipo/shared";
+import { splitDebtorPayment } from "@hipo/shared";
 import type {
   CreateDebtorPaymentInput,
   DebtorPayment,
@@ -28,11 +29,12 @@ async function fetchSplits(
       lender_id: debtorPaymentSplits.lenderId,
       lender_name: parties.name,
       amount_cents: debtorPaymentSplits.amountCents,
+      kind: debtorPaymentSplits.kind,
     })
     .from(debtorPaymentSplits)
     .innerJoin(parties, eq(parties.id, debtorPaymentSplits.lenderId))
     .where(eq(debtorPaymentSplits.paymentId, paymentId))
-    .orderBy(asc(parties.name));
+    .orderBy(asc(debtorPaymentSplits.kind), asc(parties.name));
 }
 
 async function fetchPayment(db: Db | Tx, id: number): Promise<DebtorPayment> {
@@ -41,6 +43,8 @@ async function fetchPayment(db: Db | Tx, id: number): Promise<DebtorPayment> {
       id: debtorPayments.id,
       loan_id: debtorPayments.loanId,
       amount_cents: debtorPayments.amountCents,
+      principal_cents: debtorPayments.principalCents,
+      interest_cents: debtorPayments.interestCents,
       paid_at: debtorPayments.paidAt,
       notes: debtorPayments.notes,
       created_at: debtorPayments.createdAt,
@@ -68,6 +72,21 @@ async function loanLenderShares(
   return rows.map((r): [number, number] => [r.lenderId, r.amountLentCents]);
 }
 
+async function loanPromoterShares(
+  db: Db | Tx,
+  loanId: number,
+): Promise<Array<[number, number]>> {
+  const rows = await db
+    .select({
+      partyId: loanPromoters.partyId,
+      shareBps: loanPromoters.shareBps,
+    })
+    .from(loanPromoters)
+    .where(eq(loanPromoters.loanId, loanId))
+    .orderBy(asc(loanPromoters.partyId));
+  return rows.map((r): [number, number] => [r.partyId, r.shareBps]);
+}
+
 // ---------- Reads ----------
 
 export async function doListLoanPayments(
@@ -80,6 +99,8 @@ export async function doListLoanPayments(
       id: debtorPayments.id,
       loan_id: debtorPayments.loanId,
       amount_cents: debtorPayments.amountCents,
+      principal_cents: debtorPayments.principalCents,
+      interest_cents: debtorPayments.interestCents,
       paid_at: debtorPayments.paidAt,
       notes: debtorPayments.notes,
       created_at: debtorPayments.createdAt,
@@ -104,11 +125,12 @@ export async function doListLoanPayments(
       lender_id: debtorPaymentSplits.lenderId,
       lender_name: parties.name,
       amount_cents: debtorPaymentSplits.amountCents,
+      kind: debtorPaymentSplits.kind,
     })
     .from(debtorPaymentSplits)
     .innerJoin(parties, eq(parties.id, debtorPaymentSplits.lenderId))
     .where(inArray(debtorPaymentSplits.paymentId, ids))
-    .orderBy(asc(parties.name));
+    .orderBy(asc(debtorPaymentSplits.kind), asc(parties.name));
 
   const byPayment = new Map<number, DebtorPaymentSplit[]>();
   for (const r of splitRows) {
@@ -117,6 +139,7 @@ export async function doListLoanPayments(
       lender_id: r.lender_id,
       lender_name: r.lender_name,
       amount_cents: r.amount_cents,
+      kind: r.kind,
     });
     byPayment.set(r.payment_id, arr);
   }
@@ -131,7 +154,12 @@ export async function doCreateDebtorPayment(
   args: CreateDebtorPaymentInput,
 ): Promise<DebtorPayment> {
   const me = requireAuth(ctx);
-  if (args.amountCents <= 0) throw badRequest("amount must be > 0");
+  if (!Number.isInteger(args.principalCents) || args.principalCents < 0)
+    throw badRequest("principal must be an integer >= 0");
+  if (!Number.isInteger(args.interestCents) || args.interestCents < 0)
+    throw badRequest("interest must be an integer >= 0");
+  const amountCents = args.principalCents + args.interestCents;
+  if (amountCents <= 0) throw badRequest("payment must be > 0");
   const notes = normalizeOpt(args.notes);
   const now = nowSecs();
 
@@ -144,29 +172,48 @@ export async function doCreateDebtorPayment(
   if (!loan) throw notFound("loan not found");
   if (loan.status !== "active") throw badRequest("loan is not active");
 
-  const shares = await loanLenderShares(ctx.db, args.loanId);
-  if (shares.length === 0) throw badRequest("loan has no lenders");
+  const lenderShares = await loanLenderShares(ctx.db, args.loanId);
+  if (lenderShares.length === 0) throw badRequest("loan has no lenders");
+  const promoterShares = await loanPromoterShares(ctx.db, args.loanId);
 
-  const split = splitPayment(args.amountCents, shares);
+  const { promoterSplits, lenderSplits } = splitDebtorPayment(
+    args.principalCents,
+    args.interestCents,
+    lenderShares,
+    promoterShares,
+  );
 
   return await ctx.db.transaction(async (tx) => {
     const [row] = await tx
       .insert(debtorPayments)
       .values({
         loanId: args.loanId,
-        amountCents: args.amountCents,
+        amountCents,
+        principalCents: args.principalCents,
+        interestCents: args.interestCents,
         paidAt: args.paidAt,
         notes,
         createdAt: now,
         createdBy: me.id,
       })
       .returning({ id: debtorPayments.id });
-    for (const [lenderId, cents] of split) {
+    for (const [lenderId, cents] of lenderSplits) {
       if (cents > 0) {
         await tx.insert(debtorPaymentSplits).values({
           paymentId: row.id,
           lenderId,
           amountCents: cents,
+          kind: "lender",
+        });
+      }
+    }
+    for (const [partyId, cents] of promoterSplits) {
+      if (cents > 0) {
+        await tx.insert(debtorPaymentSplits).values({
+          paymentId: row.id,
+          lenderId: partyId,
+          amountCents: cents,
+          kind: "promoter",
         });
       }
     }

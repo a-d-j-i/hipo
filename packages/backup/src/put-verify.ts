@@ -22,6 +22,8 @@ import type { BackupTarget } from "./target.ts";
 export type PutAndVerifyResult = {
   /** Unix seconds when `target.put` resolved. */
   at: number;
+  /** Filename reported by the target, if it has a meaningful one. */
+  filename?: string;
   /** Unix seconds when verify finished. Absent on write-only targets. */
   verified_at?: number;
   /** True if both byte-equal and decrypt succeeded. */
@@ -48,24 +50,24 @@ function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
 export async function putAndVerify(
   opts: PutAndVerifyInput,
 ): Promise<PutAndVerifyResult> {
-  const { at } = await opts.target.put(opts.envelopeBytes);
+  const { at, filename } = await opts.target.put(opts.envelopeBytes);
   if (!opts.target.get) {
-    return { at };
+    return { at, filename };
   }
 
   const verified_at = nowSec();
   try {
     const fetched = await opts.target.get();
-    if (!fetched) return { at, verified_at, verified_ok: false };
+    if (!fetched) return { at, filename, verified_at, verified_ok: false };
     if (!bytesEqual(fetched, opts.envelopeBytes)) {
-      return { at, verified_at, verified_ok: false };
+      return { at, filename, verified_at, verified_ok: false };
     }
     // Decryptability proves the key + envelope are mutually consistent;
     // this is what guarantees future restores will work.
     const env = unpackEnvelope(fetched);
     await decryptBlob(env, opts.key);
-    return { at, verified_at, verified_ok: true };
+    return { at, filename, verified_at, verified_ok: true };
   } catch {
-    return { at, verified_at, verified_ok: false };
+    return { at, filename, verified_at, verified_ok: false };
   }
 }

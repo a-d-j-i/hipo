@@ -11,11 +11,13 @@ import {
   doGetLoan,
   doListLoans,
   doSetLoanLenders,
+  doSetLoanPromoters,
   doUpdateLoan,
 } from "../loans/operations.ts";
 import type {
   CreateLoanInput,
   LoanLenderInput,
+  LoanPromoterInput,
   UpdateLoanInput,
 } from "../loans/types.ts";
 
@@ -56,6 +58,16 @@ export function registerLoanRoutes(app: Router<AppState>) {
       await doSetLoanLenders(ctxOf(c), {
         loanId: parseId(c),
         lenders: body.lenders,
+      }),
+    );
+  });
+
+  app.put("/api/loans/:id/promoters", requireAuth, async (c) => {
+    const body = (await c.req.json()) as { promoters: LoanPromoterInput[] };
+    return json(
+      await doSetLoanPromoters(ctxOf(c), {
+        loanId: parseId(c),
+        promoters: body.promoters ?? [],
       }),
     );
   });

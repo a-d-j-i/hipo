@@ -135,9 +135,18 @@ Deno.test(
       const row = await do_recordBackup(s.ctx, {
         target_id: "local-download",
         size_bytes: 4096,
+        filename: "hipo-backup-2026-05-20.bin",
       });
       assertEquals(row.last_backup_size_bytes, 4096);
       assertEquals(typeof row.last_backup_at, "number");
+      assertEquals(row.last_backup_filename, "hipo-backup-2026-05-20.bin");
+      // Re-recording without a filename clears it back to NULL — the
+      // most recent put wins.
+      const row2 = await do_recordBackup(s.ctx, {
+        target_id: "local-download",
+        size_bytes: 4097,
+      });
+      assertEquals(row2.last_backup_filename, null);
     } finally {
       await cleanup(s);
     }

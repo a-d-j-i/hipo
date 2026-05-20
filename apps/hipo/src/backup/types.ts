@@ -11,6 +11,7 @@ export type BackupTargetStateView = {
   configured_at: number;
   last_backup_at: number | null;
   last_backup_size_bytes: number | null;
+  last_backup_filename: string | null;
   last_verify_at: number | null;
   last_verify_ok: boolean | null;
 };
@@ -22,6 +23,7 @@ export type RestoreInput = { bytes_b64: string };
 export type RecordBackupInput = {
   target_id: string;
   size_bytes: number;
+  filename?: string | null;
 };
 
 export type RecordVerifyInput = {

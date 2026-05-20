@@ -154,7 +154,9 @@
       "interest": "Interest (flat)",
       "issuedAt": "Issued at",
       "notes": "Notes",
-      "lendersSection": "Lenders"
+      "lendersSection": "Lenders",
+      "promotersSection": "Promoters (interest only)",
+      "promotersHelp": "Promoters contribute no principal but take a fixed share of the interest off the top, before the rest is split among lenders."
     },
     "lenders": {
       "add": "Add lender",
@@ -164,20 +166,32 @@
       "lenderPlaceholder": "Lender",
       "amountPlaceholder": "Amount"
     },
+    "promoters": {
+      "add": "Add promoter",
+      "party": "Promoter",
+      "partyPlaceholder": "Promoter",
+      "percentPlaceholder": "% of interest",
+      "shareOfInterest": "% of interest",
+      "sumLabel": "Promoters total: {{pct}}%",
+      "bothLenderAndPromoter": "A party can't be both lender and promoter"
+    },
     "drawerTitle": {
       "create": "New loan",
       "edit": "Edit {{ref}}",
-      "manageLenders": "Manage lenders — {{ref}}"
+      "manageLenders": "Manage lenders — {{ref}}",
+      "managePromoters": "Manage promoters — {{ref}}"
     },
     "actionTitle": {
       "payments": "Payments",
-      "manageLenders": "Manage lenders"
+      "manageLenders": "Manage lenders",
+      "managePromoters": "Manage promoters"
     },
     "toast": {
       "created": "Loan created",
       "saved": "Saved",
       "deleted": "Deleted",
-      "lendersUpdated": "Lenders updated"
+      "lendersUpdated": "Lenders updated",
+      "promotersUpdated": "Promoters updated"
     },
     "confirmDelete": "Delete loan {{ref}}?"
   },
@@ -191,16 +205,26 @@
     },
     "form": {
       "amount": "Amount",
+      "principal": "Principal",
+      "interest": "Interest",
+      "totalLabel": "Total: {{total}}",
+      "totalMustBePositive": "Total (principal + interest) must be > 0",
       "paidAt": "Date",
       "notes": "Notes",
       "record": "Record"
+    },
+    "breakdown": "Principal: {{principal}} · Interest: {{interest}}",
+    "role": {
+      "lender": "Lender",
+      "promoter": "Promoter"
     },
     "loanClosedAlert": "Loan is closed — no new payments can be recorded.",
     "column": {
       "date": "Date",
       "amount": "Amount",
       "notes": "Notes",
-      "lender": "Lender",
+      "lender": "Beneficiary",
+      "role": "Role",
       "share": "Share"
     },
     "toast": {
@@ -346,6 +370,7 @@
       "noTargets": "No backup targets configured yet.",
       "target": {
         "lastBackup": "Last backup: {{when}}",
+        "lastBackupFilename": "File: {{filename}}",
         "lastVerify": "Last verify: {{when}} ({{ok}})",
         "neverBackedUp": "Never backed up",
         "neverVerified": "Never verified",
@@ -372,6 +397,8 @@
         "uploading": "Saving backup…",
         "verifying": "Verifying…",
         "success": "Backup saved.",
+        "successWithFile": "Backup saved as {{filename}}.",
+        "downloadsHint": "Look for the file in your browser's downloads folder.",
         "failed": "Backup failed. Check the console for details."
       },
       "fsAccess": {

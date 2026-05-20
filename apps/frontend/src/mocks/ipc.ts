@@ -18,12 +18,18 @@ import type {
   Loan,
   LoanLender,
   LoanLenderInput,
+  LoanPromoter,
+  LoanPromoterInput,
   LoanStatus,
   Party,
   Role,
   User,
 } from "@hipo/shared";
-import { splitPayment } from "@hipo/shared";
+import {
+  checkLoanComposition,
+  checkPromoters,
+  splitDebtorPayment,
+} from "@hipo/shared";
 
 // ---------- In-memory "database" ----------
 
@@ -98,6 +104,13 @@ const expandLenders = (raw: LoanLenderInput[]): LoanLender[] =>
     amount_lent_cents: r.amountLentCents,
   }));
 
+const expandPromoters = (raw: LoanPromoterInput[]): LoanPromoter[] =>
+  raw.map((r) => ({
+    party_id: r.partyId,
+    party_name: partyName(r.partyId),
+    share_bps: r.shareBps,
+  }));
+
 type DbLoan = Loan & { deletedAt: number | null };
 
 const loans: DbLoan[] = [
@@ -124,6 +137,7 @@ const loans: DbLoan[] = [
         amount_lent_cents: 4_000_000,
       },
     ],
+    promoters: [],
     created_at: 1700000000,
     created_by: 1,
     deletedAt: null,
@@ -164,16 +178,16 @@ function logAudit(
 }
 
 const expandSplits = (
-  loan: Loan,
   raw: Array<[number, number]>,
+  kind: "lender" | "promoter",
 ): DebtorPaymentSplit[] =>
   raw
     .filter(([, cents]) => cents > 0)
-    .map(([lenderId, cents]) => ({
-      lender_id: lenderId,
-      lender_name:
-        loan.lenders.find((l) => l.lender_id === lenderId)?.lender_name ?? "?",
+    .map(([partyId, cents]) => ({
+      lender_id: partyId,
+      lender_name: partyName(partyId),
       amount_cents: cents,
+      kind,
     }));
 
 const toUser = (u: DbUser): User => ({
@@ -490,6 +504,12 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         seen.add(r.lenderId);
       }
       const principal = raw.reduce((s, r) => s + r.amountLentCents, 0);
+      const promotersRaw =
+        (body?.promoters as LoanPromoterInput[] | undefined) ?? [];
+      const promErr = checkPromoters(promotersRaw);
+      if (promErr) throw badRequest(promErr);
+      const compErr = checkLoanComposition(raw, promotersRaw);
+      if (compErr) throw badRequest(compErr);
       const loan: DbLoan = {
         id: nextLoanId++,
         reference: (body?.reference as string | null) || null,
@@ -502,6 +522,7 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
         status: "active",
         notes: (body?.notes as string | null) || null,
         lenders: expandLenders(raw),
+        promoters: expandPromoters(promotersRaw),
         created_at: nowSecs(),
         created_by: me.id,
         deletedAt: null,
@@ -574,6 +595,34 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
     },
   },
   {
+    method: "PUT",
+    pattern: /^\/api\/loans\/(\d+)\/promoters$/,
+    handler: ({ match, body }) => {
+      requireAuth();
+      const loanId = asInt(match[1]);
+      const l = active(loans).find((x) => x.id === loanId);
+      if (!l) throw notFound("loan not found");
+      if (active(payments).some((p) => p.loan_id === loanId))
+        throw badRequest("cannot change promoters: loan has payments");
+      const raw = (body?.promoters as LoanPromoterInput[] | undefined) ?? [];
+      const promErr = checkPromoters(raw);
+      if (promErr) throw badRequest(promErr);
+      const lendersAsInput: LoanLenderInput[] = l.lenders.map((ll) => ({
+        lenderId: ll.lender_id,
+        amountLentCents: ll.amount_lent_cents,
+      }));
+      const compErr = checkLoanComposition(lendersAsInput, raw);
+      if (compErr) throw badRequest(compErr);
+      const beforePromoters = l.promoters;
+      l.promoters = expandPromoters(raw);
+      logAudit("loan.set_promoters", "loan", l.id, {
+        before: { promoters: beforePromoters },
+        after: { promoters: l.promoters },
+      });
+      return l;
+    },
+  },
+  {
     method: "DELETE",
     pattern: /^\/api\/loans\/(\d+)$/,
     handler: ({ match }) => {
@@ -610,20 +659,40 @@ const routes: Array<{ method: string; pattern: RegExp; handler: Handler }> = [
       const loan = active(loans).find((l) => l.id === body?.loanId);
       if (!loan) throw notFound("loan not found");
       if (loan.status !== "active") throw badRequest("loan is not active");
-      const amount = body?.amountCents as number;
-      if (amount <= 0) throw badRequest("amount must be > 0");
-      const shares = loan.lenders.map((l): [number, number] => [
+      const principalCents = (body?.principalCents as number) ?? 0;
+      const interestCents = (body?.interestCents as number) ?? 0;
+      if (principalCents < 0 || !Number.isInteger(principalCents))
+        throw badRequest("principal must be an integer >= 0");
+      if (interestCents < 0 || !Number.isInteger(interestCents))
+        throw badRequest("interest must be an integer >= 0");
+      const amount = principalCents + interestCents;
+      if (amount <= 0) throw badRequest("payment must be > 0");
+      const lenderShares = loan.lenders.map((l): [number, number] => [
         l.lender_id,
         l.amount_lent_cents,
       ]);
-      const split = splitPayment(amount, shares);
+      const promoterShares = loan.promoters.map((p): [number, number] => [
+        p.party_id,
+        p.share_bps,
+      ]);
+      const { lenderSplits, promoterSplits } = splitDebtorPayment(
+        principalCents,
+        interestCents,
+        lenderShares,
+        promoterShares,
+      );
       const payment: StoredPayment = {
         id: nextPaymentId++,
         loan_id: loan.id,
         amount_cents: amount,
+        principal_cents: principalCents,
+        interest_cents: interestCents,
         paid_at: body?.paidAt as number,
         notes: (body?.notes as string | null) || null,
-        splits: expandSplits(loan, split),
+        splits: [
+          ...expandSplits(lenderSplits, "lender"),
+          ...expandSplits(promoterSplits, "promoter"),
+        ],
         created_at: nowSecs(),
         created_by: me.id,
         deletedAt: null,

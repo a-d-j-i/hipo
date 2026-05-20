@@ -1,6 +1,6 @@
 import { httpRequest } from "../api/http";
 import type { Loan } from "@hipo/shared";
-import type { LoanLenderInput } from "@hipo/shared";
+import type { LoanLenderInput, LoanPromoterInput } from "@hipo/shared";
 import type { LoanStatus } from "@hipo/shared";
 
 export const listLoans = () => httpRequest<Loan[]>("GET", "/api/loans");
@@ -16,6 +16,7 @@ export const createLoan = (args: {
   issuedAt: number;
   notes: string | null;
   lenders: LoanLenderInput[];
+  promoters?: LoanPromoterInput[];
 }) => httpRequest<Loan>("POST", "/api/loans", args);
 
 export const updateLoan = (args: {
@@ -36,6 +37,14 @@ export const setLoanLenders = (args: {
 }) =>
   httpRequest<Loan>("PUT", `/api/loans/${args.loanId}/lenders`, {
     lenders: args.lenders,
+  });
+
+export const setLoanPromoters = (args: {
+  loanId: number;
+  promoters: LoanPromoterInput[];
+}) =>
+  httpRequest<Loan>("PUT", `/api/loans/${args.loanId}/promoters`, {
+    promoters: args.promoters,
   });
 
 export const deleteLoan = (args: { id: number }) =>

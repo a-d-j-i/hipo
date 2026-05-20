@@ -192,7 +192,8 @@ Deno.test("balances_simple_case", async () => {
   const loan = await loanWithSplit(f, "USD", 60_000, 40_000);
   await doCreateDebtorPayment(f.ctx, {
     loanId: loan,
-    amountCents: 10_000,
+    principalCents: 10_000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -210,7 +211,8 @@ Deno.test("balances_after_payout", async () => {
   const loan = await loanWithSplit(f, "USD", 60_000, 40_000);
   await doCreateDebtorPayment(f.ctx, {
     loanId: loan,
-    amountCents: 10_000,
+    principalCents: 10_000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -233,7 +235,8 @@ Deno.test("balances_overdraft_is_negative", async () => {
   const loan = await loanWithSplit(f, "USD", 60_000, 40_000);
   await doCreateDebtorPayment(f.ctx, {
     loanId: loan,
-    amountCents: 1000,
+    principalCents: 1000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -258,13 +261,15 @@ Deno.test("balances_split_across_currencies", async () => {
   const ars = await loanWithSplit(f, "ARS", 80_000, 20_000);
   await doCreateDebtorPayment(f.ctx, {
     loanId: usd,
-    amountCents: 10_000,
+    principalCents: 10_000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
   await doCreateDebtorPayment(f.ctx, {
     loanId: ars,
-    amountCents: 10_000,
+    principalCents: 10_000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });

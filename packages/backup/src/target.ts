@@ -25,8 +25,12 @@ export interface BackupTarget {
    * Persist an envelope blob. Returns a unix-seconds timestamp from
    * the target (e.g., GitHub's commit time) or the local clock if the
    * target doesn't expose its own. Throws on failure.
+   *
+   * `filename` is optional — targets that have a meaningful filename
+   * concept (download, fs-access) return it so the UI can surface
+   * "Backup saved as <name>". Cloud/blob targets (github, vault) omit it.
    */
-  put(blob: Uint8Array): Promise<{ at: number }>;
+  put(blob: Uint8Array): Promise<{ at: number; filename?: string }>;
 
   /**
    * Read the most recent blob, or `null` if the target is empty. Omit

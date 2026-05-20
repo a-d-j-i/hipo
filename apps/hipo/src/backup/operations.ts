@@ -54,6 +54,7 @@ function rowToView(r: {
   configuredAt: number;
   lastBackupAt: number | null;
   lastBackupSizeBytes: number | null;
+  lastBackupFilename: string | null;
   lastVerifyAt: number | null;
   lastVerifyOk: number | null;
 }): BackupTargetStateView {
@@ -62,6 +63,7 @@ function rowToView(r: {
     configured_at: r.configuredAt,
     last_backup_at: r.lastBackupAt,
     last_backup_size_bytes: r.lastBackupSizeBytes,
+    last_backup_filename: r.lastBackupFilename,
     last_verify_at: r.lastVerifyAt,
     last_verify_ok: r.lastVerifyOk === null ? null : r.lastVerifyOk === 1,
   };
@@ -114,6 +116,10 @@ export async function do_recordBackup(
     throw badRequest("size_bytes must be a non-negative number");
   }
   const at = nowSecs();
+  const filename =
+    typeof args.filename === "string" && args.filename.length > 0
+      ? args.filename
+      : null;
   // Upsert: a `record-backup` before `configure` should still create
   // the row (the first put on a write-only target like local-download
   // is itself the "configuration").
@@ -124,12 +130,14 @@ export async function do_recordBackup(
       configuredAt: at,
       lastBackupAt: at,
       lastBackupSizeBytes: args.size_bytes,
+      lastBackupFilename: filename,
     })
     .onConflictDoUpdate({
       target: backupTargetState.targetId,
       set: {
         lastBackupAt: at,
         lastBackupSizeBytes: args.size_bytes,
+        lastBackupFilename: filename,
       },
     });
   const [row] = await ctx.db

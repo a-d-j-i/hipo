@@ -36,7 +36,7 @@ export function downloadTarget(
       );
     },
 
-    async put(blob: Uint8Array): Promise<{ at: number }> {
+    async put(blob: Uint8Array): Promise<{ at: number; filename: string }> {
       const objectUrl = URL.createObjectURL(
         new Blob([blob as BlobPart], { type: "application/octet-stream" }),
       );
@@ -54,7 +54,7 @@ export function downloadTarget(
         // start almost immediately.
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
-      return { at: Math.floor(Date.now() / 1000) };
+      return { at: Math.floor(Date.now() / 1000), filename };
     },
   };
 }

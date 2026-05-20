@@ -32,6 +32,8 @@ export type SystemStatusTarget = {
   /** Whether the user has wired this target up at least once. */
   configured: boolean;
   last_backup_at?: number;
+  /** Filename of the last successful put, if the target has a meaningful one. */
+  last_backup_filename?: string;
   last_verify_at?: number;
   last_verify_ok?: boolean;
 };

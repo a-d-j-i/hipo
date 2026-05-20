@@ -419,25 +419,11 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
   `@hipo/auth` — imported directly.
 - `static.ts` — SPA fallback (serves `dist/` outside `/api/*`).
 
-## TODOs
+## Backup filename surfacing
 
-Low-priority UX polish, surfaced during the Phase 12 manual smoke
-(2026-05-20). Not blockers — file when there's appetite:
-
-- **Show the actual saved path in the "Back up now (download)" UI.**
-  Today the local-download target uses `<a download>` so the file
-  lands wherever webkit2gtk's downloads dir is set (in Tauri dev
-  that's the `cargo tauri dev` cwd, i.e. `apps/desktop/`). The UI
-  just toasts "success" without naming the path. Two paths to a fix:
-  (a) switch to `@tauri-apps/plugin-dialog`'s `save()` inside Tauri
-  so the user actively picks the path (and we know it); (b) keep
-  `<a download>` but surface the filename + the OS downloads dir
-  hint after a successful save. (a) is cleaner but adds a Tauri
-  plugin dep + capability entry.
-- **Track last-backup filename in `backup_target_state`.** The
-  SystemStatus panel already shows `last_backup_at` per target, but
-  not which file landed (relevant for the `local-download` target
-  specifically — github / fs-access / vault encode the destination
-  elsewhere). Would need a small additive migration adding
-  `last_backup_filename TEXT NULL` and threading the filename from
-  `runBackup` through `recordBackup`.
+`backup_target_state.last_backup_filename` records the filename of the last
+successful put. Targets with a meaningful filename concept (`local-download`,
+`fs-access`) return it from `put()`; `runBackup` threads it through
+`recordBackup` so the SystemStatus panel can render "File: …" beneath the
+"Last backup" timestamp, and the local-download toast names the file the
+browser saved.

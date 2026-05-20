@@ -6,7 +6,8 @@ export const listLoanPayments = (args: { loanId: number }) =>
 
 export const createDebtorPayment = (args: {
   loanId: number;
-  amountCents: number;
+  principalCents: number;
+  interestCents: number;
   paidAt: number;
   notes: string | null;
 }) => httpRequest<DebtorPayment>("POST", "/api/payments", args);

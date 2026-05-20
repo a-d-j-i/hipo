@@ -75,6 +75,7 @@ describe("downloadTarget", () => {
     // Anchor should have been removed after click.
     expect(clickedAnchor!.parentNode).toBeNull();
     expect(typeof result.at).toBe("number");
+    expect(result.filename).toBe("my-backup.bin");
 
     // Revoke runs on a 1s timeout — advance the clock.
     expect(revokeSpy).not.toHaveBeenCalled();

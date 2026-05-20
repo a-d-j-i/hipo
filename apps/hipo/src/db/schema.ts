@@ -54,10 +54,20 @@ export const loanLenders = sqliteTable("loan_lenders", {
   amountLentCents: integer("amount_lent_cents").notNull(),
 });
 
+// Promoters contribute no principal but take a fixed share of the
+// loan's interest off the top. `share_bps` is 1..9999 (basis points).
+export const loanPromoters = sqliteTable("loan_promoters", {
+  loanId: integer("loan_id").notNull(),
+  partyId: integer("party_id").notNull(),
+  shareBps: integer("share_bps").notNull(),
+});
+
 export const debtorPayments = sqliteTable("debtor_payments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   loanId: integer("loan_id").notNull(),
   amountCents: integer("amount_cents").notNull(),
+  principalCents: integer("principal_cents").notNull(),
+  interestCents: integer("interest_cents").notNull(),
   paidAt: integer("paid_at").notNull(),
   notes: text("notes"),
   createdAt: integer("created_at")
@@ -71,6 +81,7 @@ export const debtorPaymentSplits = sqliteTable("debtor_payment_splits", {
   paymentId: integer("payment_id").notNull(),
   lenderId: integer("lender_id").notNull(),
   amountCents: integer("amount_cents").notNull(),
+  kind: text("kind", { enum: ["lender", "promoter"] }).notNull(),
 });
 
 export const lenderPayouts = sqliteTable("lender_payouts", {
@@ -97,6 +108,7 @@ export const backupTargetState = sqliteTable("backup_target_state", {
     .default(sql`(unixepoch())`),
   lastBackupAt: integer("last_backup_at"),
   lastBackupSizeBytes: integer("last_backup_size_bytes"),
+  lastBackupFilename: text("last_backup_filename"),
   lastVerifyAt: integer("last_verify_at"),
   // 0/1 nullable — `null` = never verified, 1 = ok, 0 = failed.
   lastVerifyOk: integer("last_verify_ok"),
@@ -106,4 +118,5 @@ export const backupTargetState = sqliteTable("backup_target_state", {
 export type PartyRow = typeof parties.$inferSelect;
 export type LoanRow = typeof loans.$inferSelect;
 export type LoanLenderRow = typeof loanLenders.$inferSelect;
+export type LoanPromoterRow = typeof loanPromoters.$inferSelect;
 export type BackupTargetStateRow = typeof backupTargetState.$inferSelect;

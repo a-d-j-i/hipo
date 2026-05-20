@@ -11,19 +11,23 @@ vi.mock("../api/backup", () => {
     getSnapshot: vi.fn(async () =>
       new TextEncoder().encode("fake-sqlite-bytes-".repeat(50)),
     ),
-    recordBackup: vi.fn(async (id: string, n: number) => ({
-      target_id: id,
-      configured_at: 1,
-      last_backup_at: Math.floor(Date.now() / 1000),
-      last_backup_size_bytes: n,
-      last_verify_at: null,
-      last_verify_ok: null,
-    })),
+    recordBackup: vi.fn(
+      async (id: string, n: number, filename?: string | null) => ({
+        target_id: id,
+        configured_at: 1,
+        last_backup_at: Math.floor(Date.now() / 1000),
+        last_backup_size_bytes: n,
+        last_backup_filename: filename ?? null,
+        last_verify_at: null,
+        last_verify_ok: null,
+      }),
+    ),
     recordVerify: vi.fn(async (id: string, ok: boolean) => ({
       target_id: id,
       configured_at: 1,
       last_backup_at: 1,
       last_backup_size_bytes: 1,
+      last_backup_filename: null,
       last_verify_at: Math.floor(Date.now() / 1000),
       last_verify_ok: ok,
     })),
@@ -72,6 +76,7 @@ describe("runBackup", () => {
     expect(vi.mocked(backupApi.recordBackup)).toHaveBeenCalledWith(
       "test-memory",
       result.size_bytes,
+      undefined,
     );
     expect(vi.mocked(backupApi.recordVerify)).toHaveBeenCalledWith(
       "test-memory",
@@ -96,6 +101,7 @@ describe("runBackup", () => {
     expect(vi.mocked(backupApi.recordBackup)).toHaveBeenCalledWith(
       "writeonly",
       result.size_bytes,
+      undefined,
     );
     expect(vi.mocked(backupApi.recordVerify)).not.toHaveBeenCalled();
   });

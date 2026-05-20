@@ -154,7 +154,9 @@
       "interest": "Interés (plano)",
       "issuedAt": "Fecha de emisión",
       "notes": "Notas",
-      "lendersSection": "Prestamistas"
+      "lendersSection": "Prestamistas",
+      "promotersSection": "Promotores (sólo interés)",
+      "promotersHelp": "Los promotores no aportan capital, pero reciben un porcentaje del interés \"de la parte de arriba\" antes de que se reparta entre prestamistas."
     },
     "lenders": {
       "add": "Agregar prestamista",
@@ -164,20 +166,32 @@
       "lenderPlaceholder": "Prestamista",
       "amountPlaceholder": "Monto"
     },
+    "promoters": {
+      "add": "Agregar promotor",
+      "party": "Promotor",
+      "partyPlaceholder": "Promotor",
+      "percentPlaceholder": "% del interés",
+      "shareOfInterest": "% del interés",
+      "sumLabel": "Total promotores: {{pct}}%",
+      "bothLenderAndPromoter": "Una parte no puede ser prestamista y promotor a la vez"
+    },
     "drawerTitle": {
       "create": "Nuevo préstamo",
       "edit": "Editar {{ref}}",
-      "manageLenders": "Prestamistas — {{ref}}"
+      "manageLenders": "Prestamistas — {{ref}}",
+      "managePromoters": "Promotores — {{ref}}"
     },
     "actionTitle": {
       "payments": "Pagos",
-      "manageLenders": "Administrar prestamistas"
+      "manageLenders": "Administrar prestamistas",
+      "managePromoters": "Administrar promotores"
     },
     "toast": {
       "created": "Préstamo creado",
       "saved": "Guardado",
       "deleted": "Eliminado",
-      "lendersUpdated": "Prestamistas actualizados"
+      "lendersUpdated": "Prestamistas actualizados",
+      "promotersUpdated": "Promotores actualizados"
     },
     "confirmDelete": "¿Eliminar préstamo {{ref}}?"
   },
@@ -191,16 +205,26 @@
     },
     "form": {
       "amount": "Monto",
+      "principal": "Capital",
+      "interest": "Interés",
+      "totalLabel": "Total: {{total}}",
+      "totalMustBePositive": "El total (capital + interés) debe ser > 0",
       "paidAt": "Fecha",
       "notes": "Notas",
       "record": "Registrar"
+    },
+    "breakdown": "Capital: {{principal}} · Interés: {{interest}}",
+    "role": {
+      "lender": "Prestamista",
+      "promoter": "Promotor"
     },
     "loanClosedAlert": "El préstamo está cerrado — no se pueden registrar nuevos pagos.",
     "column": {
       "date": "Fecha",
       "amount": "Monto",
       "notes": "Notas",
-      "lender": "Prestamista",
+      "lender": "Beneficiario",
+      "role": "Rol",
       "share": "Parte"
     },
     "toast": {
@@ -346,6 +370,7 @@
       "noTargets": "Aún no hay destinos de respaldo configurados.",
       "target": {
         "lastBackup": "Último respaldo: {{when}}",
+        "lastBackupFilename": "Archivo: {{filename}}",
         "lastVerify": "Última verificación: {{when}} ({{ok}})",
         "neverBackedUp": "Nunca respaldado",
         "neverVerified": "Nunca verificado",
@@ -372,6 +397,8 @@
         "uploading": "Guardando respaldo…",
         "verifying": "Verificando…",
         "success": "Respaldo guardado.",
+        "successWithFile": "Respaldo guardado como {{filename}}.",
+        "downloadsHint": "Buscá el archivo en la carpeta de descargas del navegador.",
         "failed": "Falló el respaldo. Mirá la consola para detalles."
       },
       "fsAccess": {

@@ -32,17 +32,20 @@ import {
   centsToMajor,
   checkCurrencyCode,
   checkLenders,
+  checkPromoters,
   COMMON_CURRENCIES,
   formatCents,
+  LOAN_PROMOTER_SHARE_BPS_MAX,
   majorToCents,
 } from "@hipo/shared";
 import { rule } from "../lib/antdRules";
 import type { Loan } from "@hipo/shared";
-import type { LoanLenderInput } from "@hipo/shared";
+import type { LoanLenderInput, LoanPromoterInput } from "@hipo/shared";
 import type { LoanStatus } from "@hipo/shared";
 import type { Party } from "@hipo/shared";
 
 type LenderRow = { lenderId: number | null; amount: number | null };
+type PromoterRow = { partyId: number | null; percent: number | null };
 
 type CreateFormValues = {
   reference?: string;
@@ -52,6 +55,7 @@ type CreateFormValues = {
   issuedAt: Dayjs;
   notes?: string;
   lenders: LenderRow[];
+  promoters: PromoterRow[];
 };
 
 type EditFormValues = {
@@ -63,6 +67,19 @@ type EditFormValues = {
 };
 
 type LendersFormValues = { lenders: LenderRow[] };
+type PromotersFormValues = { promoters: PromoterRow[] };
+
+function rowsToPromoterInput(rows: PromoterRow[]): LoanPromoterInput[] {
+  // % stored as a 2-decimal value (e.g. 12.5 = 12.5%); bps is the integer
+  // 100x that (12.5% → 1250 bps). Rounding here is safe because the
+  // shared `checkPromoters` rejects non-integer bps.
+  return rows
+    .filter((r) => r?.partyId != null && r?.percent != null && r.percent > 0)
+    .map((r) => ({
+      partyId: r.partyId!,
+      shareBps: Math.round(r.percent! * 100),
+    }));
+}
 
 function LendersEditor({
   parties,
@@ -195,6 +212,131 @@ function LendersEditor({
   );
 }
 
+function PromotersEditor({
+  parties,
+  lenderRows,
+  fieldName = "promoters",
+}: {
+  parties: Party[];
+  lenderRows: LenderRow[];
+  fieldName?: string;
+}) {
+  const { t } = useTranslation();
+  const watched = Form.useWatch(fieldName) as PromoterRow[] | undefined;
+  const rows = watched ?? [];
+  const sumPercent = rows.reduce((s, r) => s + (r?.percent ?? 0), 0);
+
+  const partyOptions = parties.map((p) => ({ value: p.id, label: p.name }));
+
+  return (
+    <Form.List
+      name={fieldName}
+      rules={[
+        {
+          validator: async (_, value: PromoterRow[]) => {
+            const complete = (value ?? []).filter(
+              (r) => r?.partyId != null && r?.percent != null && r.percent > 0,
+            );
+            if (complete.length === 0) return;
+            const err = checkPromoters(rowsToPromoterInput(complete));
+            if (err) throw new Error(err);
+            const lenderIds = new Set(
+              (lenderRows ?? [])
+                .map((l) => l?.lenderId)
+                .filter((x): x is number => x != null),
+            );
+            for (const r of complete) {
+              if (lenderIds.has(r.partyId!))
+                throw new Error(t("loans.promoters.bothLenderAndPromoter"));
+            }
+          },
+        },
+      ]}
+    >
+      {(fields, { add, remove }, { errors }) => (
+        <>
+          {fields.map((field) => (
+            <Space
+              key={field.key}
+              align="baseline"
+              style={{ display: "flex", marginBottom: 8 }}
+            >
+              <Form.Item
+                name={[field.name, "partyId"]}
+                rules={[
+                  {
+                    required: true,
+                    message: t("loans.promoters.partyPlaceholder"),
+                  },
+                ]}
+                style={{ marginBottom: 0, minWidth: 200 }}
+              >
+                <Select
+                  placeholder={t("loans.promoters.partyPlaceholder")}
+                  options={partyOptions}
+                  showSearch
+                  optionFilterProp="label"
+                />
+              </Form.Item>
+              <Form.Item
+                name={[field.name, "percent"]}
+                rules={[
+                  {
+                    required: true,
+                    message: t("loans.promoters.percentPlaceholder"),
+                  },
+                  { type: "number", min: 0.01, message: "> 0" },
+                  {
+                    type: "number",
+                    max: 99.99,
+                    message: `< 100%`,
+                  },
+                ]}
+                style={{ marginBottom: 0, minWidth: 140 }}
+              >
+                <InputNumber<number>
+                  placeholder={t("loans.promoters.percentPlaceholder")}
+                  min={0}
+                  max={100}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  inputMode="decimal"
+                  addonAfter="%"
+                />
+              </Form.Item>
+              <Button danger type="text" onClick={() => remove(field.name)}>
+                {t("loans.lenders.remove")}
+              </Button>
+            </Space>
+          ))}
+          <Form.ErrorList errors={errors} />
+          <Button
+            type="dashed"
+            onClick={() => add({ partyId: null, percent: null })}
+            icon={<PlusOutlined />}
+            block
+            style={{ marginBottom: 8 }}
+          >
+            {t("loans.promoters.add")}
+          </Button>
+          <Typography.Paragraph
+            type={
+              sumPercent >= LOAN_PROMOTER_SHARE_BPS_MAX / 100
+                ? "danger"
+                : "secondary"
+            }
+            style={{ marginTop: 8 }}
+          >
+            {t("loans.promoters.sumLabel", {
+              pct: sumPercent.toFixed(2),
+            })}
+          </Typography.Paragraph>
+        </>
+      )}
+    </Form.List>
+  );
+}
+
 export default function Loans() {
   const { currentUser } = useAuth();
   const { t } = useTranslation();
@@ -206,11 +348,13 @@ export default function Loans() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Loan | null>(null);
   const [managingLenders, setManagingLenders] = useState<Loan | null>(null);
+  const [managingPromoters, setManagingPromoters] = useState<Loan | null>(null);
   const [paymentsFor, setPaymentsFor] = useState<Loan | null>(null);
 
   const [createForm] = Form.useForm<CreateFormValues>();
   const [editForm] = Form.useForm<EditFormValues>();
   const [lendersForm] = Form.useForm<LendersFormValues>();
+  const [promotersForm] = Form.useForm<PromotersFormValues>();
   const wideDrawerWidth = useResponsiveDrawerWidth(560);
   const editDrawerWidth = useResponsiveDrawerWidth(460);
 
@@ -246,6 +390,7 @@ export default function Loans() {
       issuedAt: dayjs(),
       interest: 0,
       lenders: [{ lenderId: null, amount: null }],
+      promoters: [],
     });
     setCreating(true);
   };
@@ -273,12 +418,24 @@ export default function Loans() {
     setManagingLenders(l);
   };
 
+  const openManagePromoters = (l: Loan) => {
+    promotersForm.resetFields();
+    promotersForm.setFieldsValue({
+      promoters: l.promoters.map((p) => ({
+        partyId: p.party_id,
+        percent: p.share_bps / 100,
+      })),
+    });
+    setManagingPromoters(l);
+  };
+
   const onCreate = async (v: CreateFormValues) => {
     try {
       const lenders: LoanLenderInput[] = v.lenders.map((r) => ({
         lenderId: r.lenderId!,
         amountLentCents: majorToCents(r.amount!),
       }));
+      const promoters = rowsToPromoterInput(v.promoters ?? []);
       await loansApi.createLoan({
         reference: v.reference?.trim() || null,
         debtorId: v.debtorId,
@@ -287,6 +444,7 @@ export default function Loans() {
         issuedAt: v.issuedAt.unix(),
         notes: v.notes?.trim() || null,
         lenders,
+        promoters: promoters.length > 0 ? promoters : undefined,
       });
       message.success(t("loans.toast.created"));
       setCreating(false);
@@ -334,6 +492,22 @@ export default function Loans() {
     }
   };
 
+  const onSetPromoters = async (v: PromotersFormValues) => {
+    if (!managingPromoters) return;
+    try {
+      const promoters = rowsToPromoterInput(v.promoters ?? []);
+      await loansApi.setLoanPromoters({
+        loanId: managingPromoters.id,
+        promoters,
+      });
+      message.success(t("loans.toast.promotersUpdated"));
+      setManagingPromoters(null);
+      refresh();
+    } catch (e) {
+      message.error(String(e));
+    }
+  };
+
   const onDelete = async (l: Loan) => {
     try {
       await loansApi.deleteLoan({ id: l.id });
@@ -345,6 +519,13 @@ export default function Loans() {
   };
 
   const createCurrency = Form.useWatch("currencyCode", createForm) ?? "ARS";
+  const createLenderRows =
+    (Form.useWatch("lenders", createForm) as LenderRow[] | undefined) ?? [];
+  const managePromotersLenderRows: LenderRow[] =
+    managingPromoters?.lenders.map((l) => ({
+      lenderId: l.lender_id,
+      amount: centsToMajor(l.amount_lent_cents),
+    })) ?? [];
 
   const refOf = (l: Loan | null) => (l ? (l.reference ?? `#${l.id}`) : "");
 
@@ -362,32 +543,63 @@ export default function Loans() {
         scroll={{ x: "max-content" }}
         expandable={{
           expandedRowRender: (loan) => (
-            <Table<Loan["lenders"][number]>
-              rowKey="lender_id"
-              size="small"
-              pagination={false}
-              dataSource={loan.lenders}
-              columns={[
-                {
-                  title: t("payments.column.lender"),
-                  dataIndex: "lender_name",
-                },
-                {
-                  title: t("loans.column.principal"),
-                  dataIndex: "amount_lent_cents",
-                  align: "right",
-                  render: (c: number) => formatCents(c, loan.currency_code),
-                },
-                {
-                  title: t("payments.column.share"),
-                  key: "share",
-                  align: "right",
-                  width: 100,
-                  render: (_, ll) =>
-                    `${((ll.amount_lent_cents / loan.principal_cents) * 100).toFixed(2)}%`,
-                },
-              ]}
-            />
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Typography.Text strong>
+                {t("loans.form.lendersSection")}
+              </Typography.Text>
+              <Table<Loan["lenders"][number]>
+                rowKey="lender_id"
+                size="small"
+                pagination={false}
+                dataSource={loan.lenders}
+                columns={[
+                  {
+                    title: t("payments.column.lender"),
+                    dataIndex: "lender_name",
+                  },
+                  {
+                    title: t("loans.column.principal"),
+                    dataIndex: "amount_lent_cents",
+                    align: "right",
+                    render: (c: number) => formatCents(c, loan.currency_code),
+                  },
+                  {
+                    title: t("payments.column.share"),
+                    key: "share",
+                    align: "right",
+                    width: 100,
+                    render: (_, ll) =>
+                      `${((ll.amount_lent_cents / loan.principal_cents) * 100).toFixed(2)}%`,
+                  },
+                ]}
+              />
+              {loan.promoters.length > 0 ? (
+                <>
+                  <Typography.Text strong style={{ marginTop: 8 }}>
+                    {t("loans.form.promotersSection")}
+                  </Typography.Text>
+                  <Table<Loan["promoters"][number]>
+                    rowKey="party_id"
+                    size="small"
+                    pagination={false}
+                    dataSource={loan.promoters}
+                    columns={[
+                      {
+                        title: t("loans.promoters.party"),
+                        dataIndex: "party_name",
+                      },
+                      {
+                        title: t("loans.promoters.shareOfInterest"),
+                        key: "share",
+                        align: "right",
+                        width: 200,
+                        render: (_, p) => `${(p.share_bps / 100).toFixed(2)}%`,
+                      },
+                    ]}
+                  />
+                </>
+              ) : null}
+            </Space>
           ),
         }}
         columns={[
@@ -446,6 +658,12 @@ export default function Loans() {
                   onClick={() => openManageLenders(l)}
                   title={t("loans.actionTitle.manageLenders")}
                 />
+                <Button
+                  onClick={() => openManagePromoters(l)}
+                  title={t("loans.actionTitle.managePromoters")}
+                >
+                  %
+                </Button>
                 <Popconfirm
                   title={t("loans.confirmDelete", { ref: refOf(l) })}
                   okText={t("common.delete")}
@@ -538,6 +756,13 @@ export default function Loans() {
             {t("loans.form.lendersSection")}
           </Typography.Title>
           <LendersEditor parties={parties} currencyCode={createCurrency} />
+          <Typography.Title level={5}>
+            {t("loans.form.promotersSection")}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary">
+            {t("loans.form.promotersHelp")}
+          </Typography.Paragraph>
+          <PromotersEditor parties={parties} lenderRows={createLenderRows} />
           <Button type="primary" htmlType="submit" block>
             {t("common.create")}
           </Button>
@@ -622,6 +847,39 @@ export default function Loans() {
           <LendersEditor
             parties={parties}
             currencyCode={managingLenders?.currency_code ?? "USD"}
+          />
+          <Button type="primary" htmlType="submit" block>
+            {t("common.save")}
+          </Button>
+        </Form>
+      </Drawer>
+
+      {/* Manage promoters drawer */}
+      <Drawer
+        title={
+          managingPromoters
+            ? t("loans.drawerTitle.managePromoters", {
+                ref: refOf(managingPromoters),
+              })
+            : ""
+        }
+        open={managingPromoters !== null}
+        onClose={() => setManagingPromoters(null)}
+        width={wideDrawerWidth}
+        destroyOnClose
+      >
+        <Form
+          form={promotersForm}
+          layout="vertical"
+          onFinish={onSetPromoters}
+          requiredMark={false}
+        >
+          <Typography.Paragraph type="secondary">
+            {t("loans.form.promotersHelp")}
+          </Typography.Paragraph>
+          <PromotersEditor
+            parties={parties}
+            lenderRows={managePromotersLenderRows}
           />
           <Button type="primary" htmlType="submit" block>
             {t("common.save")}

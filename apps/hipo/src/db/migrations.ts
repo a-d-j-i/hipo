@@ -99,15 +99,31 @@ const hipoMigrations: Migration[] = [
 
       CREATE INDEX idx_loan_lenders_lender ON loan_lenders(lender_id);
 
+      -- Parties that take a fixed cut of the loan's interest off the top.
+      -- share_bps is in basis points (1..9999). Sum across all promoters
+      -- on a loan must be <= 10000 (enforced in app code via
+      -- checkPromoters).
+      CREATE TABLE loan_promoters (
+        loan_id INTEGER NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+        party_id INTEGER NOT NULL REFERENCES parties(id) ON DELETE RESTRICT,
+        share_bps INTEGER NOT NULL CHECK(share_bps > 0 AND share_bps < 10000),
+        PRIMARY KEY (loan_id, party_id)
+      );
+
+      CREATE INDEX idx_loan_promoters_party ON loan_promoters(party_id);
+
       CREATE TABLE debtor_payments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         loan_id INTEGER NOT NULL REFERENCES loans(id) ON DELETE RESTRICT,
         amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+        principal_cents INTEGER NOT NULL CHECK(principal_cents >= 0),
+        interest_cents INTEGER NOT NULL CHECK(interest_cents >= 0),
         paid_at INTEGER NOT NULL,
         notes TEXT,
         created_at INTEGER NOT NULL DEFAULT (unixepoch()),
         created_by INTEGER,
-        deleted_at INTEGER
+        deleted_at INTEGER,
+        CHECK (amount_cents = principal_cents + interest_cents)
       );
 
       CREATE INDEX idx_debtor_payments_loan ON debtor_payments(loan_id);
@@ -118,6 +134,7 @@ const hipoMigrations: Migration[] = [
         payment_id INTEGER NOT NULL REFERENCES debtor_payments(id) ON DELETE CASCADE,
         lender_id INTEGER NOT NULL REFERENCES parties(id) ON DELETE RESTRICT,
         amount_cents INTEGER NOT NULL CHECK(amount_cents > 0),
+        kind TEXT NOT NULL CHECK(kind IN ('lender', 'promoter')),
         PRIMARY KEY (payment_id, lender_id)
       );
 
@@ -149,6 +166,7 @@ const hipoMigrations: Migration[] = [
         configured_at INTEGER NOT NULL DEFAULT (unixepoch()),
         last_backup_at INTEGER,
         last_backup_size_bytes INTEGER,
+        last_backup_filename TEXT,
         last_verify_at INTEGER,
         last_verify_ok INTEGER
       );

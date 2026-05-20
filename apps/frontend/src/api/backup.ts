@@ -12,6 +12,7 @@ export type BackupTargetStateView = {
   configured_at: number;
   last_backup_at: number | null;
   last_backup_size_bytes: number | null;
+  last_backup_filename: string | null;
   last_verify_at: number | null;
   last_verify_ok: boolean | null;
 };
@@ -53,11 +54,12 @@ export async function configureTarget(
 export async function recordBackup(
   targetId: string,
   sizeBytes: number,
+  filename?: string | null,
 ): Promise<BackupTargetStateView> {
   return await httpRequest<BackupTargetStateView>(
     "POST",
     "/api/backup/targets/record-backup",
-    { target_id: targetId, size_bytes: sizeBytes },
+    { target_id: targetId, size_bytes: sizeBytes, filename: filename ?? null },
   );
 }
 

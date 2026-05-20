@@ -266,6 +266,13 @@ function TargetsList({ status }: { status: SystemStatus }) {
               <div>
                 {t("settings.storage.target.lastBackup", { when: lastBackup })}
               </div>
+              {tg.last_backup_filename ? (
+                <div>
+                  {t("settings.storage.target.lastBackupFilename", {
+                    filename: tg.last_backup_filename,
+                  })}
+                </div>
+              ) : null}
               <div>
                 {lastVerifyAt
                   ? t("settings.storage.target.lastVerify", {
@@ -309,12 +316,22 @@ function BackupNowAction({
       const target = downloadTarget({
         filename: `hipo-backup-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.bin`,
       });
-      await runBackup({
+      const result = await runBackup({
         target,
         keyFor: passphrase.keyFor,
         onProgress: (s) => setStage(s),
       });
-      message.success(t("settings.storage.backupNow.success"));
+      if (result.filename) {
+        message.success(
+          t("settings.storage.backupNow.successWithFile", {
+            filename: result.filename,
+          }) +
+            " " +
+            t("settings.storage.backupNow.downloadsHint"),
+        );
+      } else {
+        message.success(t("settings.storage.backupNow.success"));
+      }
       await refresh();
     } catch (e) {
       console.warn("[hipo] backup failed:", e);

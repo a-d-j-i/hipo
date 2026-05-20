@@ -10,7 +10,9 @@ import {
   InputNumber,
   message,
   Popconfirm,
+  Space,
   Table,
+  Tag,
   Typography,
 } from "antd";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
@@ -20,11 +22,12 @@ import { useAuth } from "../auth/AuthContext";
 import { useIsMobile, useResponsiveDrawerWidth } from "../hooks/useIsMobile";
 import * as api from "./api";
 import { formatCents, majorToCents } from "@hipo/shared";
-import type { DebtorPayment } from "@hipo/shared";
+import type { DebtorPayment, DebtorPaymentSplit } from "@hipo/shared";
 import type { Loan } from "@hipo/shared";
 
 type FormValues = {
-  amount: number;
+  principal: number;
+  interest: number;
   paidAt: Dayjs;
   notes?: string;
 };
@@ -63,12 +66,16 @@ export default function PaymentsDrawer({
   useEffect(() => {
     if (open) {
       form.resetFields();
-      form.setFieldsValue({ paidAt: dayjs() });
+      form.setFieldsValue({ paidAt: dayjs(), principal: 0, interest: 0 });
       refresh();
     } else {
       setPayments([]);
     }
   }, [open, loan, form, refresh]);
+
+  const watchedPrincipal = Form.useWatch("principal", form) ?? 0;
+  const watchedInterest = Form.useWatch("interest", form) ?? 0;
+  const watchedTotal = watchedPrincipal + watchedInterest;
 
   const totalPaid = useMemo(
     () => payments.reduce((s, p) => s + p.amount_cents, 0),
@@ -79,16 +86,23 @@ export default function PaymentsDrawer({
 
   const onSubmit = async (v: FormValues) => {
     if (!loan) return;
+    const principalCents = majorToCents(v.principal ?? 0);
+    const interestCents = majorToCents(v.interest ?? 0);
+    if (principalCents + interestCents <= 0) {
+      message.error(t("payments.form.totalMustBePositive"));
+      return;
+    }
     try {
       await api.createDebtorPayment({
         loanId: loan.id,
-        amountCents: majorToCents(v.amount),
+        principalCents,
+        interestCents,
         paidAt: v.paidAt.unix(),
         notes: v.notes?.trim() || null,
       });
       message.success(t("payments.toast.recorded"));
       form.resetFields();
-      form.setFieldsValue({ paidAt: dayjs() });
+      form.setFieldsValue({ paidAt: dayjs(), principal: 0, interest: 0 });
       refresh();
     } catch (e) {
       message.error(String(e));
@@ -165,17 +179,33 @@ export default function PaymentsDrawer({
               requiredMark={false}
             >
               <Form.Item
-                name="amount"
-                label={t("payments.form.amount")}
+                name="principal"
+                label={t("payments.form.principal")}
                 rules={[
                   { required: true, message: t("common.required") },
-                  { type: "number", min: 0.01, message: "> 0" },
+                  { type: "number", min: 0, message: ">= 0" },
                 ]}
               >
                 <InputNumber<number>
                   min={0}
                   step={0.01}
-                  style={{ width: isMobile ? "100%" : 160 }}
+                  style={{ width: isMobile ? "100%" : 140 }}
+                  placeholder="0.00"
+                  inputMode="decimal"
+                />
+              </Form.Item>
+              <Form.Item
+                name="interest"
+                label={t("payments.form.interest")}
+                rules={[
+                  { required: true, message: t("common.required") },
+                  { type: "number", min: 0, message: ">= 0" },
+                ]}
+              >
+                <InputNumber<number>
+                  min={0}
+                  step={0.01}
+                  style={{ width: isMobile ? "100%" : 140 }}
                   placeholder="0.00"
                   inputMode="decimal"
                 />
@@ -190,7 +220,7 @@ export default function PaymentsDrawer({
               <Form.Item
                 name="notes"
                 label={t("payments.form.notes")}
-                style={{ flex: 1 }}
+                style={{ flex: 1, minWidth: 160 }}
               >
                 <Input placeholder={t("payments.notesPlaceholder")} />
               </Form.Item>
@@ -200,10 +230,16 @@ export default function PaymentsDrawer({
                   htmlType="submit"
                   icon={<PlusOutlined />}
                   block={isMobile}
+                  disabled={watchedTotal <= 0}
                 >
                   {t("payments.form.record")}
                 </Button>
               </Form.Item>
+              <Typography.Text type="secondary" style={{ marginLeft: 8 }}>
+                {t("payments.form.totalLabel", {
+                  total: formatCents(majorToCents(watchedTotal), ccy),
+                })}
+              </Typography.Text>
             </Form>
           )}
 
@@ -216,24 +252,42 @@ export default function PaymentsDrawer({
             scroll={{ x: "max-content" }}
             expandable={{
               expandedRowRender: (p) => (
-                <Table
-                  rowKey="lender_id"
-                  size="small"
-                  pagination={false}
-                  dataSource={p.splits}
-                  columns={[
-                    {
-                      title: t("payments.column.lender"),
-                      dataIndex: "lender_name",
-                    },
-                    {
-                      title: t("payments.column.share"),
-                      dataIndex: "amount_cents",
-                      align: "right",
-                      render: (c: number) => formatCents(c, ccy),
-                    },
-                  ]}
-                />
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <Typography.Text type="secondary">
+                    {t("payments.breakdown", {
+                      principal: formatCents(p.principal_cents, ccy),
+                      interest: formatCents(p.interest_cents, ccy),
+                    })}
+                  </Typography.Text>
+                  <Table<DebtorPaymentSplit>
+                    rowKey={(s) => `${s.kind}:${s.lender_id}`}
+                    size="small"
+                    pagination={false}
+                    dataSource={p.splits}
+                    columns={[
+                      {
+                        title: t("payments.column.role"),
+                        dataIndex: "kind",
+                        width: 100,
+                        render: (k: DebtorPaymentSplit["kind"]) => (
+                          <Tag color={k === "promoter" ? "purple" : "blue"}>
+                            {t(`payments.role.${k}`)}
+                          </Tag>
+                        ),
+                      },
+                      {
+                        title: t("payments.column.lender"),
+                        dataIndex: "lender_name",
+                      },
+                      {
+                        title: t("payments.column.share"),
+                        dataIndex: "amount_cents",
+                        align: "right",
+                        render: (c: number) => formatCents(c, ccy),
+                      },
+                    ]}
+                  />
+                </Space>
               ),
             }}
             columns={[

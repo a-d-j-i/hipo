@@ -105,7 +105,8 @@ Deno.test("create_payment_splits_correctly", async () => {
   // $50 payment → Alice 60% = 3000, Bob 40% = 2000
   const p = await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 5000,
+    principalCents: 5000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -126,7 +127,8 @@ Deno.test("create_payment_rejects_zero_amount", async () => {
     () =>
       doCreateDebtorPayment(f.ctx, {
         loanId: f.loanId,
-        amountCents: 0,
+        principalCents: 0,
+        interestCents: 0,
         paidAt: 1700000100,
         notes: null,
       }),
@@ -149,7 +151,8 @@ Deno.test("create_payment_rejects_closed_loan", async () => {
     () =>
       doCreateDebtorPayment(f.ctx, {
         loanId: f.loanId,
-        amountCents: 1000,
+        principalCents: 1000,
+        interestCents: 0,
         paidAt: 1700000100,
         notes: null,
       }),
@@ -164,7 +167,8 @@ Deno.test("create_payment_rejects_missing_loan", async () => {
     () =>
       doCreateDebtorPayment(f.ctx, {
         loanId: 99_999,
-        amountCents: 1000,
+        principalCents: 1000,
+        interestCents: 0,
         paidAt: 1700000100,
         notes: null,
       }),
@@ -177,19 +181,22 @@ Deno.test("list_payments_orders_by_paid_at_desc", async () => {
   const f = await freshFixture();
   await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 1000,
+    principalCents: 1000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
   await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 2000,
+    principalCents: 2000,
+    interestCents: 0,
     paidAt: 1700000300,
     notes: null,
   });
   await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 1500,
+    principalCents: 1500,
+    interestCents: 0,
     paidAt: 1700000200,
     notes: null,
   });
@@ -204,7 +211,8 @@ Deno.test("delete_payment_soft_deletes_admin_only", async () => {
   const f = await freshFixture();
   const p = await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 5000,
+    principalCents: 5000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -231,7 +239,8 @@ Deno.test("cannot_set_lenders_when_payments_exist", async () => {
   const f = await freshFixture();
   await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 5000,
+    principalCents: 5000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -250,7 +259,8 @@ Deno.test("cannot_delete_loan_when_payments_exist", async () => {
   const f = await freshFixture();
   await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 5000,
+    principalCents: 5000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });
@@ -261,11 +271,61 @@ Deno.test("cannot_delete_loan_when_payments_exist", async () => {
   );
 });
 
+Deno.test("create_payment_with_promoter_off_the_top_of_interest", async () => {
+  // 60/40 Alice/Bob lenders + a promoter taking 10% off the top of interest.
+  const f = await freshFixture();
+  const promoter = await doCreateParty(f.ctx, {
+    name: "Promotora SA",
+    externalRef: null,
+    notes: null,
+  });
+  const loan = await doCreateLoan(f.ctx, {
+    reference: "LN-P",
+    debtorId: (
+      await doCreateParty(f.ctx, {
+        name: "Other Debtor",
+        externalRef: null,
+        notes: null,
+      })
+    ).id,
+    currencyCode: "USD",
+    interestCents: 1000,
+    issuedAt: 1700000000,
+    notes: null,
+    lenders: [
+      { lenderId: f.lenderA, amountLentCents: 60_000 },
+      { lenderId: f.lenderB, amountLentCents: 40_000 },
+    ],
+    promoters: [{ partyId: promoter.id, shareBps: 1000 }],
+  });
+  const p = await doCreateDebtorPayment(f.ctx, {
+    loanId: loan.id,
+    principalCents: 10_000,
+    interestCents: 1_000,
+    paidAt: 1700000100,
+    notes: null,
+  });
+  assertEquals(p.amount_cents, 11_000);
+  // Promoter gets 100 (10% of 1000). Lenders split (10000 + 900) = 10900
+  // by 60/40 → 6540 / 4360.
+  const byParty = new Map(
+    p.splits.map((s) => [s.lender_name, [s.amount_cents, s.kind] as const]),
+  );
+  assertEquals(byParty.get("Promotora SA"), [100, "promoter"]);
+  assertEquals(byParty.get("Alice"), [6540, "lender"]);
+  assertEquals(byParty.get("Bob"), [4360, "lender"]);
+  assertEquals(
+    p.splits.reduce((s, x) => s + x.amount_cents, 0),
+    11_000,
+  );
+});
+
 Deno.test("audit_log_records_payment_mutations", async () => {
   const f = await freshFixture();
   const p = await doCreateDebtorPayment(f.ctx, {
     loanId: f.loanId,
-    amountCents: 5000,
+    principalCents: 5000,
+    interestCents: 0,
     paidAt: 1700000100,
     notes: null,
   });

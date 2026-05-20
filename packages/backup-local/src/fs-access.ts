@@ -198,7 +198,7 @@ export function fsAccessTarget(
       }
     },
 
-    async put(blob: Uint8Array): Promise<{ at: number }> {
+    async put(blob: Uint8Array): Promise<{ at: number; filename: string }> {
       const dir = await getReadyHandle();
       const file = await dir.getFileHandle(filename, { create: true });
       const writable = await file.createWritable();
@@ -207,7 +207,7 @@ export function fsAccessTarget(
       } finally {
         await writable.close();
       }
-      return { at: Math.floor(Date.now() / 1000) };
+      return { at: Math.floor(Date.now() / 1000), filename };
     },
 
     async get(): Promise<Uint8Array | null> {

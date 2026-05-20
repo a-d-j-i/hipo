@@ -72,6 +72,7 @@ export async function do_getSystemStatus(ctx: Ctx): Promise<SystemStatus> {
     // facing sense.
     configured: true,
     last_backup_at: r.lastBackupAt ?? undefined,
+    last_backup_filename: r.lastBackupFilename ?? undefined,
     last_verify_at: r.lastVerifyAt ?? undefined,
     last_verify_ok: r.lastVerifyOk === null ? undefined : r.lastVerifyOk === 1,
   }));

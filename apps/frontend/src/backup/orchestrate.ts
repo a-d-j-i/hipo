@@ -28,6 +28,7 @@ export type RunBackupInput = {
 export type RunBackupResult = {
   size_bytes: number;
   at: number;
+  filename?: string;
   verified_at?: number;
   verified_ok?: boolean;
 };
@@ -66,7 +67,7 @@ export async function runBackup(
     key,
   });
 
-  await recordBackup(opts.target.id, envelopeBytes.length);
+  await recordBackup(opts.target.id, envelopeBytes.length, result.filename);
   if (typeof result.verified_ok === "boolean") {
     await recordVerify(opts.target.id, result.verified_ok);
   }
@@ -74,6 +75,7 @@ export async function runBackup(
   return {
     size_bytes: envelopeBytes.length,
     at: result.at,
+    filename: result.filename,
     verified_at: result.verified_at,
     verified_ok: result.verified_ok,
   };
