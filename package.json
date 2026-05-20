@@ -1,10 +1,10 @@
 {
-  "name": "hipo",
+  "name": "@hipo/workspace",
   "private": true,
   "version": "0.1.0",
   "workspaces": [
     "apps/frontend",
-    "apps/backend",
+    "apps/hipo",
     "apps/desktop",
     "packages/shared",
     "packages/sqlite",
@@ -24,21 +24,21 @@
     "dev:frontend": "npm run dev -w @hipo/frontend",
     "dev:mock": "npm run dev:mock -w @hipo/frontend",
     "dev:fast": "npm run dev:fast -w @hipo/frontend",
-    "dev:backend": "npm run dev -w @hipo/backend",
+    "dev:backend": "npm run dev -w hipo",
     "dev:desktop": "npm run dev -w @hipo/desktop",
     "build:frontend": "npm run build -w @hipo/frontend",
     "build:frontend:inpage": "npm run build:inpage -w @hipo/frontend",
-    "build:backend:linux": "npm run compile:linux -w @hipo/backend",
-    "build:backend:windows": "npm run compile:windows -w @hipo/backend",
+    "build:backend:linux": "npm run compile:linux -w hipo",
+    "build:backend:windows": "npm run compile:windows -w hipo",
     "build:desktop:linux": "npm run build:frontend:inpage && npm run build:linux -w @hipo/desktop",
     "build:desktop:windows": "npm run build:frontend:inpage && npm run build:windows -w @hipo/desktop",
     "lint": "npm run lint -w @hipo/frontend",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:frontend": "npm run test -w @hipo/frontend",
-    "test:backend": "npm run test -w @hipo/backend",
+    "test:backend": "npm run test -w hipo",
     "check:frontend": "npm run check -w @hipo/frontend",
-    "check:backend": "npm run check -w @hipo/backend"
+    "check:backend": "npm run check -w hipo"
   },
   "devDependencies": {
     "prettier": "^3.8.3"

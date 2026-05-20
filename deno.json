@@ -1,7 +1,7 @@
 {
-  "comment": "Deno workspace root. apps/backend is the entry point; framework packages live under packages/ and are wired into the workspace so their imports resolve regardless of which member runs them.",
+  "comment": "Deno workspace root. apps/hipo is the entry point; framework packages live under packages/ and are wired into the workspace so their imports resolve regardless of which member runs them.",
   "workspace": [
-    "./apps/backend",
+    "./apps/hipo",
     "./packages/sqlite",
     "./packages/server",
     "./packages/auth",

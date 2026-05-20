@@ -32,17 +32,17 @@ standalone HTTP server. Three deployment shapes from one codebase:
 hipo/
 ├── apps/
 │   ├── frontend/     React + Vite + antd (browser bundle)
-│   ├── backend/      Deno + Hono + Drizzle + libsql (HTTP server)
+│   ├── hipo/         Deno + Hono + Drizzle + libsql (HTTP server)
 │   └── desktop/      Tauri shell — spawns backend, opens webview
 ├── packages/
 │   └── shared/       Source-only TypeScript shared by frontend + backend
 ├── package.json      Workspace root (npm workspaces)
-└── deno.json         Deno workspace root (declares apps/backend)
+└── deno.json         Deno workspace root (declares apps/hipo)
 ```
 
 Each workspace keeps its native config: `package.json` + `vite.config.ts`
-in frontend, `deno.json` in backend, `Cargo.toml` + `tauri.conf.json` in
-desktop. The thin `package.json` files in `apps/{backend,desktop}` only
+in frontend, `deno.json` in `apps/hipo`, `Cargo.toml` + `tauri.conf.json`
+in desktop. The thin `package.json` files in `apps/{hipo,desktop}` only
 exist so npm workspaces can resolve them by name.
 
 ## Domain
@@ -103,7 +103,7 @@ Most commands run from the repo root.
 - `npm run format` — Prettier across the repo.
 
 Inside individual workspaces use the native tools directly:
-- `cd apps/backend && deno task {dev,test,check,compile:linux,…}`
+- `cd apps/hipo && deno task {dev,test,check,compile:linux,…}`
 - `cd apps/desktop && cargo check`, `cargo tauri dev`, `cargo tauri build`
 - `cd apps/frontend && npm run dev` (or any other frontend script)
 
@@ -152,7 +152,7 @@ no build step; both Vite and Deno read the `.ts` files directly. Imports
 use explicit `.ts` extensions so Deno's strict resolver is happy.
 
 - `src/types.ts` — 14 canonical API + input types (`User`, `Party`, `Loan`,
-  `CreateLoanInput`, `PartyInput`, …). Backend `apps/backend/src/<domain>/types.ts`
+  `CreateLoanInput`, `PartyInput`, …). Backend `apps/hipo/src/<domain>/types.ts`
   files re-export them by name (and house any row→API mappers like
   `publicParty`).
 - `src/validators.ts` — `check*` functions returning `string | null` plus
@@ -164,7 +164,7 @@ use explicit `.ts` extensions so Deno's strict resolver is happy.
 
 Resolution mechanisms differ but the import specifier is the same:
 - Frontend (Vite + npm workspaces): symlink at `node_modules/@hipo/shared`.
-- Backend (Deno): import map entry in `apps/backend/deno.json`
+- Backend (Deno): import map entry in `apps/hipo/deno.json`
   (`"@hipo/shared": "../../packages/shared/src/index.ts"`).
 
 ## Architectural conventions
@@ -207,11 +207,11 @@ call `message.error(String(e))`.
 
 **Migrations.** A `migrations` table tracks applied versions; the Deno
 side holds an ordered `(version, sql)` array in
-`apps/backend/src/db/migrations.ts` and applies any whose version isn't yet
+`apps/hipo/src/db/migrations.ts` and applies any whose version isn't yet
 recorded. Every schema change is a new entry with a monotonic version.
 **Never edit a migration that has shipped.** Multi-statement SQL is split
 on `;` and run one statement at a time (`splitStatements` in
-`apps/backend/src/db/client.ts`).
+`apps/hipo/src/db/client.ts`).
 
 **Soft delete.** `users`, `parties`, `loans`, `debtor_payments`, and
 `lender_payouts` carry a `deleted_at INTEGER` column (NULL = active). All
@@ -226,7 +226,7 @@ is by manual SQL. The audit log (`xxx.delete` action) records who
 soft-deleted what with the `before` state.
 
 **Type sync.** All API + input shapes live in `packages/shared/src/types.ts`.
-Backend `apps/backend/src/<domain>/types.ts` files re-export them by name
+Backend `apps/hipo/src/<domain>/types.ts` files re-export them by name
 (no rename) and house any row→API mappers (e.g. `publicParty`); frontend
 imports them directly from `@hipo/shared`. No codegen, no ts-rs.
 
@@ -283,12 +283,12 @@ that same transaction before committing. Action strings are `entity.verb`
 
 Two layers:
 
-- **Deno tests** (`apps/backend/src/**/*_test.ts`) cover `do_*` operations
+- **Deno tests** (`apps/hipo/src/**/*_test.ts`) cover `do_*` operations
   against an in-memory libsql database (via `Deno.makeTempFile` —
   `:memory:` doesn't survive `db.transaction()` in libsql's node binding).
-  57 tests across auth/parties/loans/payments/payouts/audit, plus the
-  shared `splitPayment` algorithm tests in
-  `apps/backend/src/payments/split_test.ts`.
+  98 tests across auth/parties/loans/payments/payouts/audit/backup/system,
+  plus the shared `splitPayment` algorithm tests in
+  `apps/hipo/src/payments/split_test.ts`.
 - **Vitest** (`apps/frontend/src/**/*.test.tsx`) covers React with
   Testing Library + `vi.stubGlobal("fetch", ...)`. `setup.ts` extends
   `expect` with `@testing-library/jest-dom/matchers` explicitly (the
@@ -343,7 +343,7 @@ CI uses a native Windows runner instead.
                │ spawns
                ▼
 ┌──────────────────────────────┐
-│  apps/backend (Deno sidecar)  │  Hono + Drizzle + libsql + cookie sessions
+│  apps/hipo (Deno sidecar)     │  Hono + Drizzle + libsql + cookie sessions
 │                               │  + audit log + serves the React SPA
 └──────────────▲───────────────┘
                │ fetch (cookie + X-Hipo-Token)
@@ -398,20 +398,21 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
   `Loans`, `Payments` drawer, `Payouts`, `Users`, `AuditLog`, `Settings`).
 - `test/setup.ts` — Vitest setup (cleanup, fetch stub, jest-dom matchers).
 
-**Backend source layout (`apps/backend/src/`):**
+**Backend source layout (`apps/hipo/src/`):**
 
-- `server.ts` — Hono entry: middleware chain (CORS, requireLocalToken,
-  session), route mounts, `Deno.serve` printing `HIPO_READY`.
+- `server.ts` — entry: boot boilerplate delegated to `@hipo/server-deploy`;
+  supplies hipo-specific pieces (config, DB open, session middleware, routes).
 - `config.ts` — env-var-driven config (`HIPO_PORT`, `HIPO_DATA_DIR`,
   `HIPO_AUTH_TOKEN`, `HIPO_STATIC_DIR`, `HIPO_SESSION_TTL_DAYS`).
-- `db/{client,schema,migrations}.ts` — Drizzle setup + table defs + v1
-  migration.
+- `db/{client,schema,migrations}.ts` — Drizzle setup + table defs +
+  hipo-specific migrations.
 - `<domain>/{operations,types,validators}.ts` — `do_*` operations, type
   re-exports from `@hipo/shared` (+ any row→API mappers), validator
   wrappers. Each domain has a `*_test.ts` next to `operations.ts`.
-- `routes/<domain>.ts` — Hono routes, one per domain.
-- `audit/write.ts` — `writeAudit(tx, ...)` helper.
-- `auth/{passwords,types}.ts` + `middleware/session.ts` — session +
-  argon2 + Ctx + requireAuth/Admin.
-- `errors.ts` + `error_handler.ts` — `AppError` class + `onError` handler.
+- `routes/<domain>.ts` — routes per domain, registered onto
+  `@hipo/server`'s `Router<AppState>`.
+- `middleware/session.ts` — session middleware (hipo-specific: imports
+  `../config.ts`).
+- Framework error/audit/auth primitives live in `@hipo/server`,
+  `@hipo/audit`, `@hipo/auth` — imported directly.
 - `static.ts` — SPA fallback (serves `dist/` outside `/api/*`).

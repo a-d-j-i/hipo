@@ -19,7 +19,7 @@ import {
   unpackEnvelope,
   type Envelope,
 } from "@hipo/backup";
-import { migrations } from "@hipo/backend/migrations";
+import { migrations } from "hipo/migrations";
 
 const DB_PATH = "hipo.sqlite3";
 

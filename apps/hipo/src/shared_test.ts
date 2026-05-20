@@ -1,4 +1,4 @@
-// Tests for @hipo/shared. They live in apps/backend/ alongside the existing
+// Tests for @hipo/shared. They live in apps/hipo/ alongside the existing
 // split_test.ts because that's where the deno test runner is configured.
 // packages/shared has no runner of its own (source-only package); both Vite
 // and Deno read its .ts files directly.

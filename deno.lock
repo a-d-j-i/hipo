@@ -3092,13 +3092,6 @@
       ]
     },
     "members": {
-      "apps/backend": {
-        "dependencies": [
-          "npm:@libsql/client@0.14",
-          "npm:@node-rs/argon2@2",
-          "npm:drizzle-orm@0.36"
-        ]
-      },
       "apps/desktop": {
         "packageJson": {
           "dependencies": [
@@ -3113,7 +3106,6 @@
             "npm:@eslint/js@^10.0.1",
             "npm:@hipo/audit@*",
             "npm:@hipo/auth@*",
-            "npm:@hipo/backend@*",
             "npm:@hipo/backup-github@*",
             "npm:@hipo/backup-local@*",
             "npm:@hipo/backup-vault@*",
@@ -3139,6 +3131,7 @@
             "npm:eslint@^10.3.0",
             "npm:globals@^17.6.0",
             "npm:hash-wasm@^4.11.0",
+            "npm:hipo@*",
             "npm:i18next-browser-languagedetector@^8.2.1",
             "npm:i18next@^26.1.0",
             "npm:jsdom@^29.1.1",
@@ -3153,6 +3146,13 @@
             "npm:vitest@3"
           ]
         }
+      },
+      "apps/hipo": {
+        "dependencies": [
+          "npm:@libsql/client@0.14",
+          "npm:@node-rs/argon2@2",
+          "npm:drizzle-orm@0.36"
+        ]
       },
       "packages/audit": {
         "dependencies": [

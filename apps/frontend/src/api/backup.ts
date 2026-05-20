@@ -1,5 +1,5 @@
 // Frontend wrappers around /api/backup/*. Mirrors the backend types
-// in `apps/backend/src/backup/types.ts`.
+// in `apps/hipo/src/backup/types.ts`.
 //
 // `bytesToBase64` / `base64ToBytes` are exported as helpers so the
 // Settings + bootstrap flows can keep `Uint8Array` until just before

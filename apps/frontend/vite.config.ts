@@ -56,7 +56,7 @@ export default defineConfig(async () => ({
           "@hipo/auth",
           "@hipo/audit",
           "@hipo/shared",
-          "@hipo/backend",
+          "hipo",
         ],
       }
     : undefined,

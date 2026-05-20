@@ -3,7 +3,7 @@
 // Router with hipo's full route surface, and dispatches /api/*
 // requests sent by the Service Worker over a MessageChannel port.
 //
-// Same source as apps/backend/src/server.ts minus `Deno.serve` and
+// Same source as apps/hipo/src/server.ts minus `Deno.serve` and
 // the static-SPA fallback (the SW handles non-/api fetches).
 
 /// <reference lib="webworker" />
@@ -13,9 +13,9 @@ import { Router, serveOnPort } from "@hipo/server";
 import {
   type AppState,
   sessionMiddleware,
-} from "@hipo/backend/middleware-session";
-import { registerAllRoutes } from "@hipo/backend/routes";
-import { migrations } from "@hipo/backend/migrations";
+} from "hipo/middleware-session";
+import { registerAllRoutes } from "hipo/routes";
+import { migrations } from "hipo/migrations";
 import type { Db } from "@hipo/sqlite";
 
 type Shape = "tauri" | "browser";
