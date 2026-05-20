@@ -173,14 +173,16 @@ async function handleApi(request) {
   });
   apiPort.postMessage(wire);
   const replyWire = await responsePromise;
-  // worker-bridge.ts always serializes the body via `await res.text()`,
-  // which returns "" for null-body responses (204 No Content, 304, …).
-  // Reconstructing `new Response("", {status: 204})` throws on strict
-  // engines (webkit2gtk: "Response cannot have a body with the given
-  // status"). Pass null body for these statuses — same fix as
-  // `withCoiHeaders` above.
-  const body = NULL_BODY_STATUSES.has(replyWire.status) ? null : replyWire.body;
-  return new Response(body, {
+  // worker-bridge.ts always serializes the response body via
+  // `await res.text()`, which returns "" for null-body responses
+  // (204 No Content, 304, …). Reconstructing `new Response("",
+  // {status: 204})` throws on strict engines (webkit2gtk: "Response
+  // cannot have a body with the given status"). Pass null for these
+  // statuses — same fix as `withCoiHeaders` above.
+  const replyBody = NULL_BODY_STATUSES.has(replyWire.status)
+    ? null
+    : replyWire.body;
+  return new Response(replyBody, {
     status: replyWire.status,
     statusText: replyWire.statusText,
     headers: entriesToHeaders(replyWire.headers),
