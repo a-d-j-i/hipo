@@ -7,6 +7,8 @@ import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "@hipo/server";
 import {
+  _resetForTests as resetRateLimit,
+  type Ctx,
   doChangePassword,
   doChangeUserRole,
   doCreateUser,
@@ -15,9 +17,8 @@ import {
   doLogin,
   doResetUserPassword,
   doSetupFirstAdmin,
-} from "./operations.ts";
-import { _resetForTests as resetRateLimit } from "@hipo/auth";
-import type { Ctx, User } from "@hipo/auth";
+  type User,
+} from "@hipo/auth";
 
 async function freshCtx(): Promise<{
   ctx: Ctx;

@@ -6,8 +6,7 @@ import { auditLog } from "../db/schema.ts";
 import { splitStatements } from "../db/client.ts";
 import { migrations } from "../db/migrations.ts";
 import { AppError } from "@hipo/server";
-import { doCreateUser, doSetupFirstAdmin } from "../auth/operations.ts";
-import type { Ctx, User } from "@hipo/auth";
+import { type Ctx, doCreateUser, doSetupFirstAdmin, type User } from "@hipo/auth";
 import {
   doCreateParty,
   doDeleteParty,
