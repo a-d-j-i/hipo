@@ -55,5 +55,5 @@ import { users, sessions } from "@hipo/auth/schema";
 
 - **Migrations** that create the tables — see `apps/<app>/src/db/migrations.ts`
   for now; future split per Phase 1's eventual lex-ID migration story.
-- **HTTP/cookie wiring** (`middleware-session.ts`) — stays in `apps/backend`
-  through Phase 1B; rewritten on the new router in Phase 1C.
+- **HTTP/cookie wiring** (`middleware-session.ts`) — lives in `apps/hipo`
+  (rewritten on the framework router in Phase 1C).

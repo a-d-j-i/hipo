@@ -46,8 +46,8 @@ configuration change:
 
 1. Provision a Linux VM (Fly.io / Render / Hetzner). $5/mo is fine for under
    ~100 users.
-2. Build `apps/backend` (`deno task compile:linux`) and copy the binary to the
-   host.
+2. Build the consumer app (`deno task compile:linux` — e.g. from `apps/hipo`)
+   and copy the binary to the host.
 3. Set env vars: `MYAPP_PORT=8787`, `MYAPP_DATA_DIR=/var/lib/myapp/`, no
    `MYAPP_AUTH_TOKEN` (that's for sidecar mode), `MYAPP_STATIC_DIR` pointing at
    your built SPA.

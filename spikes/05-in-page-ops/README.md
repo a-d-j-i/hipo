@@ -33,7 +33,7 @@ doListUsers returned 1 user(s)
 smoke ok ✓
 ```
 
-The `doSetupFirstAdmin` source that runs in `apps/backend` on Deno runs
+The `doSetupFirstAdmin` source that runs in `apps/hipo` on Deno runs
 unchanged here in a browser. Same Drizzle queries, same audit write inside the
 transaction. Only swapped:
 

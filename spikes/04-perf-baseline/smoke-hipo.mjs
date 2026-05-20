@@ -57,7 +57,7 @@ async function main() {
   // Start backend
   log("starting backend…");
   const backend = startProc("backend", "deno", ["task", "start"], {
-    cwd: `${REPO_ROOT}/apps/backend`,
+    cwd: `${REPO_ROOT}/apps/hipo`,
     env: {
       ...process.env,
       HIPO_DATA_DIR: DATA_DIR,
