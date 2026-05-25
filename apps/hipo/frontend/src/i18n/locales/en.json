@@ -470,7 +470,32 @@
         "testFailed": "Could not reach vault: {{message}}",
         "currentLabel": "Linked",
         "saveFailed": "Save failed: {{message}}",
-        "fieldRequired": "Required"
+        "fieldRequired": "Required",
+        "managePats": {
+          "header": "Manage PATs on the server",
+          "description": "Every PAT you've ever minted from this account, including ones from other devices. Revoke any you're no longer using — revoking a PAT prevents anyone holding the token bytes from writing or reading blobs.",
+          "refresh": "Refresh",
+          "loading": "Loading PATs…",
+          "loadFailed": "Could not list PATs: {{message}}",
+          "none": "No PATs on the server.",
+          "linked": "Currently linked on this device",
+          "label": "Label",
+          "hash": "Token hash",
+          "created": "Created",
+          "lastUsed": "Last used",
+          "lastUsedNever": "never",
+          "revoke": "Revoke",
+          "revokeConfirmTitle": "Revoke this PAT?",
+          "revokeConfirmBody": "Anyone still holding the token bytes will lose access to the vault. This cannot be undone — you'll need to mint a new PAT to write again.",
+          "revoked": "PAT revoked.",
+          "revokeFailed": "Revoke failed: {{message}}"
+        },
+        "unlinkConfirmTitle": "Unlink and revoke the PAT?",
+        "unlinkConfirmBody": "Unlinking clears this device's config and encrypted PAT. With the passphrase unlocked, the PAT will also be revoked on the server. Without the passphrase, only this device is cleared — the PAT stays live on the server until you revoke it from Manage PATs.",
+        "unlinkAndRevoke": "Unlink and revoke",
+        "unlinkLocalOnly": "Unlink (this device only)",
+        "unlinkedWithServerRevoke": "Vault target unlinked and PAT revoked on the server.",
+        "unlinkedLocalOnly": "Vault target unlinked on this device. Revoke the PAT from Manage PATs if you're done with it."
       },
       "restore": {
         "title": "Restore from a backup file",

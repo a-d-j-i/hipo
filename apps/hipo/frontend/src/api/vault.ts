@@ -33,3 +33,12 @@ export async function revokeVaultPat(tokenHash: string): Promise<void> {
     `/api/vault/pats/${encodeURIComponent(tokenHash)}`,
   );
 }
+
+/** Matches the server's SHA-256 hex digest — used to find the local PAT in the list. */
+export async function sha256Hex(input: string): Promise<string> {
+  const encoded = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}

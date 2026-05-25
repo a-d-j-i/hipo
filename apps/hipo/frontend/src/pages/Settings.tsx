@@ -5,9 +5,12 @@ import {
   Descriptions,
   Modal,
   Input,
+  Popconfirm,
   Radio,
   Space,
   Spin,
+  Table,
+  Tag,
   Typography,
   message,
 } from "antd";
@@ -50,7 +53,13 @@ import {
   getSecret,
   setSecret,
 } from "../backup/secrets-vault";
-import { mintVaultPat } from "../api/vault";
+import {
+  listVaultPats,
+  mintVaultPat,
+  revokeVaultPat,
+  sha256Hex,
+  type PatView,
+} from "../api/vault";
 import { usePassphrase } from "../bootstrap/PassphraseContext";
 import { useAuth } from "../auth/AuthContext";
 
@@ -759,6 +768,9 @@ function VaultSection({
   // Mint PAT modal state.
   const [mintedToken, setMintedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Manage-PATs panel: bump to force re-list after mint/revoke/refresh.
+  const [patListVersion, setPatListVersion] = useState(0);
+  const reloadPats = () => setPatListVersion((n) => n + 1);
 
   const stateRow = status.backups.targets.find((tg) => tg.id === "vault");
 
@@ -781,6 +793,7 @@ function VaultSection({
       setMintedToken(res.token);
       setPat(res.token);
       setCopied(false);
+      reloadPats();
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       message.error(t("settings.storage.vault.testFailed", { message: msg }));
@@ -842,15 +855,45 @@ function VaultSection({
     }
   };
 
-  const onUnlink = () => {
-    clearVaultConfig();
-    clearSecret("vault.pat");
-    setConfig(null);
-    setBaseUrl("");
-    setBlobId("backup.bin");
-    setPat("");
-    message.success(t("settings.storage.vault.unlinked"));
-    void refresh();
+  // Server-revoke when the passphrase is unlocked (so we can decrypt the
+  // stored PAT → hash it → call DELETE /api/vault/pats/:hash). Otherwise
+  // fall through to local-only clear and tell the user the PAT stays live
+  // until they revoke it from Manage PATs.
+  const onUnlink = async () => {
+    setBusy(true);
+    let serverRevoked = false;
+    try {
+      if (passphrase.isSet) {
+        try {
+          const key = await passphrase.keyFor(getOrCreateVaultSalt());
+          const token = await getSecret("vault.pat", key);
+          if (token) {
+            const hash = await sha256Hex(token);
+            await revokeVaultPat(hash);
+            serverRevoked = true;
+          }
+        } catch (e) {
+          // Decrypt failed (wrong passphrase) or DELETE 404 (already revoked
+          // elsewhere): fall through to local-only clear without scaring the user.
+          console.warn("[hipo] vault PAT server-revoke skipped:", e);
+        }
+      }
+      clearVaultConfig();
+      clearSecret("vault.pat");
+      setConfig(null);
+      setBaseUrl("");
+      setBlobId("backup.bin");
+      setPat("");
+      message.success(
+        serverRevoked
+          ? t("settings.storage.vault.unlinkedWithServerRevoke")
+          : t("settings.storage.vault.unlinkedLocalOnly"),
+      );
+      reloadPats();
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onBackupNow = async () => {
@@ -946,13 +989,34 @@ function VaultSection({
               >
                 {t("settings.storage.vault.backupNow")}
               </Button>
-              <Button danger onClick={onUnlink} loading={busy}>
-                {t("settings.storage.vault.unlink")}
-              </Button>
+              <Popconfirm
+                title={t("settings.storage.vault.unlinkConfirmTitle")}
+                description={
+                  <div style={{ maxWidth: 320 }}>
+                    {t("settings.storage.vault.unlinkConfirmBody")}
+                  </div>
+                }
+                okText={
+                  passphrase.isSet
+                    ? t("settings.storage.vault.unlinkAndRevoke")
+                    : t("settings.storage.vault.unlinkLocalOnly")
+                }
+                okButtonProps={{ danger: true }}
+                onConfirm={() => void onUnlink()}
+              >
+                <Button danger loading={busy}>
+                  {t("settings.storage.vault.unlink")}
+                </Button>
+              </Popconfirm>
             </>
           )}
         </Space>
       </Space>
+      <ManagePatsPanel
+        baseUrl={config?.baseUrl ?? baseUrl}
+        version={patListVersion}
+        onChange={reloadPats}
+      />
       {/* Minted PAT modal — shows the token exactly once */}
       <Modal
         title={t("settings.storage.vault.mintedTitle")}
@@ -979,6 +1043,193 @@ function VaultSection({
         <Input.Password value={mintedToken ?? ""} readOnly autoFocus />
       </Modal>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Manage PATs — list + revoke for the calling user's vault account
+// ---------------------------------------------------------------------------
+
+function ManagePatsPanel({
+  baseUrl,
+  version,
+  onChange,
+}: {
+  baseUrl: string;
+  version: number;
+  onChange: () => void;
+}) {
+  const { t } = useTranslation();
+  const passphrase = usePassphrase();
+  const [pats, setPats] = useState<PatView[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [linkedHash, setLinkedHash] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!baseUrl) {
+      setPats(null);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = await listVaultPats();
+      setPats(rows);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(
+        t("settings.storage.vault.managePats.loadFailed", { message: msg }),
+      );
+      setPats([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [baseUrl, t]);
+
+  useEffect(() => {
+    void load();
+  }, [load, version]);
+
+  // Resolve which row matches the locally-linked PAT (only possible when
+  // passphrase is unlocked; otherwise the "Linked" tag stays off).
+  useEffect(() => {
+    let cancelled = false;
+    async function resolveLinked() {
+      if (!passphrase.isSet) {
+        if (!cancelled) setLinkedHash(null);
+        return;
+      }
+      try {
+        const key = await passphrase.keyFor(getOrCreateVaultSalt());
+        const token = await getSecret("vault.pat", key);
+        if (!cancelled) setLinkedHash(token ? await sha256Hex(token) : null);
+      } catch {
+        if (!cancelled) setLinkedHash(null);
+      }
+    }
+    void resolveLinked();
+    return () => {
+      cancelled = true;
+    };
+  }, [passphrase, version]);
+
+  const onRevoke = async (hash: string) => {
+    try {
+      await revokeVaultPat(hash);
+      message.success(t("settings.storage.vault.managePats.revoked"));
+      onChange();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      message.error(
+        t("settings.storage.vault.managePats.revokeFailed", { message: msg }),
+      );
+    }
+  };
+
+  if (!baseUrl) return null;
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <Space style={{ width: "100%", justifyContent: "space-between" }}>
+        <Typography.Text strong>
+          {t("settings.storage.vault.managePats.header")}
+        </Typography.Text>
+        <Button
+          size="small"
+          icon={<ReloadOutlined />}
+          onClick={() => onChange()}
+          loading={loading}
+        >
+          {t("settings.storage.vault.managePats.refresh")}
+        </Button>
+      </Space>
+      <Typography.Paragraph type="secondary" style={{ marginTop: 4 }}>
+        {t("settings.storage.vault.managePats.description")}
+      </Typography.Paragraph>
+      {error && (
+        <Typography.Text
+          type="danger"
+          style={{ display: "block", marginBottom: 8 }}
+        >
+          {error}
+        </Typography.Text>
+      )}
+      <Table<PatView>
+        size="small"
+        rowKey="token_hash"
+        loading={loading}
+        dataSource={pats ?? []}
+        pagination={false}
+        locale={{
+          emptyText: loading
+            ? t("settings.storage.vault.managePats.loading")
+            : t("settings.storage.vault.managePats.none"),
+        }}
+        columns={[
+          {
+            title: t("settings.storage.vault.managePats.label"),
+            dataIndex: "label",
+            render: (label: string | null, row) =>
+              row.token_hash === linkedHash ? (
+                <Space size={6}>
+                  <span>{label ?? "—"}</span>
+                  <Tag color="blue">
+                    {t("settings.storage.vault.managePats.linked")}
+                  </Tag>
+                </Space>
+              ) : (
+                <span>{label ?? "—"}</span>
+              ),
+          },
+          {
+            title: t("settings.storage.vault.managePats.hash"),
+            dataIndex: "token_hash",
+            render: (hash: string) => (
+              <Typography.Text code style={{ fontSize: 11 }}>
+                {hash.slice(0, 12)}…
+              </Typography.Text>
+            ),
+          },
+          {
+            title: t("settings.storage.vault.managePats.created"),
+            dataIndex: "created_at",
+            render: (t: number) => new Date(t * 1000).toLocaleDateString(),
+          },
+          {
+            title: t("settings.storage.vault.managePats.lastUsed"),
+            dataIndex: "last_used_at",
+            render: (lu: number | null) =>
+              lu === null
+                ? t("settings.storage.vault.managePats.lastUsedNever")
+                : new Date(lu * 1000).toLocaleString(),
+          },
+          {
+            title: "",
+            key: "actions",
+            render: (_: unknown, row) => (
+              <Popconfirm
+                title={t(
+                  "settings.storage.vault.managePats.revokeConfirmTitle",
+                )}
+                description={
+                  <div style={{ maxWidth: 320 }}>
+                    {t("settings.storage.vault.managePats.revokeConfirmBody")}
+                  </div>
+                }
+                okText={t("settings.storage.vault.managePats.revoke")}
+                okButtonProps={{ danger: true }}
+                onConfirm={() => void onRevoke(row.token_hash)}
+              >
+                <Button size="small" danger>
+                  {t("settings.storage.vault.managePats.revoke")}
+                </Button>
+              </Popconfirm>
+            ),
+          },
+        ]}
+      />
+    </div>
   );
 }
 

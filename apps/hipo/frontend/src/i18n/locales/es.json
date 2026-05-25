@@ -470,7 +470,32 @@
         "testFailed": "No se pudo conectar con el vault: {{message}}",
         "currentLabel": "Conectado",
         "saveFailed": "Falló al guardar: {{message}}",
-        "fieldRequired": "Requerido"
+        "fieldRequired": "Requerido",
+        "managePats": {
+          "header": "Administrar PATs en el servidor",
+          "description": "Todos los PATs que alguna vez emitiste con esta cuenta, incluidos los de otros dispositivos. Revocá los que ya no uses — revocar un PAT impide que alguien con los bytes del token escriba o lea blobs.",
+          "refresh": "Refrescar",
+          "loading": "Cargando PATs…",
+          "loadFailed": "No se pudo listar los PATs: {{message}}",
+          "none": "No hay PATs en el servidor.",
+          "linked": "Vinculado actualmente en este dispositivo",
+          "label": "Etiqueta",
+          "hash": "Hash del token",
+          "created": "Creado",
+          "lastUsed": "Último uso",
+          "lastUsedNever": "nunca",
+          "revoke": "Revocar",
+          "revokeConfirmTitle": "¿Revocar este PAT?",
+          "revokeConfirmBody": "Quien tenga los bytes del token perderá acceso al vault. No se puede deshacer — vas a necesitar emitir un nuevo PAT para volver a escribir.",
+          "revoked": "PAT revocado.",
+          "revokeFailed": "Falló la revocación: {{message}}"
+        },
+        "unlinkConfirmTitle": "¿Desconectar y revocar el PAT?",
+        "unlinkConfirmBody": "Desconectar borra la configuración y el PAT cifrado en este dispositivo. Con la contraseña desbloqueada, el PAT también se revoca en el servidor. Sin la contraseña, solo este dispositivo se limpia — el PAT sigue vivo en el servidor hasta que lo revoques desde Administrar PATs.",
+        "unlinkAndRevoke": "Desconectar y revocar",
+        "unlinkLocalOnly": "Desconectar (solo este dispositivo)",
+        "unlinkedWithServerRevoke": "Vault desconectado y PAT revocado en el servidor.",
+        "unlinkedLocalOnly": "Vault desconectado en este dispositivo. Revocá el PAT desde Administrar PATs si ya no lo usás."
       },
       "restore": {
         "title": "Restaurar desde un archivo de respaldo",
