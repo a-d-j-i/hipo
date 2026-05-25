@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "comment": "Thin npm-workspace wrapper around the Tauri CLI. All real config lives in tauri.conf.json and Cargo.toml.",
   "scripts": {
+    "tauri": "tauri",
     "dev": "tauri dev",
     "dev:e2e": "tauri dev --no-watch -- --features e2e-testing",
     "build": "tauri build",
