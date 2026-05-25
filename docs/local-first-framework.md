@@ -411,6 +411,16 @@ hipo can add `backup-github` later.
 
 ## Phase 6 — Bootstrap & restore flow
 
+**Status: closed 2026-05-25.** Bootstrap landed in `43affa7`; the
+GitHub/fs-access "configure at bootstrap" extension was considered and
+declined — those targets stay in Settings → Storage where the user
+already has a logged-in session + the secrets-vault to encrypt PATs.
+The bootstrap UI only needs to give the user a way to seed durable
+state on a fresh device, and the download-target's "save a file now"
+ceremony does that without dragging a PAT-entry form into a pre-setup
+page. The dashboard banner + Settings panel cover ongoing target
+configuration.
+
 Lives in `packages/server` (the bootstrap UI is a small framework concern, even
 though it renders React). Or in a new `packages/bootstrap` if it grows too much.
 
@@ -420,10 +430,10 @@ though it renders React). Or in a new `packages/bootstrap` if it grows too much.
    it happens before any further code runs.
 2. Detect OPFS state.
 3. If empty → route to `/bootstrap`:
-   - **New install** — prompt for passphrase, register with chosen target, take
-     initial backup, proceed to app's setup flow.
-   - **Restore from backup** — pick file (or fetch from GitHub/vault) → enter
-     passphrase → decrypt → write to OPFS → reload → boot normally.
+   - **New install** — prompt for passphrase, optionally download an initial
+     backup as a sanity check, proceed to app's setup flow.
+   - **Restore from backup** — pick file → enter passphrase → decrypt → write
+     to OPFS → reload → boot normally.
 
 Passphrase: in-memory per session only. Re-entered once per session.
 
@@ -574,10 +584,12 @@ the in-page SQLite engine isn't part of the Tauri shape. Phase 8A's scaffolding
 (JSC SAB env var, C-FFI feature flags, COI in the merged SW) stays useful for
 non-SQL storage paths.
 
-**Phase 8B (deferred, conditional):** drop `build:desktop:linux` from root npm
-scripts and `ubuntu-22.04` from the CI matrix in
-`.github/workflows/release.yml`. **Skip if Phase 12 ships first** — the CI
-matrix and root script are exactly what Phase 12 needs to keep alive.
+**Phase 8B — DROPPED 2026-05-25.** The original idea (drop
+`build:desktop:linux` + `ubuntu-22.04` from the matrix) was a fallback for
+the world where Linux Tauri stayed sunset. Phase 12 reopened that decision:
+Linux Tauri is back via rusqlite + Drizzle proxy, validated end-to-end on
+WebKitGTK 2.50.6, and the CI matrix's ubuntu-22.04 leg is intentional.
+Nothing to clean up.
 
 ## Phase 9 — Decide what `apps/hipo` (née `apps/backend`) becomes
 
@@ -623,10 +635,11 @@ The packages most likely to want publishing first: `packages/sw`,
 
 ## Phase 11 — Hosting, headers, docs
 
-**Status: landed 2026-05-19.** Deliverables 1–6 shipped; deliverable 7 (Phase 8B
-cleanup) skipped per the conditional (Phase 12 slices 1–4 are in and rely on the
-existing `build:desktop:linux` script). See `memory/ project-status.md` for the
-commit hash + verification details.
+**Status: landed 2026-05-19.** Deliverables 1–6 shipped; deliverable 7
+(Phase 8B cleanup) is moot now — Linux Tauri came back via Phase 12, the
+CI matrix's ubuntu-22.04 leg is intentional, and `build:desktop:linux` is
+load-bearing. See `memory/project-status.md` for the commit hash +
+verification details.
 
 The framework's primary demo deploy. Required by
 [[feedback-github-pages-mandatory]] and load-bearing for Linux users
@@ -662,9 +675,9 @@ Firefox" and that URL didn't exist before this phase.
 6. **Documentation refresh** — root README links the Pages URL at the top;
    `packages/tauri-shell/README` declares the Linux path (Pages today, native
    via Phase 12 later); CLAUDE.md gets a pointer to the demo URL.
-7. **Phase 8B cleanup** — drop `build:desktop:linux` from root + `ubuntu-22.04`
-   from the release-workflow matrix. **Skip if Phase 12 lands first** (it relies
-   on those exact scripts).
+7. ~~**Phase 8B cleanup**~~ — dropped 2026-05-25. Phase 12 brought Linux Tauri
+   back, so `build:desktop:linux` + `ubuntu-22.04` in the matrix are
+   load-bearing, not deferred cleanup.
 
 ### Why now
 
@@ -791,9 +804,10 @@ clean follow-on, not a prerequisite.
 
 ### Decision on Phase 8A
 
-Moves from **"Linux Tauri sunsetted"** to **"Linux Tauri deferred pending Phase
-12 (native SQLite via Drizzle proxy)."** Phase 8B (CI cleanup) is conditional:
-skip if Phase 12 lands first.
+Moves from **"Linux Tauri sunsetted"** to **"Linux Tauri restored via Phase
+12 (native SQLite through the Drizzle proxy)."** Phase 8B is consequently
+dropped (2026-05-25) — CI matrix's ubuntu-22.04 leg and the
+`build:desktop:linux` script are load-bearing now.
 
 ### Rejected alternative: OPFS polyfill via SAB + Tauri-IPC bridge
 
