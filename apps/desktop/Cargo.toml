@@ -33,7 +33,10 @@ e2e-testing = []
 [dependencies]
 # Framework shell: window bring-up, single-instance focus, updater.
 tauri-shell = { path = "../../packages/tauri-shell" }
-tauri = { version = "2", features = [] }
+# `devtools` ships the WebKit inspector in release builds too — accessible
+# via right-click → Inspect Element. Small binary-size cost; worth it for a
+# desktop admin tool where field-debugging matters.
+tauri = { version = "2", features = ["devtools"] }
 # Tauri's build script scans direct dependencies for plugin manifests
 # (capability schemas + permission lists). Even though tauri-shell uses
 # these internally, the consumer crate has to list them so the
