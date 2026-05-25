@@ -21,7 +21,7 @@
       "endpoints": [
         "https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json"
       ],
-      "pubkey": "PLACEHOLDER_REPLACE_WITH_TAURI_SIGNING_PUBLIC_KEY"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc3N0YwNUZCRTYyMEE5MEMKUldRTXFTRG0rd1YvZDMyYTIyVzc1UkNoOHNycmlxU0ZBUjhwaGNCV00vcWh6WHlubmREYisxQnQK"
     }
   },
   "bundle": {
