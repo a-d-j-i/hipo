@@ -11,9 +11,9 @@ yarn.lock
 /tmp
 /out-tsc
 dist/
-apps/frontend/dist/
-apps/desktop/target/
-apps/desktop/gen/
+apps/hipo/frontend/dist/
+apps/hipo/tauri/target/
+apps/hipo/tauri/gen/
 *.tsbuildinfo
 coverage/
 
@@ -32,11 +32,11 @@ coverage/
 
 # Tauri sidecar binaries — rebuilt by:
 #   cd apps/hipo && deno task compile:linux    (or :windows)
-apps/desktop/binaries/*
-!apps/desktop/binaries/.gitkeep
+apps/hipo/tauri/binaries/*
+!apps/hipo/tauri/binaries/.gitkeep
 
 # Local backup artifacts from manual smoke tests
-apps/desktop/*.bin
+apps/hipo/tauri/*.bin
 
 # Playwright e2e ephemeral output
 e2e/playwright-report/

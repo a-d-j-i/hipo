@@ -98,7 +98,7 @@ fn build_main_window<R: tauri::Runtime>(
     // `http:`/`https:` script URLs, so WebKitGTK refuses
     // `serviceWorker.register()` on `tauri://localhost`. hipo handles
     // this by booting a main-thread router instead of a SW + Worker
-    // on the Tauri shape (see `apps/frontend/src/in-page-mainthread.ts`).
+    // on the Tauri shape (see `apps/hipo/frontend/src/in-page-mainthread.ts`).
     #[allow(unused_mut)]
     let mut builder = WebviewWindowBuilder::new(handle, "main", WebviewUrl::default())
         .title(title)

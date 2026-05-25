@@ -32,9 +32,10 @@ integer-cents money math everywhere.
 ```
 hipo/
 ├── apps/
-│   ├── frontend/     React + Vite + antd (the SPA)
-│   ├── hipo/         Deno HTTP server — hipo routes + vault-server
-│   └── desktop/      Tauri shell (Windows)
+│   └── hipo/         the consumer app — backend + frontend + Tauri shell
+│       ├── src/      Deno HTTP server: hipo routes + vault-server
+│       ├── frontend/ React + Vite + antd SPA
+│       └── tauri/    Tauri shell (Windows)
 ├── packages/         The local-first framework
 │   ├── sqlite/         data layer: libsql (Deno) + sqlocal (browser)
 │   ├── server/         hand-rolled router (~50 LOC), Ctx, AppError
@@ -46,7 +47,7 @@ hipo/
 │   ├── backup-github/  GitHub Contents API target
 │   ├── backup-vault/   client for @hipo/backup-vault-server
 │   ├── backup-vault-server/  PAT-authed blob storage HTTP routes
-│   ├── tauri-shell/    generic Tauri Rust shell (consumed by apps/desktop)
+│   ├── tauri-shell/    generic Tauri Rust shell (consumed by apps/hipo/tauri)
 │   └── shared/         hipo-specific shared types + validators + split algorithm
 ├── docs/
 │   └── local-first-framework.md   the load-bearing strategic plan
@@ -89,17 +90,17 @@ header configuration on the host.
 ### Shape 2: Deno HTTP server
 
 ```
-┌──────────────────────────────┐
-│  apps/hipo (Deno)          │   Hono → hand-rolled router
-│  • libsql via @libsql/client  │   cookie sessions or X-Hipo-Token
-│  • hipo domain routes         │
-│  • @hipo/backup-vault-server  │   PAT-authed vault endpoints
-│  • serves the React SPA       │
-└──────────────▲───────────────┘
-               │ fetch (cookie + X-Hipo-Token)
-┌──────────────┴───────────────┐
-│  apps/frontend (React SPA)    │
-└──────────────────────────────┘
+┌─────────────────────────────────────┐
+│  apps/hipo (Deno)                   │   Hono → hand-rolled router
+│  • libsql via @libsql/client        │   cookie sessions or X-Hipo-Token
+│  • hipo domain routes               │
+│  • @hipo/backup-vault-server        │   PAT-authed vault endpoints
+│  • serves the React SPA             │
+└─────────────────▲───────────────────┘
+                  │ fetch (cookie + X-Hipo-Token)
+┌─────────────────┴───────────────────┐
+│  apps/hipo/frontend (React SPA)     │
+└─────────────────────────────────────┘
 ```
 
 Same router and `do_*(ctx, args)` operations as Shape 1 — only the substrate
@@ -157,8 +158,8 @@ on first load and triggers a one-time reload to activate cross-origin isolation
 — subsequent boots are direct.
 
 > **Set `VITE_INPAGE_BACKEND=1`** for this mode if you want it through
-> `apps/frontend`'s native `npm run dev` (the dev:frontend script doesn't set it
-> by default — Mode B does, see below).
+> `apps/hipo/frontend`'s native `npm run dev` (the dev:frontend script doesn't
+> set it by default — Mode B does, see below).
 
 ### Mode B: Local Deno backend + Vite SPA (Shape 2 dev)
 
@@ -199,7 +200,7 @@ npm run dev:fast        # mock backend + auto-login + Spanish locale
 ```
 
 Seed users: `admin/admin123` (admin), `alice/alice123` (user). Mocks live in
-`apps/frontend/src/mocks/ipc.ts` and stub `window.fetch` for `/api/*` URLs.
+`apps/hipo/frontend/src/mocks/ipc.ts` and stub `window.fetch` for `/api/*` URLs.
 
 ### Useful commands (from repo root)
 
@@ -219,8 +220,8 @@ Seed users: `admin/admin123` (admin), `alice/alice123` (user). Mocks live in
 | `npm run format`                           | Prettier across the repo                                        |
 
 Inside individual workspaces use the native tools directly:
-`cd apps/hipo && deno task test`, `cd apps/desktop && cargo check`,
-`cd apps/frontend && npm run test:watch`, etc.
+`cd apps/hipo && deno task test`, `cd apps/hipo/tauri && cargo check`,
+`cd apps/hipo/frontend && npm run test:watch`, etc.
 
 ---
 
@@ -274,7 +275,7 @@ See `docs/local-first-framework.md` Phase 4–7 for the full design.
 
 ## Releases (Tauri)
 
-`apps/desktop` ships with `tauri-plugin-updater`. On launch (release builds
+`apps/hipo/tauri` ships with `tauri-plugin-updater`. On launch (release builds
 only) the frontend calls `check()`; if a newer signed bundle is available the
 user gets an antd modal offering to install and relaunch.
 
@@ -286,14 +287,14 @@ user gets an antd modal offering to install and relaunch.
    npm run signer:generate -w @hipo/desktop
    ```
 
-   - Public key → `apps/desktop/tauri.conf.json` at `plugins.updater.pubkey`
+   - Public key → `apps/hipo/tauri/tauri.conf.json` at `plugins.updater.pubkey`
      (replace the `PLACEHOLDER_…` value).
    - Private key + password → repo secrets `TAURI_SIGNING_PRIVATE_KEY` and
      `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
    - Keep the private key safe — losing it means existing installs can't accept
      updates.
 
-2. **Updater feed URL** in `apps/desktop/tauri.conf.json` at
+2. **Updater feed URL** in `apps/hipo/tauri/tauri.conf.json` at
    `plugins.updater.endpoints`:
 
    ```

@@ -1,5 +1,5 @@
 // Wire types for /api/backup/*. Mirrored on the frontend via
-// `apps/frontend/src/api/backup.ts`.
+// `apps/hipo/frontend/src/api/backup.ts`.
 //
 // Bytes payloads are base64 strings for Phase 7A — JSON-only wire
 // keeps us on the existing worker bridge. The 33% size penalty is

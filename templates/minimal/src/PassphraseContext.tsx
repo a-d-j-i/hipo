@@ -3,7 +3,7 @@
 // derive AES-GCM keys against incoming salts on demand, and clear everything
 // on logout or hard navigation.
 //
-// Mirror of apps/frontend/src/bootstrap/PassphraseContext.tsx.
+// Mirror of apps/hipo/frontend/src/bootstrap/PassphraseContext.tsx.
 // **Never persisted** — only the encrypted backup file holds durable key material.
 
 import {

@@ -101,7 +101,7 @@ async function main() {
     "npm",
     ["run", "dev", "--", "--port", String(FRONTEND_PORT)],
     {
-      cwd: `${REPO_ROOT}/apps/frontend`,
+      cwd: `${REPO_ROOT}/apps/hipo/frontend`,
       env: {
         ...process.env,
         HIPO_BACKEND_PORT: String(BACKEND_PORT),

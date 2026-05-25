@@ -238,8 +238,8 @@ the destinations still hold.)
 - `apps/hipo/src/audit/{operations,write}.ts` + tests → `packages/audit/src/`
 - `apps/hipo/src/{parties,loans,payments,payouts}/` →
   `apps/hipo/src/domain/<area>/` (these are app code, not framework)
-- `apps/desktop/` → `packages/tauri-shell/` (the generic shell) +
-  `apps/hipo/tauri/` (name/icon/identifier overrides)
+- `apps/desktop/` (née; now `apps/hipo/tauri/`) → `packages/tauri-shell/` (the
+  generic shell) + `apps/hipo/tauri/` (name/icon/identifier overrides)
 
 `Ctx` stays `{ db, user }`. Lives in `packages/server`. `Db` is a Drizzle type
 both backends will satisfy. `User` re-exports from `packages/auth`.
@@ -297,9 +297,9 @@ Worker boundary is hidden from app code.
   `fetch` event when `apiRoute` is enabled — that keeps routing logic close to
   the server package while the SW package stays the single owner of the SW
   artifact.
-- `apps/frontend/src/in-page-backend.ts`: boots the worker, registers the SW.
-  Gate behind `VITE_INPAGE_BACKEND=1`, parallel to existing `VITE_USE_MOCKS`.
-  Safety valve for the rest of the migration.
+- `apps/hipo/frontend/src/in-page-backend.ts`: boots the worker, registers the
+  SW. Gate behind `VITE_INPAGE_BACKEND=1`, parallel to existing
+  `VITE_USE_MOCKS`. Safety valve for the rest of the migration.
 - Cookie sessions replaced with an in-memory token map (also lives in
   `packages/auth` as an alternate session strategy). Existing `X-Hipo-Token`
   header path reused.
@@ -518,8 +518,8 @@ Once Phase 3 has been default for a release and is stable:
 
 - Remove sidecar spawn, `externalBin`, `HIPO_AUTH_TOKEN` env wiring,
   `HIPO_READY` parsing.
-- `apps/desktop/` Rust shell + `tauri.conf.json` template moves into
-  `packages/tauri-shell/`.
+- `apps/hipo/tauri/` (née `apps/desktop/`) Rust shell + `tauri.conf.json`
+  template moves into `packages/tauri-shell/`.
 - `apps/hipo/tauri/` becomes a thin layer that overrides name/icon/ identifier
   and pulls in the shell template.
 - Framework-level Tauri capabilities: `dialog:default`,
@@ -648,13 +648,13 @@ Firefox" and that URL didn't exist before this phase.
    bootstrap → setup → take-a-backup round-trip succeeds. Runs on a
    Chromium-only matrix in v1 (the templates/minimal local harness already
    covers Firefox + WebKit surface-area).
-3. **`packages/sw` extraction** — promote `apps/frontend/public/sw.js` into a
-   real package per Phase 1's original structure. Required so future consumers
+3. **`packages/sw` extraction** — promote `apps/hipo/frontend/public/sw.js` into
+   a real package per Phase 1's original structure. Required so future consumers
    don't copy-paste the COI + `/api/*`-routing SW. Vite plugin or static-copy
    hook handles build-time placement.
-4. **Release index page** — `apps/frontend/public/releases.html` (or served by
-   Pages) lists: current Pages demo URL, latest Tauri installer per OS (links to
-   GitHub Releases), updater feed URL, signing-key fingerprint. Small static
+4. **Release index page** — `apps/hipo/frontend/public/releases.html` (or served
+   by Pages) lists: current Pages demo URL, latest Tauri installer per OS (links
+   to GitHub Releases), updater feed URL, signing-key fingerprint. Small static
    HTML; updated by the same release workflow that publishes installers.
 5. **ESLint `no-restricted-imports`** — enforce "no `apps/*` imports inside
    `packages/*`" per Phase 1 principle #1. Convention only today; one ESLint
@@ -719,14 +719,14 @@ Decide during the Phase 12 spike. Default: rusqlite for control.
 
 ### Code surface (rough)
 
-| Piece                                                          | LOC  | Where                                    |
-| -------------------------------------------------------------- | ---- | ---------------------------------------- |
-| Rust SQL commands (exec / query / txn lifecycle)               | ~150 | `packages/tauri-shell/src/sql.rs`        |
-| Drizzle proxy driver                                           | ~30  | `packages/sqlite/src/client-tauri.ts`    |
-| Connection factory: detect shape, return proxy or sqlocal      | ~20  | `packages/sqlite/src/openDb.ts`          |
-| Capability allow-list                                          | ~10  | `apps/desktop/capabilities/default.json` |
-| Vite build condition: omit SQLite-WASM from Tauri inpage build | ~5   | `apps/frontend/vite.config.ts`           |
-| Tests (parity smoke + transaction lifetime)                    | ~150 | new                                      |
+| Piece                                                          | LOC  | Where                                       |
+| -------------------------------------------------------------- | ---- | ------------------------------------------- |
+| Rust SQL commands (exec / query / txn lifecycle)               | ~150 | `packages/tauri-shell/src/sql.rs`           |
+| Drizzle proxy driver                                           | ~30  | `packages/sqlite/src/client-tauri.ts`       |
+| Connection factory: detect shape, return proxy or sqlocal      | ~20  | `packages/sqlite/src/openDb.ts`             |
+| Capability allow-list                                          | ~10  | `apps/hipo/tauri/capabilities/default.json` |
+| Vite build condition: omit SQLite-WASM from Tauri inpage build | ~5   | `apps/hipo/frontend/vite.config.ts`         |
+| Tests (parity smoke + transaction lifetime)                    | ~150 | new                                         |
 
 **~365 LOC total**, about half the OPFS-polyfill alternative. No `target_os` cfg
 in the Rust shell — Rust SQL commands compile on all platforms; the Drizzle
@@ -871,10 +871,10 @@ a rejected alternative.
 | Piece                                                              | LOC  | Where                                                  |
 | ------------------------------------------------------------------ | ---- | ------------------------------------------------------ |
 | Web Lock helpers (`tryAcquireLock`, `observeLockReleased`)         | ~70  | `packages/server/src/tab-lock.ts`                      |
-| Boot-path probe + render gate                                      | ~15  | `apps/frontend/src/main.tsx`                           |
-| "Already open elsewhere" page (antd)                               | ~55  | `apps/frontend/src/MultiTabBlock.tsx`                  |
+| Boot-path probe + render gate                                      | ~15  | `apps/hipo/frontend/src/main.tsx`                      |
+| "Already open elsewhere" page (antd)                               | ~55  | `apps/hipo/frontend/src/MultiTabBlock.tsx`             |
 | Same for minimal template (plain CSS)                              | ~30  | `templates/minimal/src/MultiTabBlock.tsx` + `main.tsx` |
-| Vitest cases (6 — acquire, ifAvailable false, release, observe x3) | ~120 | `apps/frontend/src/tab-lock.test.ts`                   |
+| Vitest cases (6 — acquire, ifAvailable false, release, observe x3) | ~120 | `apps/hipo/frontend/src/tab-lock.test.ts`              |
 | Playwright multi-context spike                                     | ~140 | `spikes/06-multi-tab/multi-tab.mjs`                    |
 
 **~430 LOC including tests + spike.**

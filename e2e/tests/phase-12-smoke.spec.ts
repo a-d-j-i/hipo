@@ -24,7 +24,7 @@ import type { TauriPage } from "@srsholmes/tauri-playwright";
 import { test, expect } from "../fixtures";
 
 // Same in-page wrapper used by spikes/04-perf-baseline/smoke-inpage.mjs.
-// Mirrors apps/frontend/src/api/http.ts: sends X-Hipo-Token from
+// Mirrors apps/hipo/frontend/src/api/http.ts: sends X-Hipo-Token from
 // sessionStorage and syncs it from the X-Hipo-Session response header.
 const API_HELPER = `
   (() => {
@@ -174,7 +174,7 @@ test("Phase 12 smoke: rusqlite + IPC end-to-end, including reload persistence an
   expect(snapshot.body.bytes_b64.length).toBeGreaterThan(0);
 
   // The Tauri shape's backup format is `gzipped(binaryFormat())` (see
-  // apps/frontend/src/in-page-worker.ts), so /api/backup/snapshot
+  // apps/hipo/frontend/src/in-page-worker.ts), so /api/backup/snapshot
   // returns gzipped SQLite bytes. Check the gzip magic (0x1f 0x8b) and
   // let the restore step below validate the SQLite payload underneath.
   const gzipMagicOk = await tauriPage.evaluate<boolean>(

@@ -17,5 +17,5 @@ export const { test, expect } = createTauriTest({
   // `npm run dev:desktop:e2e`; the fixture uses this for screenshot
   // paths etc. Resolved relative to the repo root (the test runner's
   // CWD when launched via the root `test:e2e:tauri` script).
-  tauriCwd: resolve(process.cwd(), "apps/desktop"),
+  tauriCwd: resolve(process.cwd(), "apps/hipo/tauri"),
 });

@@ -3,7 +3,7 @@
 // root *outside* sqlocal's storage pool; its presence is independent of any
 // specific DB engine layout.
 //
-// Mirror of apps/frontend/src/bootstrap/opfs-state.ts — uses the
+// Mirror of apps/hipo/frontend/src/bootstrap/opfs-state.ts — uses the
 // "minimal-bootstrap-v1" marker so a minimal template install doesn't
 // accidentally share state with a hipo install on the same origin.
 

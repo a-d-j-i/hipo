@@ -72,7 +72,7 @@ async function waitForUrl(url, timeoutMs = 30_000) {
 async function main() {
   log("starting frontend (dev:inpage)…");
   const frontend = startProc("frontend", "npm", ["run", "dev:inpage"], {
-    cwd: `${REPO_ROOT}/apps/frontend`,
+    cwd: `${REPO_ROOT}/apps/hipo/frontend`,
   });
 
   let browser;

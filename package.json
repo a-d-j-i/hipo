@@ -3,9 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "apps/frontend",
     "apps/hipo",
-    "apps/desktop",
+    "apps/hipo/frontend",
+    "apps/hipo/tauri",
     "packages/shared",
     "packages/sqlite",
     "packages/server",

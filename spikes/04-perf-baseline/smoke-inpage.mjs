@@ -61,7 +61,7 @@ async function waitForUrl(url, timeoutMs = 30_000) {
 async function main() {
   log("starting frontend in VITE_INPAGE_BACKEND mode (no Deno)…");
   const frontend = startProc("frontend", "npm", ["run", "dev:inpage"], {
-    cwd: `${REPO_ROOT}/apps/frontend`,
+    cwd: `${REPO_ROOT}/apps/hipo/frontend`,
   });
 
   let browser;
@@ -85,7 +85,7 @@ async function main() {
     await page.goto(URL, { waitUntil: "domcontentloaded" });
     await page.waitForSelector("input", { timeout: 30_000 });
 
-    // Install a small wrapper that mirrors apps/frontend/src/api/http.ts:
+    // Install a small wrapper that mirrors apps/hipo/frontend/src/api/http.ts:
     // sends X-Hipo-Token from sessionStorage, syncs from X-Hipo-Session
     // response headers. Same logic the React app uses.
     await page.evaluate(() => {

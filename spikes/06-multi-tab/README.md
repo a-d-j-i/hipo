@@ -28,7 +28,7 @@ node spikes/06-multi-tab/multi-tab.mjs
 ```
 
 Exits `0` on green; non-zero if any assertion fails. The script starts
-`apps/frontend` in `dev:inpage` mode itself, drives Playwright through both
+`apps/hipo/frontend` in `dev:inpage` mode itself, drives Playwright through both
 tabs, and cleans up its own dev server in `finally`.
 
 ## What it does NOT cover

@@ -63,7 +63,7 @@ jobs:
           set -euo pipefail
           mkdir -p _site/minimal _site/hipo
           cp -r templates/minimal/dist/. _site/minimal/
-          cp -r apps/frontend/dist/. _site/hipo/
+          cp -r apps/hipo/frontend/dist/. _site/hipo/
           cp pages/index.html _site/index.html
 
           # Stamp the landing page with this deploy's commit + date.

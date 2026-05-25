@@ -1,8 +1,8 @@
 // Main-thread bootstrap for the in-page backend shape.
 //
-// Mirror of apps/frontend/src/in-page-backend.ts. See that file for the
+// Mirror of apps/hipo/frontend/src/in-page-backend.ts. See that file for the
 // full topology description. Identical logic; separate file so the
-// template has no import dependency on apps/frontend.
+// template has no import dependency on apps/hipo/frontend.
 
 const BASE = import.meta.env.BASE_URL;
 

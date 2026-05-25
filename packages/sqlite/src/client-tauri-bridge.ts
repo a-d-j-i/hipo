@@ -60,7 +60,7 @@ function installListener(): void {
 
 /**
  * Generic Tauri-IPC bridge invoke from a Worker. The main thread's
- * SQL bridge handler (see `apps/frontend/src/in-page-backend.ts`)
+ * SQL bridge handler (see `apps/hipo/frontend/src/in-page-backend.ts`)
  * forwards every `sql.invoke` it receives to `invoke(cmd, args)`,
  * regardless of command name — so this primitive is reusable by the
  * Tauri-side BinaryFormat (`binary-format-tauri.ts`) on top of the

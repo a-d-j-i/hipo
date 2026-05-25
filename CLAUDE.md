@@ -37,19 +37,21 @@ HTTP server. Three deployment shapes from one codebase: **Tauri desktop**,
 ```
 hipo/
 ├── apps/
-│   ├── frontend/     React + Vite + antd (browser bundle)
-│   ├── hipo/         Deno + Hono + Drizzle + libsql (HTTP server)
-│   └── desktop/      Tauri shell — spawns backend, opens webview
+│   └── hipo/             the consumer app
+│       ├── src/          Deno + Hono + Drizzle + libsql (HTTP server)
+│       ├── frontend/     React + Vite + antd (browser bundle)
+│       └── tauri/        Tauri shell — opens the webview
 ├── packages/
-│   └── shared/       Source-only TypeScript shared by frontend + backend
-├── package.json      Workspace root (npm workspaces)
-└── deno.json         Deno workspace root (declares apps/hipo)
+│   └── shared/           Source-only TypeScript shared by frontend + backend
+├── package.json          Workspace root (npm workspaces)
+└── deno.json             Deno workspace root (declares apps/hipo)
 ```
 
 Each workspace keeps its native config: `package.json` + `vite.config.ts` in
-frontend, `deno.json` in `apps/hipo`, `Cargo.toml` + `tauri.conf.json` in
-desktop. The thin `package.json` files in `apps/{hipo,desktop}` only exist so
-npm workspaces can resolve them by name.
+`apps/hipo/frontend`, `deno.json` in `apps/hipo`, `Cargo.toml` +
+`tauri.conf.json` in `apps/hipo/tauri`. The thin `package.json` files in
+`apps/hipo/{frontend,tauri}` are thin wrappers that exist so npm workspaces can
+resolve them by name.
 
 ## Domain
 
@@ -93,13 +95,13 @@ Most commands run from the repo root.
 - `npm run dev:desktop` — Tauri shell (calls into Vite via `beforeDevCommand`).
   User runs `dev:backend` separately.
 - `npm run dev:mock` / `npm run dev:fast` — Vite + in-browser mock backend.
-  `apps/frontend/src/mocks/ipc.ts` stubs `window.fetch` for `/api/*` URLs; the
-  React app runs end-to-end with seed data (`admin`/`admin123`,
+  `apps/hipo/frontend/src/mocks/ipc.ts` stubs `window.fetch` for `/api/*` URLs;
+  the React app runs end-to-end with seed data (`admin`/`admin123`,
   `alice`/`alice123`). No Deno needed.
 - `npm run build:frontend` — `tsc --noEmit` + `vite build` →
-  `apps/frontend/dist/`.
+  `apps/hipo/frontend/dist/`.
 - `npm run build:backend:linux` / `:windows` — compile Deno sidecar to a single
-  native binary in `apps/desktop/binaries/`.
+  native binary in `apps/hipo/tauri/binaries/`.
 - `npm run build:desktop:linux` / `:windows` — full Tauri build (chains
   frontend + backend + desktop). Windows uses `cargo-xwin` from Linux.
 - `npm run check:frontend` / `check:backend` — type-check each workspace.
@@ -110,8 +112,8 @@ Most commands run from the repo root.
 Inside individual workspaces use the native tools directly:
 
 - `cd apps/hipo && deno task {dev,test,check,compile:linux,…}`
-- `cd apps/desktop && cargo check`, `cargo tauri dev`, `cargo tauri build`
-- `cd apps/frontend && npm run dev` (or any other frontend script)
+- `cd apps/hipo/tauri && cargo check`, `cargo tauri dev`, `cargo tauri build`
+- `cd apps/hipo/frontend && npm run dev` (or any other frontend script)
 
 ## Frontend stack — agreed deps
 
@@ -164,7 +166,7 @@ step; both Vite and Deno read the `.ts` files directly. Imports use explicit
 - `src/validators.ts` — `check*` functions returning `string | null` plus
   constants (`USERNAME_MAX_LENGTH`, `PASSWORD_MIN_LENGTH`, etc.). Backend wraps
   each in a thin `validate*` that throws `badRequest(msg)`. Frontend uses them
-  via `rule(checkX)` (see `apps/frontend/src/lib/antdRules.ts`).
+  via `rule(checkX)` (see `apps/hipo/frontend/src/lib/antdRules.ts`).
 - `src/split.ts` — largest-remainder payment split (BigInt-safe).
 - `src/format.ts` — currency formatters + `centsToMajor`/`majorToCents`.
 
@@ -182,10 +184,10 @@ client state library.
 
 **Data flow.** Components call functions in their domain's `api.ts`
 (`listLoans`, `createParty`, …). Each `api.ts` calls `httpRequest()` from
-`apps/frontend/src/api/http.ts`, which `fetch()`es the backend at `/api/...`
-(proxied to the Deno port in dev; same-origin in prod via the sidecar). After a
-mutation, the page re-fetches the affected list — locally or via a `refresh()`
-callback passed through props. No global cache yet.
+`apps/hipo/frontend/src/api/http.ts`, which `fetch()`es the backend at
+`/api/...` (proxied to the Deno port in dev; same-origin in prod via the
+sidecar). After a mutation, the page re-fetches the affected list — locally or
+via a `refresh()` callback passed through props. No global cache yet.
 
 **Auth-token bootstrap (Tauri build only).** The Tauri shell generates a 256-bit
 random token, passes it to the Deno child via `HIPO_AUTH_TOKEN` env var, and
@@ -201,7 +203,7 @@ middleware is a no-op.
 **Validation, two layers.**
 
 1. Antd `rules` on `<Form.Item>` for instant client-side feedback. Use
-   `rule(checkX)` from `apps/frontend/src/lib/antdRules.ts` alongside
+   `rule(checkX)` from `apps/hipo/frontend/src/lib/antdRules.ts` alongside
    `{ required: true, message: t("...") }` so the empty case stays localized and
    the structural case comes from shared.
 2. Backend `do_*` functions throw `AppError` via `badRequest(msg)`. The error
@@ -246,14 +248,14 @@ recovery in V1 — backups are the answer. No encryption at rest (deferred). See
 `memory/project-hipo-auth.md` for full design.
 
 **i18n.** `react-i18next` + `i18next` + `i18next-browser-languagedetector`.
-Catalogs at `apps/frontend/src/i18n/locales/{es,en}.json`. Default locale `es`;
-toggle in Settings persists to `localStorage["hipo.locale"]`. All UI surfaces
-translate via `useTranslation()` + `t()`. **Backend error strings are
+Catalogs at `apps/hipo/frontend/src/i18n/locales/{es,en}.json`. Default locale
+`es`; toggle in Settings persists to `localStorage["hipo.locale"]`. All UI
+surfaces translate via `useTranslation()` + `t()`. **Backend error strings are
 pass-through English** — the UI displays them as-is. Translating them would
 require an error-code refactor on the backend. Deferred.
 
 **Dev feature flags** (Vite env vars, read by
-`apps/frontend/src/vite-env.d.ts`):
+`apps/hipo/frontend/src/vite-env.d.ts`):
 
 - `VITE_USE_MOCKS=1` — loads `src/mocks/ipc.ts`, which stubs `window.fetch` so
   the app runs without a real backend. Seed users: `admin`/`admin123` (admin),
@@ -291,7 +293,7 @@ Two layers:
   survive `db.transaction()` in libsql's node binding). 98 tests across
   auth/parties/loans/payments/payouts/audit/backup/system, plus the shared
   `splitPayment` algorithm tests in `apps/hipo/src/payments/split_test.ts`.
-- **Vitest** (`apps/frontend/src/**/*.test.tsx`) covers React with Testing
+- **Vitest** (`apps/hipo/frontend/src/**/*.test.tsx`) covers React with Testing
   Library + `vi.stubGlobal("fetch", ...)`. `setup.ts` extends `expect` with
   `@testing-library/jest-dom/matchers` explicitly (the auto-extend `/vitest`
   entry doesn't reach the right vitest instance under our npm-workspaces +
@@ -302,7 +304,7 @@ a flow worth automating.
 
 ## Auto-updater
 
-`apps/desktop` ships with `tauri-plugin-updater` (release builds only —
+`apps/hipo/tauri` ships with `tauri-plugin-updater` (release builds only —
 `#[cfg(not(debug_assertions))]`-gated). On launch, the frontend's
 `checkForUpdates()` calls `check()`; if a newer signed bundle is available the
 user gets an antd modal offering to install and relaunch. Settings → "Check for
@@ -311,12 +313,12 @@ updates" runs the same flow manually.
 Signing pipeline:
 
 - `npm run signer:generate -w @hipo/desktop` produces the keypair.
-- Public key → `apps/desktop/tauri.conf.json` at `plugins.updater.pubkey`.
+- Public key → `apps/hipo/tauri/tauri.conf.json` at `plugins.updater.pubkey`.
 - Private key + password → CI secrets `TAURI_SIGNING_PRIVATE_KEY` +
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
 - Endpoint URL points at
-  `https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json`
-  (wired in `tauri.conf.json`).
+  `https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json` (wired
+  in `tauri.conf.json`).
 
 Release pipeline: `.github/workflows/release.yml` triggers on `v*` tags,
 matrix-builds on `ubuntu-22.04` + `windows-latest`, signs via `tauri-action`,
@@ -339,47 +341,47 @@ the Microsoft Windows SDK (~600 MB). CI uses a native Windows runner instead.
 ## Architecture
 
 ```
-┌──────────────────────────────┐
-│  apps/desktop (Tauri shell)   │  generates auth token, spawns sidecar,
-│                               │  opens webview, runs the auto-updater
-└──────────────┬───────────────┘
-               │ spawns
-               ▼
-┌──────────────────────────────┐
-│  apps/hipo (Deno sidecar)     │  Hono + Drizzle + libsql + cookie sessions
-│                               │  + audit log + serves the React SPA
-└──────────────▲───────────────┘
-               │ fetch (cookie + X-Hipo-Token)
-               │
-┌──────────────┴───────────────┐
-│  apps/frontend (React)        │  antd 5, responsive, no invoke()
-└──────────────────────────────┘
+┌─────────────────────────────────────┐
+│  apps/hipo/tauri (Tauri shell)      │  generates auth token, spawns sidecar,
+│                                     │  opens webview, runs the auto-updater
+└─────────────────┬───────────────────┘
+                  │ spawns
+                  ▼
+┌─────────────────────────────────────┐
+│  apps/hipo (Deno sidecar)           │  Hono + Drizzle + libsql + cookie sessions
+│                                     │  + audit log + serves the React SPA
+└─────────────────▲───────────────────┘
+                  │ fetch (cookie + X-Hipo-Token)
+                  │
+┌─────────────────┴───────────────────┐
+│  apps/hipo/frontend (React)         │  antd 5, responsive, no invoke()
+└─────────────────────────────────────┘
 ```
 
 Dev mode: the Tauri shell does **not** spawn the sidecar (it relies on
 `npm run dev:backend` running separately, and Vite proxies `/api/*` to it). Prod
 mode: the shell spawns the bundled `hipo-backend-<target>` from
-`apps/desktop/binaries/`, parses `HIPO_READY hostname=… port=N` from stdout,
+`apps/hipo/tauri/binaries/`, parses `HIPO_READY hostname=… port=N` from stdout,
 then builds the webview at `http://127.0.0.1:N/#token=<token>`.
 
-Window/plugin permissions are gated by `apps/desktop/capabilities/default.json`
-(currently `core:default` + `updater:default` + a scoped `shell:allow-execute`
-for the sidecar).
+Window/plugin permissions are gated by
+`apps/hipo/tauri/capabilities/default.json` (currently `core:default` +
+`updater:default` + a scoped `shell:allow-execute` for the sidecar).
 
 App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
-800×600 (`apps/desktop/tauri.conf.json`).
+800×600 (`apps/hipo/tauri/tauri.conf.json`).
 
 ## Tooling
 
-- **ESLint** flat config (`apps/frontend/eslint.config.js`): `@eslint/js`
+- **ESLint** flat config (`apps/hipo/frontend/eslint.config.js`): `@eslint/js`
   - `typescript-eslint` + `react-hooks` + `react-refresh`;
     `eslint-config-prettier` disables formatting rules.
 - **Prettier** (`.prettierrc.json` at repo root): 2-space, double-quote,
   trailing-comma-all, 80 cols; `*.md` uses `proseWrap: "always"`.
-- **TypeScript** (`apps/frontend/tsconfig.json`): bundler resolution,
+- **TypeScript** (`apps/hipo/frontend/tsconfig.json`): bundler resolution,
   `jsx: react-jsx`, `noEmit: true`, `allowImportingTsExtensions: true`.
 
-**Frontend source layout (`apps/frontend/src/`):**
+**Frontend source layout (`apps/hipo/frontend/src/`):**
 
 - `App.tsx` — root: `ConfigProvider` + `BrowserRouter` + `AuthProvider` +
   routes.
@@ -425,6 +427,6 @@ App identifier `ar.com.adjimann.hipo`; product name `hipo`; default window
 `backup_target_state.last_backup_filename` records the filename of the last
 successful put. Targets with a meaningful filename concept (`local-download`,
 `fs-access`) return it from `put()`; `runBackup` threads it through
-`recordBackup` so the SystemStatus panel can render "File: …" beneath the
-"Last backup" timestamp, and the local-download toast names the file the
-browser saved.
+`recordBackup` so the SystemStatus panel can render "File: …" beneath the "Last
+backup" timestamp, and the local-download toast names the file the browser
+saved.

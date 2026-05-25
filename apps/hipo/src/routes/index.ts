@@ -1,6 +1,6 @@
 // Hipo's full route surface, registered onto a Router<AppState>.
 // Used by both the Deno server (apps/hipo/src/server.ts) and the
-// in-page Worker (apps/frontend/src/in-page-worker.ts).
+// in-page Worker (apps/hipo/frontend/src/in-page-worker.ts).
 
 import type { Router } from "@hipo/server";
 import type { BackupFormat } from "@hipo/backup";

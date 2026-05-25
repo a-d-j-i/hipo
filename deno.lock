@@ -3124,14 +3124,14 @@
       ]
     },
     "members": {
-      "apps/desktop": {
-        "packageJson": {
-          "dependencies": [
-            "npm:@tauri-apps/cli@2"
-          ]
-        }
+      "apps/hipo": {
+        "dependencies": [
+          "npm:@libsql/client@0.14",
+          "npm:@node-rs/argon2@2",
+          "npm:drizzle-orm@0.36"
+        ]
       },
-      "apps/frontend": {
+      "apps/hipo/frontend": {
         "packageJson": {
           "dependencies": [
             "npm:@ant-design/icons@^6.2.2",
@@ -3181,12 +3181,12 @@
           ]
         }
       },
-      "apps/hipo": {
-        "dependencies": [
-          "npm:@libsql/client@0.14",
-          "npm:@node-rs/argon2@2",
-          "npm:drizzle-orm@0.36"
-        ]
+      "apps/hipo/tauri": {
+        "packageJson": {
+          "dependencies": [
+            "npm:@tauri-apps/cli@2"
+          ]
+        }
       },
       "packages/audit": {
         "dependencies": [

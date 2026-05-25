@@ -51,16 +51,16 @@ jobs:
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
           echo "Stamping version: $VERSION"
-          sed -i 's/^  "version": "[^"]*",$/  "version": "'"$VERSION"'",/' apps/desktop/tauri.conf.json
-          sed -i '0,/^version = "[^"]*"$/{s/^version = "[^"]*"$/version = "'"$VERSION"'"/}' apps/desktop/Cargo.toml
+          sed -i 's/^  "version": "[^"]*",$/  "version": "'"$VERSION"'",/' apps/hipo/tauri/tauri.conf.json
+          sed -i '0,/^version = "[^"]*"$/{s/^version = "[^"]*"$/version = "'"$VERSION"'"/}' apps/hipo/tauri/Cargo.toml
           sed -i 's/APP_VERSION = "[^"]*"/APP_VERSION = "'"$VERSION"'"/' apps/hipo/src/version.ts
-          grep '"version":' apps/desktop/tauri.conf.json | head -1
-          grep '^version =' apps/desktop/Cargo.toml | head -1
+          grep '"version":' apps/hipo/tauri/tauri.conf.json | head -1
+          grep '^version =' apps/hipo/tauri/Cargo.toml | head -1
           cat apps/hipo/src/version.ts
 
       # The Tauri shell no longer spawns a Deno sidecar (Phase 8A trimmed
       # it out — see packages/tauri-shell/src/lib.rs and
-      # apps/desktop/tauri.conf.json's lack of `externalBin`). tauri-action's
+      # apps/hipo/tauri/tauri.conf.json's lack of `externalBin`). tauri-action's
       # `beforeBuildCommand` (configured in tauri.conf.json) builds the
       # in-page frontend bundle, which IS the backend now.
 
@@ -70,7 +70,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: apps/desktop
+          projectPath: apps/hipo/tauri
           tagName: ${{ github.ref_name }}
           releaseName: "hipo ${{ github.ref_name }}"
           releaseBody: "See the assets to download and install."

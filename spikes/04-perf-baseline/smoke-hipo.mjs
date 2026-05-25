@@ -82,7 +82,7 @@ async function main() {
   // Start frontend dev (with proxy pointed at our backend)
   log("starting frontend…");
   const frontend = startProc("frontend", "npm", ["run", "dev"], {
-    cwd: `${REPO_ROOT}/apps/frontend`,
+    cwd: `${REPO_ROOT}/apps/hipo/frontend`,
     env: { ...process.env, HIPO_BACKEND_PORT: String(BACKEND_PORT) },
   });
 

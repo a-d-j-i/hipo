@@ -1,5 +1,5 @@
 // Root ESLint config: enforces framework-isolation rules across
-// packages/. The frontend has its own config at apps/frontend/eslint.config.js
+// packages/. The frontend has its own config at apps/hipo/frontend/eslint.config.js
 // for React-specific rules.
 
 import js from "@eslint/js";
@@ -11,7 +11,7 @@ export default tseslint.config(
       "**/node_modules",
       "**/dist",
       "**/target",
-      "apps/desktop/gen",
+      "apps/hipo/tauri/gen",
       // Spikes and templates are excluded by their own configs / are
       // exploratory; the framework-isolation rule only matters for the
       // canonical framework code under packages/.

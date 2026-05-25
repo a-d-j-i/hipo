@@ -45,9 +45,8 @@ async function bootstrap() {
       const { bootInPageMainThread } = await import("./in-page-mainthread");
       await bootInPageMainThread();
     } else {
-      const { registerInPageSW, spawnInPageWorker } = await import(
-        "./in-page-backend"
-      );
+      const { registerInPageSW, spawnInPageWorker } =
+        await import("./in-page-backend");
       await registerInPageSW();
 
       // Acquire the single-tab Web Lock before touching OPFS. If

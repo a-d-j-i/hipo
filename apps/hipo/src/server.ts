@@ -6,7 +6,7 @@
 //
 // Shape 2 ("hipo as a regular web app with a backend") runs this
 // same entry. The router stays runnable in-page (Worker) too — see
-// apps/frontend/src/in-page-worker.ts.
+// apps/hipo/frontend/src/in-page-worker.ts.
 
 import { serve } from "@hipo/server-deploy";
 import { gzipped } from "@hipo/backup";

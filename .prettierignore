@@ -1,6 +1,10 @@
 node_modules
 dist
 yarn.lock
-src-tauri/target
-src-tauri/gen
-src-tauri/Cargo.lock
+**/target
+**/gen
+**/Cargo.lock
+package-lock.json
+deno.lock
+apps/hipo/data
+apps/hipo/tauri/binaries
