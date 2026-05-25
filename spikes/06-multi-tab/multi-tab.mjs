@@ -16,11 +16,13 @@
 // verification is deferred until Pages is deployed.
 
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const FRONTEND_PORT = 1420;
 const URL = `http://127.0.0.1:${FRONTEND_PORT}/`;
-const REPO_ROOT = "/home/work/user/hipo";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function log(line) {
   console.log(`[multi-tab ${new Date().toISOString().slice(11, 19)}] ${line}`);

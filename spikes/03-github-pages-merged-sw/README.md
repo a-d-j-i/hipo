@@ -51,7 +51,7 @@ UI. The setup is:
 2. **Copy the spike directory into the new repo as the root**:
    ```bash
    # From the new repo's working tree:
-   cp -r /home/work/user/hipo/spikes/03-github-pages-merged-sw/. .
+   cp -r <hipo-checkout>/spikes/03-github-pages-merged-sw/. .
    rm -rf .github/workflows/deploy.yml  # we'll re-add below
    ```
 3. **Move the workflow up to repo root** (it's currently inside the spike at
@@ -59,7 +59,7 @@ UI. The setup is:
    `.github/workflows/deploy.yml` at root level):
    ```bash
    mkdir -p .github/workflows
-   cp /home/work/user/hipo/spikes/03-github-pages-merged-sw/.github/workflows/deploy.yml .github/workflows/
+   cp <hipo-checkout>/spikes/03-github-pages-merged-sw/.github/workflows/deploy.yml .github/workflows/
    ```
    (If you copied the whole directory in step 2, the workflow is already in
    place — skip this.)

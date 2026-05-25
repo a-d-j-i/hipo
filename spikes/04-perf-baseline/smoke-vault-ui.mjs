@@ -11,6 +11,8 @@
 
 import { spawn } from "node:child_process";
 import { rmSync, mkdirSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const DATA_DIR = `/tmp/hipo-vault-ui-${Date.now()}`;
@@ -18,7 +20,7 @@ const SHOTS_DIR = "/tmp/hipo-vault-ui-shots";
 const BACKEND_PORT = 18901;
 const FRONTEND_PORT = 1424;
 const URL = `http://127.0.0.1:${FRONTEND_PORT}/`;
-const REPO_ROOT = "/home/work/user/hipo";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PASSPHRASE = "smoke-passphrase-2026";
 
 function log(line) {

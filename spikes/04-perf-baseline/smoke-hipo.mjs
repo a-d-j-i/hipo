@@ -5,13 +5,15 @@
 
 import { spawn } from "node:child_process";
 import { rmSync, mkdirSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const DATA_DIR = `/tmp/hipo-smoke-${Date.now()}`;
 const BACKEND_PORT = 18787;
 const FRONTEND_PORT = 1420;
 const URL = `http://127.0.0.1:${FRONTEND_PORT}/`;
-const REPO_ROOT = "/home/work/user/hipo";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 function log(line) {
   console.log(`[smoke ${new Date().toISOString().slice(11, 19)}] ${line}`);

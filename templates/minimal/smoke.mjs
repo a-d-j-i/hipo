@@ -12,11 +12,13 @@
 
 import { spawn } from "node:child_process";
 import { mkdirSync, existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { chromium } from "playwright";
 
 const FRONTEND_PORT = 1430;
 const URL = `http://127.0.0.1:${FRONTEND_PORT}/`;
-const REPO_ROOT = "/home/work/user/hipo";
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SHOTS_DIR = "/tmp/templates-minimal-shots";
 
 function log(line) {
