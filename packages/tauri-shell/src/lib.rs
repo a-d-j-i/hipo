@@ -104,20 +104,37 @@ fn build_main_window<R: tauri::Runtime>(
         .title(title)
         .inner_size(size.0, size.1);
 
-    // Windows: skip OLE drop-target registration on the window. tao
-    // registers an `IDropTarget` per webview via `RegisterDragDrop`
-    // and unregisters it via `RevokeDragDrop` on window teardown;
-    // Wine's ole32 mishandles the `IDropTarget::Release()` call and
-    // segfaults. Disabling at the shell layer avoids the round-trip
-    // entirely. Consumers that want OS-level file drops on Windows
-    // can build their own window with `.drag_and_drop(true)` — but
-    // hipo's frontend is built to stay identical between Tauri and
-    // Pages (`<input type="file">` everywhere), so OS drag-drop
-    // adds nothing.
+    // Skip the wry-level drag-drop handler. wry installs an
+    // `IDropTarget` per WebView2 child window by walking the host
+    // HWND with `EnumChildWindows` (wry-0.54.2
+    // `webview2/drag_drop.rs:60-65`); each child gets a
+    // `RevokeDragDrop` to clear any pre-existing target before
+    // `RegisterDragDrop` reinstalls wry's own. Wine 11 segfaults
+    // inside that first `RevokeDragDrop` — the COM `Release()` on
+    // the existing IDropTarget mishandles its vtable. The crash
+    // happens during setup, not teardown.
+    //
+    // Setting `disable_drag_drop_handler()` flips
+    // `webview_attributes.drag_drop_handler_enabled = false`;
+    // tauri-runtime-wry only calls `with_drag_drop_handler` when
+    // that flag is true, so `DragDropController::new` (the call
+    // that scans + revokes + reinstalls) never runs. Real Windows
+    // doesn't crash on the scan either, but disabling it costs
+    // nothing — hipo's frontend uses `<input type="file">` for
+    // file selection (CLAUDE.md mandate to stay identical between
+    // Tauri and Pages), not OS drag-drop.
+    //
+    // `drag_and_drop(false)` belt-and-suspenders disables the
+    // tao window-level handler too (separate code path: tao's
+    // `RegisterDragDrop` on the parent HWND + unconditional
+    // `RevokeDragDrop` on `WM_DESTROY`). Not strictly load-bearing
+    // for this crash, but consistent with "no OLE drag-drop on
+    // Windows" overall.
     #[cfg(windows)]
     {
         builder = builder.drag_and_drop(false);
     }
+    builder = builder.disable_drag_drop_handler();
 
     builder.build()?;
     Ok(())
