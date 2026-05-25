@@ -3,10 +3,11 @@
 Guidance for Claude Code when working in this repository.
 
 **Live Pages demos:** `https://a-d-j-i.github.io/hipo/{hipo,minimal}/` — the
-full product + the framework's smallest working consumer. The Pages deploy is
-the "latest main" build; Tauri installers ship via GitHub Releases on tag
-pushes. See `.github/workflows/pages.yml` for the build and post-deploy
-Playwright smoke.
+full product + the framework's smallest working consumer. Pages and Tauri
+installers both ship from the same `v*` tag push (see
+`.github/workflows/pages.yml` + `release.yml`); the Pages workflow also has a
+`workflow_dispatch` escape hatch that stamps a `0.0.0-dev+<sha>` version. The
+Playwright smoke runs post-deploy against the live URL.
 
 ## Project goals
 
