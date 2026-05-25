@@ -8,18 +8,25 @@
 // `decode`, callers should reload the page so migrations re-apply
 // against the restored schema.
 //
-// Designed to be imported by code running inside the in-page Worker
-// — the bridge primitive forwards via postMessage to the main thread
-// (which has `invoke()`). When called from the main thread directly,
-// the bridge listener simply doesn't match its own postMessage; use
-// the `client-tauri.ts` direct path on the main thread.
+// Works on the main thread or inside a Worker — pass the appropriate
+// invoker:
+//   - main thread: `(cmd, args) => invoke(cmd, args)` from
+//     `@tauri-apps/api/core` (the default when no invoker is supplied).
+//   - Worker: `bridgeInvoke` from `./client-tauri-bridge.ts`, which
+//     postMessages the call to the main thread.
 //
 // `format.name` is `"binary"` so envelopes interoperate with the
 // other shapes' binary backups — wrap with `gzipped(...)` from
 // `@hipo/backup` to get `"binary-gzip"` envelopes.
 
 import type { BackupFormat } from "@hipo/backup";
-import { bridgeInvoke } from "./client-tauri-bridge.ts";
+import { invoke } from "@tauri-apps/api/core";
+import type { BridgeCmd } from "./client-tauri-bridge.ts";
+
+export type TauriInvoker = <T>(
+  cmd: BridgeCmd,
+  args: Record<string, unknown>,
+) => Promise<T>;
 
 function base64ToBytes(b64: string): Uint8Array {
   const bin = atob(b64);
@@ -45,17 +52,20 @@ function bytesToBase64(bytes: Uint8Array): string {
  * Build a Tauri-shape `BackupFormat`. `encode()` calls
  * `sql_backup_to_bytes` (`VACUUM INTO` → read → base64); `decode()`
  * calls `sql_restore_from_bytes` (base64 → temp file → close → rename
- * → reopen). Both transit through the Worker → main → Rust bridge.
+ * → reopen). The default invoker uses `@tauri-apps/api/core`'s
+ * `invoke()` directly (main-thread); Worker callers pass
+ * `bridgeInvoke` from `client-tauri-bridge.ts` to postMessage instead.
  */
-export function binaryFormat(): BackupFormat {
+export function binaryFormat(invoker?: TauriInvoker): BackupFormat {
+  const inv: TauriInvoker = invoker ?? ((cmd, args) => invoke(cmd, args));
   return {
     name: "binary",
     async encode(): Promise<Uint8Array> {
-      const b64 = await bridgeInvoke<string>("sql_backup_to_bytes", {});
+      const b64 = await inv<string>("sql_backup_to_bytes", {});
       return base64ToBytes(b64);
     },
     async decode(bytes: Uint8Array): Promise<void> {
-      await bridgeInvoke<void>("sql_restore_from_bytes", {
+      await inv<void>("sql_restore_from_bytes", {
         bytes: bytesToBase64(bytes),
       });
     },

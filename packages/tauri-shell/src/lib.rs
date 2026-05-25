@@ -88,14 +88,38 @@ fn build_main_window<R: tauri::Runtime>(
     size: (f64, f64),
 ) -> tauri::Result<()> {
     // `WebviewUrl::default()` opens the bundled `frontendDist` via
-    // Tauri's `tauri://localhost/` (Windows) / `http://tauri.localhost/`
-    // (Linux/macOS) protocol. In `tauri dev` it follows `build.devUrl`
-    // from `tauri.conf.json`. Either way the consumer's frontend boots
-    // and registers its own service worker.
-    WebviewWindowBuilder::new(handle, "main", WebviewUrl::default())
+    // Tauri's custom protocol. On Windows + Android the scheme is
+    // `http(s)://tauri.localhost/`; on Linux + macOS it's
+    // `tauri://localhost/` (see `tauri::manager::tauri_protocol_url`
+    // in tauri 2.11). In `tauri dev` it follows `build.devUrl` from
+    // `tauri.conf.json`.
+    //
+    // Heads-up for consumers: the Service Worker spec requires
+    // `http:`/`https:` script URLs, so WebKitGTK refuses
+    // `serviceWorker.register()` on `tauri://localhost`. hipo handles
+    // this by booting a main-thread router instead of a SW + Worker
+    // on the Tauri shape (see `apps/frontend/src/in-page-mainthread.ts`).
+    #[allow(unused_mut)]
+    let mut builder = WebviewWindowBuilder::new(handle, "main", WebviewUrl::default())
         .title(title)
-        .inner_size(size.0, size.1)
-        .build()?;
+        .inner_size(size.0, size.1);
+
+    // Windows: skip OLE drop-target registration on the window. tao
+    // registers an `IDropTarget` per webview via `RegisterDragDrop`
+    // and unregisters it via `RevokeDragDrop` on window teardown;
+    // Wine's ole32 mishandles the `IDropTarget::Release()` call and
+    // segfaults. Disabling at the shell layer avoids the round-trip
+    // entirely. Consumers that want OS-level file drops on Windows
+    // can build their own window with `.drag_and_drop(true)` — but
+    // hipo's frontend is built to stay identical between Tauri and
+    // Pages (`<input type="file">` everywhere), so OS drag-drop
+    // adds nothing.
+    #[cfg(windows)]
+    {
+        builder = builder.drag_and_drop(false);
+    }
+
+    builder.build()?;
     Ok(())
 }
 

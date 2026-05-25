@@ -21,6 +21,7 @@
     "npm:@types/react@^19.1.8": "19.2.14",
     "npm:@vitejs/plugin-react@^4.6.0": "4.7.0_vite@7.3.3__@types+node@22.19.19_@types+node@22.19.19",
     "npm:antd@^6.3.7": "6.3.7_react@19.2.6_react-dom@19.2.6__react@19.2.6",
+    "npm:cross-env@^10.1.0": "10.1.0",
     "npm:dayjs@^1.11.20": "1.11.20",
     "npm:drizzle-orm@0.36": "0.36.4_@libsql+client@0.14.0_@types+react@19.2.14_react@19.2.6",
     "npm:drizzle-orm@~0.36.4": "0.36.4_@libsql+client@0.14.0_@types+react@19.2.14_react@19.2.6",
@@ -354,6 +355,9 @@
     },
     "@emotion/unitless@0.7.5": {
       "integrity": "sha512-OWORNpfjMsSSUBVrRBVGECkhWcULOAJz9ZW8uK9qgxD+87M7jHRcvh/A96XXNhXTLmKcoYSQtBEX7lHMO7YRwg=="
+    },
+    "@epic-web/invariant@1.0.0": {
+      "integrity": "sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA=="
     },
     "@esbuild/aix-ppc64@0.25.12": {
       "integrity": "sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==",
@@ -2010,6 +2014,14 @@
     "cookie@1.1.1": {
       "integrity": "sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ=="
     },
+    "cross-env@10.1.0": {
+      "integrity": "sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==",
+      "dependencies": [
+        "@epic-web/invariant",
+        "cross-spawn"
+      ],
+      "bin": true
+    },
     "cross-spawn@7.0.6": {
       "integrity": "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==",
       "dependencies": [
@@ -3144,6 +3156,7 @@
             "npm:@types/react@^19.1.8",
             "npm:@vitejs/plugin-react@^4.6.0",
             "npm:antd@^6.3.7",
+            "npm:cross-env@^10.1.0",
             "npm:dayjs@^1.11.20",
             "npm:drizzle-orm@~0.36.4",
             "npm:eslint-config-prettier@^10.1.8",

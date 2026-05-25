@@ -38,12 +38,19 @@ async function openForShape(shape: Shape): Promise<{
     // thread (see in-page-backend.ts). Backups go through Rust
     // `VACUUM INTO` + file read; restores through atomic file
     // rename + reopen (see `binary-format-tauri.ts`).
-    const [{ openDb }, { binaryFormat }] = await Promise.all([
+    //
+    // Note: hipo's production Tauri boot path now uses the main-
+    // thread router topology in `in-page-mainthread.ts` (webkit2gtk
+    // refuses to register a Service Worker over the `tauri://`
+    // scheme used by Linux/macOS release builds). This Worker
+    // branch is dead code for hipo's Tauri shape — kept for any
+    // framework consumer that wants COI/SAB alongside rusqlite.
+    const [{ openDb, bridgeInvoke }, { binaryFormat }] = await Promise.all([
       import("@hipo/sqlite/client-tauri-bridge"),
       import("@hipo/sqlite/binary-format-tauri"),
     ]);
     const opened = await openDb({ migrations });
-    return { db: opened.db, backupFormat: gzipped(binaryFormat()) };
+    return { db: opened.db, backupFormat: gzipped(binaryFormat(bridgeInvoke)) };
   }
   // Browser / Pages shape — sqlocal + OPFS, with the binary backup
   // format wired against the live SQLocal handle.

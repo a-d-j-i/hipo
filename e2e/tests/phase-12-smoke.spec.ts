@@ -57,10 +57,12 @@ const API_HELPER = `
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "admin12345";
 
-// Boot readiness is two-phase: (1) the SW must be controlling the
-// page (so /api/* gets intercepted instead of falling through to
-// Vite's :8787 proxy), (2) /api/healthz must return 200 (so the
-// Worker is reachable and the DB is open).
+// Boot readiness: `/api/healthz` returns 200. The Tauri shape uses
+// the main-thread router topology (`in-page-mainthread.ts`) — no SW,
+// no Worker — because WebKitGTK refuses to register a Service Worker
+// over the `tauri://` scheme. So readiness is purely "did the fetch
+// interceptor get installed and is the DB open?", which collapses
+// neatly into a single `/api/healthz` round-trip.
 //
 // We deliberately do NOT wait for any UI element. When the React
 // app is rendered inside webkit2gtk under Tauri it can stall in an
@@ -69,11 +71,10 @@ const ADMIN_PASS = "admin12345";
 // proving the rusqlite + IPC + sqlite-proxy stack works end-to-end,
 // not the React rendering.
 //
-// First-boot is slow (SW install + COI self-reload + Worker spawn);
-// warm reloads complete in < 5s. We allow up to 60s on the outer
-// loop. Each `tauriPage.evaluate` is independently bounded below
-// the plugin's hard-coded 30s IPC cap (server.rs in
-// tauri-plugin-playwright 0.2.2).
+// First-boot is slow (interpreter warm-up + migrations); warm reloads
+// complete in < 5s. We allow up to 60s on the outer loop. Each
+// `tauriPage.evaluate` is independently bounded below the plugin's
+// hard-coded 30s IPC cap (server.rs in tauri-plugin-playwright 0.2.2).
 async function waitForBackendReady(tauriPage: TauriPage): Promise<void> {
   await tauriPage.evaluate(API_HELPER);
 
@@ -81,22 +82,17 @@ async function waitForBackendReady(tauriPage: TauriPage): Promise<void> {
   const deadlineMs = 60_000;
   let lastNote = "";
   while (Date.now() - start < deadlineMs) {
-    const probe = await tauriPage.evaluate<{
-      sw: boolean;
-      healthz: number;
-    }>(`(async () => {
-      const sw = !!navigator.serviceWorker.controller;
-      if (!sw) return { sw: false, healthz: 0 };
+    const probe = await tauriPage.evaluate<{ healthz: number }>(`(async () => {
       try {
         const r = await Promise.race([
           fetch("/api/healthz").then(r => r.status),
           new Promise((_, rej) => setTimeout(() => rej("t"), 5000)),
         ]);
-        return { sw: true, healthz: r };
-      } catch { return { sw: true, healthz: 0 }; }
+        return { healthz: r };
+      } catch { return { healthz: 0 }; }
     })()`);
-    if (probe.sw && probe.healthz === 200) return;
-    lastNote = `sw=${probe.sw} healthz=${probe.healthz}`;
+    if (probe.healthz === 200) return;
+    lastNote = `healthz=${probe.healthz}`;
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error(
