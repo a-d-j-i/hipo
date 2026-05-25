@@ -19,7 +19,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/CHANGE_ME_OWNER/CHANGE_ME_REPO/releases/latest/download/latest.json"
+        "https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json"
       ],
       "pubkey": "PLACEHOLDER_REPLACE_WITH_TAURI_SIGNING_PUBLIC_KEY"
     }

@@ -4,7 +4,7 @@ Desktop + browser app for tracking **mortgage loans with multiple lenders**.
 Built on top of a small **local-first TypeScript framework** that lives in
 `packages/` — hipo is the framework's first consumer.
 
-**Live demos:** `https://<owner>.github.io/<repo>/` (release index) → `/hipo/`
+**Live demos:** `https://a-d-j-i.github.io/hipo/` (release index) → `/hipo/`
 (full product) · `/minimal/` (framework template). The Pages deploy is the
 rolling "latest main" build; tagged installer releases live on GitHub Releases.
 
@@ -293,11 +293,11 @@ user gets an antd modal offering to install and relaunch.
    - Keep the private key safe — losing it means existing installs can't accept
      updates.
 
-2. **Replace the placeholder URL** in `apps/desktop/tauri.conf.json` at
-   `plugins.updater.endpoints` with your repo:
+2. **Updater feed URL** in `apps/desktop/tauri.conf.json` at
+   `plugins.updater.endpoints`:
 
    ```
-   https://github.com/<owner>/<repo>/releases/latest/download/latest.json
+   https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json
    ```
 
 3. **Verify local cross-compile** (only if you'll cut releases manually):

@@ -2,7 +2,7 @@
 
 Guidance for Claude Code when working in this repository.
 
-**Live Pages demos:** `https://<owner>.github.io/<repo>/{hipo,minimal}/` — the
+**Live Pages demos:** `https://a-d-j-i.github.io/hipo/{hipo,minimal}/` — the
 full product + the framework's smallest working consumer. The Pages deploy is
 the "latest main" build; Tauri installers ship via GitHub Releases on tag
 pushes. See `.github/workflows/pages.yml` for the build and post-deploy
@@ -314,8 +314,8 @@ Signing pipeline:
 - Private key + password → CI secrets `TAURI_SIGNING_PRIVATE_KEY` +
   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
 - Endpoint URL points at
-  `https://github.com/<owner>/<repo>/releases/latest/download/latest.json`
-  (placeholder in `tauri.conf.json` — replace with the real org/repo).
+  `https://github.com/a-d-j-i/hipo/releases/latest/download/latest.json`
+  (wired in `tauri.conf.json`).
 
 Release pipeline: `.github/workflows/release.yml` triggers on `v*` tags,
 matrix-builds on `ubuntu-22.04` + `windows-latest`, signs via `tauri-action`,
