@@ -35,6 +35,13 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
 
+      - name: Stamp version (dev + commit SHA)
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA::7}"
+          sed -i 's/APP_VERSION = "[^"]*"/APP_VERSION = "0.0.0-dev+'"$SHA"'"/' apps/hipo/src/version.ts
+          cat apps/hipo/src/version.ts
+
       - name: Build templates/minimal
         env:
           VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/minimal/

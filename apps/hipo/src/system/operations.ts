@@ -13,8 +13,7 @@ import {
 } from "@hipo/server";
 import type { Ctx } from "@hipo/auth";
 import { backupTargetState } from "../db/schema.ts";
-
-const FRAMEWORK_VERSION = "0.0.0";
+import { APP_VERSION } from "../version.ts";
 
 // A target counts as "stale" if its last successful backup is older
 // than this. Matches plan §Phase 7's nudge threshold.
@@ -101,7 +100,7 @@ export async function do_getSystemStatus(ctx: Ctx): Promise<SystemStatus> {
 
   return {
     status_schema_version: STATUS_SCHEMA_VERSION,
-    framework_version: FRAMEWORK_VERSION,
+    framework_version: APP_VERSION,
     shape,
     shape_details: {},
     storage: {
