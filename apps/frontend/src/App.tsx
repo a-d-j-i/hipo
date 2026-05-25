@@ -44,7 +44,7 @@ function PageFallback() {
 export default function App() {
   return (
     <ConfigProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <AuthProvider>
           <PassphraseProvider>
             <CadenceRunner />
