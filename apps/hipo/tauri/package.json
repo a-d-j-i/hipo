@@ -10,7 +10,8 @@
     "build": "tauri build",
     "build:linux": "tauri build --target x86_64-unknown-linux-gnu",
     "build:windows": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc",
-    "signer:generate": "tauri signer generate"
+    "signer:generate": "tauri signer generate",
+    "clean": "rm -rf target gen && rm -f *.bin"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

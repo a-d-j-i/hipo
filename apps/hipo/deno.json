@@ -5,7 +5,8 @@
     "compile:linux": "deno compile --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys --target x86_64-unknown-linux-gnu --output ./tauri/binaries/hipo-backend-x86_64-unknown-linux-gnu src/server.ts",
     "compile:windows": "deno compile --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys --target x86_64-pc-windows-msvc --output ./tauri/binaries/hipo-backend-x86_64-pc-windows-msvc.exe src/server.ts",
     "check": "deno check src/server.ts",
-    "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys src/"
+    "test": "deno test --allow-net --allow-read --allow-write --allow-env --allow-ffi --allow-sys src/",
+    "clean": "rm -rf tauri/binaries"
   },
   "imports": {
     "@hipo/shared": "../../packages/shared/src/index.ts",

@@ -16,6 +16,7 @@
     "check": "deno task check",
     "test": "deno task test",
     "compile:linux": "deno task compile:linux",
-    "compile:windows": "deno task compile:windows"
+    "compile:windows": "deno task compile:windows",
+    "clean": "deno task clean"
   }
 }

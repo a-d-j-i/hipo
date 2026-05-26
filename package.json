@@ -42,7 +42,8 @@
     "test:backend": "npm run test -w hipo",
     "test:e2e:tauri": "playwright test --config e2e/playwright.config.ts --project=tauri",
     "check:frontend": "npm run check -w @hipo/frontend",
-    "check:backend": "npm run check -w hipo"
+    "check:backend": "npm run check -w hipo",
+    "clean": "npm run clean --workspaces --if-present && rm -rf packages/tauri-shell/target"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
