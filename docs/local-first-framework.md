@@ -649,13 +649,20 @@ Firefox" and that URL didn't exist before this phase.
 ### Deliverables
 
 1. **GitHub Pages workflow** (`.github/workflows/pages.yml`):
-   - Triggers on push to `main` + manual dispatch.
+   - Triggers on `v*` tag pushes + manual dispatch (changed from
+     push-to-`main` in commit `20a6899`, 2026-05-25 — same `v*` tag drives
+     `release.yml`, so Pages + installers ship in lockstep).
    - Runs `npm run build:frontend:inpage` against the chosen demo consumer
      (`templates/minimal` first, hipo later if wanted).
    - Deploys via `actions/deploy-pages@v4` to
      `https://<owner>.github.io/<repo>/`.
    - Pre-deploy step asserts the merged SW lands at the right path and
      `index.html` registers it.
+   - **One-time env setup**: repo Settings → Environments → `github-pages`
+     → "Deployment branches and tags" must permit `v*` tag pattern (default
+     is branch-only, which rejects the first tag deploy with `Tag "v0.1.X"
+     is not allowed to deploy to github-pages due to environment protection
+     rules`).
 2. **Post-deploy smoke** — a Playwright job hits the deployed URL, confirms the
    SW forces the COI reload, `crossOriginIsolated` resolves to `true`, and the
    bootstrap → setup → take-a-backup round-trip succeeds. Runs on a

@@ -8,6 +8,11 @@ installers both ship from the same `v*` tag push (see
 `.github/workflows/pages.yml` + `release.yml`); the Pages workflow also has a
 `workflow_dispatch` escape hatch that stamps a `0.0.0-dev+<sha>` version. The
 Playwright smoke runs post-deploy against the live URL.
+**One-time env config:** repo Settings → Environments → `github-pages` →
+"Deployment branches and tags" must include a `v*` tag rule (or be set to
+"All branches and tags"); the auto-created default blocks tag deploys with
+`Tag "v0.1.X" is not allowed to deploy to github-pages due to environment
+protection rules`.
 
 ## Project goals
 
