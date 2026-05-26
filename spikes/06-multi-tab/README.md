@@ -23,6 +23,8 @@ This spike is the load-bearing test for that primitive.
 
 ## Run
 
+### Local dev (`multi-tab.mjs`)
+
 ```bash
 node spikes/06-multi-tab/multi-tab.mjs
 ```
@@ -31,11 +33,27 @@ Exits `0` on green; non-zero if any assertion fails. The script starts
 `apps/hipo/frontend` in `dev:inpage` mode itself, drives Playwright through both
 tabs, and cleans up its own dev server in `finally`.
 
+### Deployed Pages parity (`multi-tab-pages.mjs`)
+
+```bash
+node spikes/06-multi-tab/multi-tab-pages.mjs               # both engines
+node spikes/06-multi-tab/multi-tab-pages.mjs chromium      # one engine
+PAGES_URL=https://example.com/ node spikes/06-multi-tab/multi-tab-pages.mjs
+```
+
+Runs the same multi-tab flow against `https://a-d-j-i.github.io/hipo/hipo/` (or
+`$PAGES_URL`) under both Chromium and WebKit. No frontend spawn. Requires
+`npx playwright install` to have pulled the WebKit driver. Verified PASS
+2026-05-25 against deployed commit `2abeca8` in both engines.
+
 ## What it does NOT cover
 
-- WebKitGTK / GitHub Pages parity — both require a deployed Pages build and are
-  deferred until Phase 11 ships. Trace plan doc §Phase 13 pre-commit spike item
-  #4 for the deferred check.
+- True webkit2gtk runtime — Playwright's WebKit is desktop-Safari WebKit, not
+  webkit2gtk 2.50.6. The Web Locks API has been in upstream WebKit since
+  Safari 15.4 (2022), so webkit2gtk 2.50.6 supports it; strict
+  webkit2gtk-engine testing would require Epiphany or wry against the live URL
+  but is not a separate spec surface from Playwright's WebKit for this
+  primitive.
 - Three-or-more tabs — the lock primitive degenerates trivially (any tab beyond
   the first sees the lock held); two is enough to exercise the semantics.
 - Tauri shape — single-window by default, multi-tab is moot.
