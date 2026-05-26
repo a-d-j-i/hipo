@@ -133,7 +133,7 @@ export default function PaymentsDrawer({
       }
       open={open}
       onClose={onClose}
-      width={drawerWidth}
+      size={drawerWidth}
       destroyOnClose
     >
       {loan && (
@@ -167,7 +167,7 @@ export default function PaymentsDrawer({
             <Alert
               type="info"
               showIcon
-              message={t("payments.loanClosedAlert")}
+              title={t("payments.loanClosedAlert")}
               style={{ marginBottom: 16 }}
             />
           ) : (

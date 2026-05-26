@@ -258,7 +258,7 @@ export default function Payouts() {
         }
         open={recordTarget !== null}
         onClose={() => setRecordTarget(null)}
-        width={drawerWidth}
+        size={drawerWidth}
         destroyOnClose
       >
         <Form

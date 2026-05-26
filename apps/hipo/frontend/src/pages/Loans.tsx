@@ -694,7 +694,7 @@ export default function Loans() {
         title={t("loans.drawerTitle.create")}
         open={creating}
         onClose={() => setCreating(false)}
-        width={wideDrawerWidth}
+        size={wideDrawerWidth}
         destroyOnClose
       >
         <Form
@@ -776,7 +776,7 @@ export default function Loans() {
         }
         open={editing !== null}
         onClose={() => setEditing(null)}
-        width={editDrawerWidth}
+        size={editDrawerWidth}
         destroyOnClose
       >
         <Form
@@ -835,7 +835,7 @@ export default function Loans() {
         }
         open={managingLenders !== null}
         onClose={() => setManagingLenders(null)}
-        width={wideDrawerWidth}
+        size={wideDrawerWidth}
         destroyOnClose
       >
         <Form
@@ -865,7 +865,7 @@ export default function Loans() {
         }
         open={managingPromoters !== null}
         onClose={() => setManagingPromoters(null)}
-        width={wideDrawerWidth}
+        size={wideDrawerWidth}
         destroyOnClose
       >
         <Form

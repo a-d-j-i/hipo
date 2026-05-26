@@ -165,7 +165,7 @@ export default function Parties() {
         title={drawerTitle}
         open={open}
         onClose={close}
-        width={drawerWidth}
+        size={drawerWidth}
         destroyOnClose
       >
         <Form

@@ -25,8 +25,9 @@ import type { MintPatInput } from "./types.ts";
 /** Minimal state shape the vault routes need on the router. */
 export type VaultState = { db: Db; user: User | null };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function registerVaultRoutes(app: Router<any>): void {
+export function registerVaultRoutes<T extends VaultState>(
+  app: Router<T>,
+): void {
   // Open — no auth. Lets the client verify the server is reachable.
   app.get("/api/vault/health", () => json({ ok: true }));
 

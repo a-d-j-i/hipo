@@ -36,7 +36,7 @@ export function RiskBanner({
       <Alert
         type="error"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.noBackupConfigured")}
       />
     );
@@ -46,7 +46,7 @@ export function RiskBanner({
       <Alert
         type="error"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.lastVerifyFailed")}
       />
     );
@@ -56,7 +56,7 @@ export function RiskBanner({
       <Alert
         type="warning"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.noRecentBackup")}
       />
     );
@@ -66,7 +66,7 @@ export function RiskBanner({
       <Alert
         type="warning"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.nearStorageQuota")}
       />
     );
@@ -82,7 +82,7 @@ export function RiskBanner({
       <Alert
         type="success"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.ok")}
       />
     );
@@ -92,7 +92,7 @@ export function RiskBanner({
       <Alert
         type="info"
         showIcon
-        message={title}
+        title={title}
         description={t("settings.storage.risk.clearedByBrowserDataClear")}
       />
     );

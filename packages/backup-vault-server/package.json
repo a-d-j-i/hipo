@@ -11,5 +11,9 @@
     "./migrations": "./src/migrations.ts",
     "./routes": "./src/routes.ts",
     "./middleware": "./src/middleware.ts"
+  },
+  "scripts": {
+    "test": "deno task test",
+    "check": "deno task check"
   }
 }

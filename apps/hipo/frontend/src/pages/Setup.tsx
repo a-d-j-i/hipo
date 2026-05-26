@@ -39,7 +39,7 @@ export default function Setup() {
         <Alert
           type="warning"
           showIcon
-          message={t("auth.setup.warningTitle")}
+          title={t("auth.setup.warningTitle")}
           description={t("auth.setup.warningDescription")}
           style={{ marginBottom: 16 }}
         />

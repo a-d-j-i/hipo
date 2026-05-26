@@ -194,7 +194,7 @@ export default function Users() {
         title={t("users.drawerTitle.add")}
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        width={drawerWidth}
+        size={drawerWidth}
         destroyOnClose
       >
         <Form

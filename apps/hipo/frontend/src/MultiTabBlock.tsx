@@ -47,14 +47,14 @@ export default function MultiTabBlock() {
           <Alert
             type="success"
             showIcon
-            message={t("multiTab.resuming")}
+            title={t("multiTab.resuming")}
             icon={<Spin size="small" />}
           />
         ) : (
           <Alert
             type="info"
             showIcon
-            message={t("multiTab.waiting")}
+            title={t("multiTab.waiting")}
             icon={<Spin size="small" />}
           />
         )}

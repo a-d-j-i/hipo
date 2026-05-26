@@ -140,7 +140,7 @@ function BootstrapNewPanel() {
       <Alert
         type="warning"
         showIcon
-        message={t("bootstrap.new.warningTitle")}
+        title={t("bootstrap.new.warningTitle")}
         description={t("bootstrap.new.warningDescription")}
         style={{ marginBottom: 16 }}
       />

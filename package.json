@@ -39,7 +39,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:frontend": "npm run test -w @hipo/frontend",
-    "test:backend": "npm run test -w hipo",
+    "test:backend": "npm run test -w hipo && npm run test -w @hipo/backup-vault-server",
     "test:e2e:tauri": "playwright test --config e2e/playwright.config.ts --project=tauri",
     "check:frontend": "npm run check -w @hipo/frontend",
     "check:backend": "npm run check -w hipo",
